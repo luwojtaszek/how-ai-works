@@ -55,4 +55,4 @@ Record real corrections in the changelog (`updated`).
 
 ## Deploy
 
-Every push to `main` builds the site, checks internal links and publishes it to GitHub Pages (`.github/workflows/deploy.yml`). The public address is `site` in `astro.config.mjs`.
+Every push to `main` builds the site, checks internal links and publishes it to Cloudflare Pages (`.github/workflows/deploy.yml`); a pull request gets a preview URL in a comment. The public address is `site` in `astro.config.mjs`.

@@ -36,4 +36,4 @@ The guide's text and images (`src/stations/`, the text in `src/data.js` and `src
 
 ## Deploy
 
-Every push to `main` builds the site and publishes it to GitHub Pages (`.github/workflows/deploy.yml`), served at https://howaiworks.dev. The public address is set in `astro.config.mjs` (`site`).
+Every push to `main` builds the site and publishes it to Cloudflare Pages (`.github/workflows/deploy.yml`), served at https://howaiworks.dev. Pull requests get a preview URL in a comment. The public address is set in `astro.config.mjs` (`site`).

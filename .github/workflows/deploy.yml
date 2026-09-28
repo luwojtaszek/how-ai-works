@@ -1,22 +1,27 @@
-# Build the static site and publish it to GitHub Pages (custom domain howaiworks.dev) on every push to main.
+# Build the static site and publish it to Cloudflare Pages (project how-ai-works).
+# A push to main is production (howaiworks.dev); a pull request from this repository gets a preview URL
+# posted as a comment, so changes (including the ones agents propose) can be reviewed before merging.
+# Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 name: Deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pull-requests: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: deploy-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
+    # fork pull requests get no secrets, so they are skipped
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -26,15 +31,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: python3 scripts/qa/links.py dist
-      - uses: actions/upload-pages-artifact@v4
+      - id: cf
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: dist
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=how-ai-works --branch=${{ github.head_ref || github.ref_name }}
+      - if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "Preview: ${{ steps.cf.outputs.deployment-url }}"
