@@ -1,0 +1,30 @@
+<section class="station" id="moe" data-hue="tok">
+  <h2>Mixture of Experts</h2>
+  <p class="lede">W Mixture of Experts (MoE) warstwę MLP zastępuje wielu „ekspertów”, a router dla każdego tokena wybiera kilku z nich. Model ma bardzo dużo parametrów, ale na token liczy tylko część: obliczenia jak w małym modelu, pamięć jak w dużym.</p>
+  <div class="lab">
+    <p class="lab-title">Klikaj tokeny i patrz, których ekspertów wybiera router. Na dole: ilu ekspertów potrzebuje całe zdanie</p>
+    <div class="att-row" id="moeToks"></div>
+    <div class="experts" id="moeEx"></div>
+    <div class="stats"><div class="stat"><b>2 z 8</b><span>ekspertów liczy przy jednym tokenie</span></div><div class="stat"><b id="moeAll"></b><span>ekspertów potrzebuje całe zdanie, czyli batch</span></div><div class="stat"><b>13 z 47 mld</b><span>parametrów aktywnych w Mixtral 8×7B</span></div></div>
+    <p class="hint">Uproszczenie: jedna warstwa, 8 ekspertów i 2 na token, jak w Mixtral 8×7B (2023), a wybór jest poglądowy, nie z prawdziwego modelu. Pasek pod ekspertem pokazuje, jak często wybierały go tokeny z tego zdania. Router patrzy na stan tokena w kontekście, nie tylko na jego tekst, więc ten sam token w innym miejscu może trafić gdzie indziej.</p>
+  </div>
+  <h3 class="sub">Jak działa routing</h3>
+  <ul class="notes">
+    <li>Router to mała warstwa liniowa. Z wektora tokena liczy wynik dla każdego eksperta, wybiera k najlepszych (zwykle 2–8) i sumuje ich wyjścia z wagami wyliczonymi z tych wyników. Wybór zapada osobno w każdej warstwie MoE i dla każdego tokena.</li>
+    <li>Eksperci zastępują tylko MLP. Attention, embeddingi i normalizacje są wspólne, dlatego Mixtral 8×7B ma ok. 47 mld parametrów, a nie 56 mld, z czego ok. 13 mld aktywnych na token. Nowe modele mają dużo więcej, drobniejszych ekspertów: DeepSeek-V3 ma w każdej warstwie MoE 256 ekspertów routowanych i jednego wspólnego, a wybiera 8.</li>
+    <li>„Ekspert” nie jest specjalistą od tematu. Autorzy Mixtrala nie znaleźli wyraźnych wzorców przydziału według dziedziny tekstu; wybór wiąże się raczej ze składnią, np. wcięcia w kodzie trafiają stale do tych samych ekspertów.</li>
+    <li>Bez wyrównywania obciążenia router wpada w kilku ulubionych ekspertów, a reszta parametrów prawie się nie uczy. Stąd dodatkowa strata równoważąca w treningu (od pierwszych rzadkich warstw MoE, uproszczona w Switch Transformer) albo, w DeepSeek-V3, głównie bias każdego eksperta korygowany w trakcie treningu i używany tylko do wyboru ekspertów, plus minimalna strata równoważąca na poziomie sekwencji.</li>
+  </ul>
+  <h3 class="sub">Konsekwencje dla serwowania</h3>
+  <ul class="notes">
+    <li>W pamięci muszą leżeć wszyscy eksperci. DeepSeek-V3 ma 671 mld parametrów, z czego 37 mld aktywnych na token. W FP8 to ok. 671 GB samych wag, więcej niż 640 GB na ośmiu kartach H100.</li>
+    <li>Przy jednej rozmowie decode czyta tylko aktywnych ekspertów, więc jest szybki jak w modelu tej aktywnej wielkości. Przy większym batchu tokeny rozchodzą się prawie do wszystkich ekspertów: krok czyta prawie cały model, a każdy ekspert dostaje tylko część batcha. Żeby liczenie dogoniło czytanie, batch musi być mniej więcej tyle razy większy niż w modelu gęstym, ile wynosi stosunek wszystkich ekspertów do wybranych (zobacz „Czemu GPU się nudzi”).</li>
+    <li>Dlatego duże MoE rozkłada się ekspertami na wiele kart (expert parallelism), z wymianą tokenów między kartami typu all-to-all w każdej warstwie. DeepSeek-V3 dekoduje na jednostkach po 320 GPU, po jednym ekspercie na kartę, i duplikuje najczęściej wybieranych ekspertów, bo najbardziej obciążony ekspert wyznacza czas całego kroku.</li>
+  </ul>
+  <h3 class="sub">Kiedy MoE, a kiedy model gęsty</h3>
+  <ul class="notes">
+    <li>MoE daje więcej jakości na jednostkę obliczeń i tańszy trening. Model gęsty tej samej łącznej wielkości zwykle jest lepszy, ale liczy wielokrotnie więcej na token. Większość czołowych modeli open-weight od 2025 roku to MoE, dlatego podaje się dwie liczby: parametry łącznie i aktywne (np. Qwen3-235B-A22B).</li>
+    <li>Na sprzęcie z dużą, ale wolną pamięcią, jak Mac z pamięcią wspólną, MoE działa dla jednej osoby zaskakująco szybko, bo czyta tylko aktywne parametry. gpt-oss-120b (117 mld parametrów, 5,1 mld aktywnych) mieści się dzięki MXFP4 na jednej karcie 80 GB. Z tego samego powodu duże MoE ruszy na jednej domowej karcie, jeśli wagi ekspertów zostaną w RAM-ie procesora, a attention na GPU (llama.cpp <code>--cpu-moe</code> albo <code>--n-cpu-moe</code>).</li>
+    <li>Duże MoE w self-hostingu opłaca się dopiero przy ruchu, który wypełni batch na wielu kartach. Przy mniejszym ruchu taniej wychodzi API albo mniejszy model (zobacz „Open-weight”).</li>
+  </ul>
+</section>

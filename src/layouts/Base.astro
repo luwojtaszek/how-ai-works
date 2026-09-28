@@ -1,0 +1,121 @@
+---
+import '../styles/global.css';
+import { UI, content, root, other, REPO } from '../i18n.js';
+import Settings from '../components/Settings.astro';
+import { SITE_UPDATED, fmtDate, isNew } from '../lib/content.js';
+
+const { lang = 'en', title, description, current, sections = [], md, alt, jsonld, image = `/og/${lang}/home.png` } = Astro.props;
+const ui = UI[lang], c = content(lang), r = root(lang);
+const abs = (p) => (Astro.site ? new URL(p, Astro.site).href : p);
+const canonical = abs(Astro.url.pathname);
+const fullTitle = title ? `${title} · ${ui.siteName}` : `${ui.siteName}: ${ui.tagline}`;
+const desc = description || ui.siteDesc;
+const hrefs = { [lang]: Astro.url.pathname, [other(lang)]: alt || root(other(lang)) };
+const gi = current ? c.groups.findIndex((g) => g[2].includes(current)) : -1;
+const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${c.titleOf(current)}` : ui.toc;
+---
+<!doctype html>
+<html lang={lang}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>{fullTitle}</title>
+<meta name="description" content={desc}>
+<link rel="canonical" href={canonical}>
+<link rel="alternate" hreflang="en" href={abs(hrefs.en)}>
+<link rel="alternate" hreflang="pl" href={abs(hrefs.pl)}>
+<link rel="alternate" hreflang="x-default" href={abs(hrefs.en)}>
+<meta property="og:type" content={title ? 'article' : 'website'}>
+<meta property="og:title" content={fullTitle}>
+<meta property="og:description" content={desc}>
+<meta property="og:url" content={canonical}>
+<meta property="og:locale" content={ui.locale}>
+<meta property="og:site_name" content={ui.siteName}>
+<meta property="og:image" content={abs(image)}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="author" content="magnificode.pl">
+{jsonld && <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />}
+{md && <link rel="alternate" type="text/markdown" href={md} title="Markdown">}
+<link rel="alternate" type="application/rss+xml" href={`${r}changelog.xml`} title={`${ui.siteName}: ${ui.whatsNew}`}>
+<link rel="alternate" type="text/plain" href={`${r}llms-full.txt`} title={ui.wholeFile}>
+<link rel="icon" href={`${root('en')}favicon.svg`} type="image/svg+xml">
+<script is:inline>
+  // default follows the browser; a saved choice exists only when it differs from it
+  try { const t = localStorage.getItem('llm-mapa-theme'); if (t) document.documentElement.dataset.theme = JSON.parse(t); } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<aside class="rail" aria-label={ui.topicList}>
+  <div class="rail-bar">
+    <a class="rail-title" href={r}>{ui.siteName}</a>
+    <button class="m-current" type="button" popovertarget="toc"><small>{ui.siteName}</small><span><em>{curLabel}</em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></button>
+    <div class="rail-actions">
+      <Settings lang={lang} hrefs={hrefs} ui={ui} path={Astro.url.pathname} />
+      <button class="icon-btn search-btn" type="button" data-search-open aria-label={ui.searchLabel} title={ui.searchLabel}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+    </div>
+    <i class="read-progress" aria-hidden="true"></i>
+  </div>
+  <button class="search-field" type="button" data-search-open>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <span>{ui.search}</span><kbd>Ctrl K</kbd>
+  </button>
+  <div id="toc" popover>
+    <div class="toc-head">
+      <b>{ui.toc}</b>
+      <Settings lang={lang} hrefs={hrefs} ui={ui} path={Astro.url.pathname} />
+      <button class="icon-btn" type="button" popovertarget="toc" popovertargetaction="hide" aria-label={ui.closeToc}>✕</button>
+    </div>
+    <nav class="chapters">
+      {c.groups.map(([g, , ids], gi) => (
+        <details class="chapter" open={!current || ids.includes(current) ? true : undefined}>
+          <summary><span class="ch-num">{gi + 1}</span><span class="ch-name">{g}</span></summary>
+          <ol>
+            {ids.map((id, ti) => (
+              <li>
+                <a href={c.path(id)} data-id={id} class:list={{ here: id === current }} aria-current={id === current ? 'page' : undefined}><span class="t-num">{gi + 1}.{ti + 1}</span><span class="t-name">{c.titleOf(id)}{isNew(id) && <em class="badge-new">{ui.newBadge}</em>}</span></a>
+                {id === current && sections.length > 0 && (
+                  <ul class="rail-sections">
+                    {sections.map((s) => <li><a href={`#${s.anchor}`}>{s.title}</a></li>)}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ))}
+    </nav>
+    <a class="rail-news" href={`${r}changelog/`}>{ui.whatsNew}<span>{fmtDate(SITE_UPDATED, lang)}</span></a>
+    <p class="rail-ai">{ui.aiNote[0]}<a href={`${r}llms-full.txt`}>{ui.aiNote[1]}</a>{ui.aiNote[2]}</p>
+  </div>
+</aside>
+<dialog id="search" aria-label={ui.searchLabel}>
+  <form method="dialog" class="search-box">
+    <input id="searchInput" type="search" placeholder={ui.searchPlaceholder} autocomplete="off" aria-controls="searchResults">
+    <button class="icon-btn" type="submit" aria-label={ui.closeSearch}>✕</button>
+  </form>
+  <ol id="searchResults" class="search-results" aria-live="polite"></ol>
+</dialog>
+<main>
+  <slot />
+  <footer class="site-foot">
+    <nav class="foot-nav" aria-label={ui.footer}>
+      <a href={`${r}about/`}>{ui.aboutShort}</a>
+      <a href={`${r}changelog/`}>{ui.whatsNew}</a>
+      <a href={REPO}>GitHub</a>
+      <a href={`${r}changelog.xml`}>RSS</a>
+      <a href={`${r}llms.txt`}>llms.txt</a>
+    </nav>
+    <p class="foot-meta"><span>by <a href="https://magnificode.pl">magnificode.pl</a></span><span>{ui.lastUpdate}: {fmtDate(SITE_UPDATED, lang)}</span></p>
+  </footer>
+</main>
+<script>import '../scripts/app.js';</script>
+</body>
+</html>

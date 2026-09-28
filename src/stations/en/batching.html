@@ -1,0 +1,46 @@
+<section class="station" id="batching" data-hue="cache">
+  <h2>Continuous batching and PagedAttention</h2>
+  <p class="lede">A server groups conversations into a batch so that one read of the weights serves many users at once. Continuous batching swaps conversations in and out of the batch at every step, and PagedAttention hands out KV cache memory in small blocks, so the same GPU fits several times more of them.</p>
+  <div class="lab">
+    <p class="lab-title">Play both modes and compare how many cells sit empty and at which step the last conversation finishes</p>
+    <div class="row">
+      <button class="btn ghost" id="cbStatic" type="button" aria-pressed="true">Static batch</button>
+      <button class="btn ghost" id="cbCont" type="button" aria-pressed="false">Continuous batching</button>
+    </div>
+    <div id="cbPlayer" style="margin-top:12px"></div>
+    <div class="bgrid" id="cbGrid" style="margin-top:12px"></div>
+    <div class="legend"><span><i style="background:var(--tok-t)"></i>conversation generates a token</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 1.5px var(--cost)"></i>slot sits empty</span></div>
+    <div class="stats"><div class="stat"><b id="cbDone"></b><span>conversations finished</span></div><div class="stat"><b id="cbIdle"></b><span>empty cells (slot × step) so far</span></div><div class="stat"><b id="cbEnd"></b><span>steps to serve all eight</span></div></div>
+    <p class="hint">Eight conversations (A–H), 2 to 9 tokens long. Rows s1–s4 are the four slots in the batch; columns are successive steps. Illustrative: it leaves out the prefill a new conversation must run before its first token.</p>
+  </div>
+  <h3 class="sub">How the scheduler works</h3>
+  <ul class="notes">
+    <li>A static batch fixes its membership once: everyone waits for the longest answer, and new requests wait for the whole group to finish. You don’t know answer lengths in advance, so empty slots are the rule, not the exception.</li>
+    <li>Continuous batching (iteration-level scheduling in the literature, from the Orca system, OSDI 2022) decides the batch membership at every decode step. A finished conversation frees its slot immediately and a waiting one joins on the next step. It works because each step is a separate forward pass, and the layers other than attention don’t depend on sequence length.</li>
+    <li>A new conversation starts with the prefill of its prompt, which briefly takes the GPU away from conversations that are mid-generation. Chunked prefill cuts a long prompt into chunks that fit the per-step token budget. vLLM V1 enables it by default: each step it schedules the decoding conversations first and fills the remaining budget with prefill.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Switch the memory allocation scheme and count how many conversations fit in the same 32 blocks</p>
+    <div class="row">
+      <button class="btn ghost" id="pgOld" type="button" aria-pressed="true">Reserve for the maximum length</button>
+      <button class="btn ghost" id="pgNew" type="button" aria-pressed="false">Allocate blocks on demand</button>
+    </div>
+    <div class="pblocks" id="pgBlocks" style="margin-top:14px"></div>
+    <div class="legend"><span><i style="background:var(--tok-t)"></i>block used by a conversation</span><span><i style="background:repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 6px)"></i>reserved but empty</span></div>
+    <div class="stats"><div class="stat"><b id="pgFit"></b><span>conversations fit in memory</span></div><div class="stat"><b id="pgWaste"></b><span>of memory reserved but unused</span></div></div>
+    <p class="hint">Illustrative: the reservation assumes a maximum of 8 blocks per conversation. In a real server the tail of each conversation’s last block also stays empty.</p>
+  </div>
+  <h3 class="sub">PagedAttention: KV cache memory</h3>
+  <ul class="notes">
+    <li>Reserving a contiguous region for the maximum answer length wastes memory on headroom and fragmentation. The vLLM authors measured 60–80% of KV cache memory wasted in the systems of the time.</li>
+    <li>PagedAttention splits the KV cache into blocks of a dozen or so tokens (usually 16), allocated as generation proceeds and addressed through a block table, like pages of virtual memory in an operating system. Only the tail of the last block stays empty, and waste drops below 4%. More conversations in memory means a bigger batch and a lower cost per token.</li>
+    <li>Blocks can be shared with copy-on-write. A common prefix, such as a system prompt or several samples of the same answer, is stored in memory once. Server-side prefix caching builds on this (see “Prompt caching”). With several replicas it pays off only if the router sends requests with the same prefix to the replica that already holds it (prefix-aware routing, e.g. in llm-d or NVIDIA Dynamo).</li>
+    <li>The price of on-demand allocation is that memory can run out mid-generation. The server then preempts a conversation and later recomputes its KV cache from scratch. In vLLM V1 this is the default, rather than swapping the cache out to CPU memory. The user sees it as a sudden stall in the stream.</li>
+  </ul>
+  <h3 class="sub">What it means in production</h3>
+  <ul class="notes">
+    <li>Batch size is limited by KV cache memory (number of conversations × context length) and by the latency budget between tokens. Server settings such as <code>max_num_seqs</code> and <code>max_num_batched_tokens</code> in vLLM set this trade-off directly.</li>
+    <li>Throughput comes at the cost of latency. Under load, time to first token grows because of the queue and prefills, and time between tokens grows because of larger batches. Measure the two separately, at p50 and p99 (see “LLMs in production”).</li>
+    <li>Providers’ batch APIs sell a loose SLO: at Anthropic it is 50% cheaper, most batches finish within an hour, and the limit is 24 hours. The provider can use this traffic to fill free batch slots and traffic troughs. For evals and bulk processing it is the simplest saving.</li>
+  </ul>
+</section>

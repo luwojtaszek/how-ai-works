@@ -1,0 +1,36 @@
+<section class="station" id="promptcache" data-hue="cache">
+  <h2>Prompt caching</h2>
+  <p class="lede">Prompt caching to KV cache zachowany u dostawcy między requestami. Request, który zaczyna się identycznie jak niedawny, pomija prefill tej części: płaci ułamek ceny wejścia i szybciej dostaje pierwszy token.</p>
+  <div class="lab">
+    <p class="lab-title">Wybierz układ promptu. Zobacz, jaka część drugiego requestu trafia w cache i ile to kosztuje</p>
+    <div class="row" id="pcLayouts" role="group" aria-label="Układ promptu"></div>
+    <p class="hint" style="margin-top:14px">Request 1</p>
+    <div class="req" id="pcR1"></div>
+    <p class="hint">Request 2, chwilę później</p>
+    <div class="req" id="pcR2"></div>
+    <div class="legend"><span><i style="background:var(--prob-t);box-shadow:inset 0 0 0 2px var(--prob)"></i>zapis do cache’u</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>trafienie</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 2px var(--cost)"></i>liczone od nowa i zapisywane</span></div>
+    <div class="stats"><div class="stat"><b id="pcHit"></b><span>tokenów requestu 2 z cache’u</span></div><div class="stat"><b id="pcCost1"></b><span>koszt wejścia requestu 1: sam zapis</span></div><div class="stat"><b id="pcCost"></b><span>koszt wejścia requestu 2: odczyt plus zapis nowego</span></div><div class="stat"><b id="pcSave"></b><span id="pcSaveL">taniej niż bez cache’u</span></div></div>
+    <div class="callout" id="pcMsg"></div>
+    <p class="hint">Przykładowe stawki: 3 USD za milion tokenów wejściowych, odczyt z cache’u 10% tej ceny, zapis 125%. Tak liczą Anthropic przy 5-minutowym wpisie i OpenAI od GPT-5.6 (wrzesień 2026). U starszych modeli i innych dostawców zapis bywa bez dopłaty.</p>
+  </div>
+  <h3 class="sub">Jak to działa</h3>
+  <ul class="notes">
+    <li>Po requeście dostawca zachowuje KV cache promptu w blokach i indeksuje je hashem prefiksu, czyli wszystkiego od początku promptu do końca bloku (temat „Pętla generowania i KV cache”). Request z tym samym początkiem wczytuje te bloki zamiast liczyć je od nowa.</li>
+    <li>Trafia tylko identyczny prefiks. K i V każdego tokena zależą od wszystkich tokenów przed nim, a dzięki masce przyczynowej od niczego za nim. Dopisany koniec zostawia więc cache ważny, a pierwszy zmieniony token unieważnia wszystko za nim, nawet gdy dalsza część jest identyczna.</li>
+    <li>Zysk jest podwójny: tańsze wejście i krótszy czas do pierwszego tokena, bo prefill pomija trafioną część. Generowania odpowiedzi to nie przyspiesza. Model widzi dokładnie ten sam tekst, więc cache nie zmienia jakości.</li>
+  </ul>
+  <h3 class="sub">Warunki u dostawców</h3>
+  <ul class="notes">
+    <li>Anthropic (wrzesień 2026): odczyt 0,1 ceny wejścia (w najnowszych modelach jeszcze mniej), zapis 1,25 przy wpisie 5-minutowym i 2 przy godzinnym. Punkty cięcia wskazujesz sam (do 4 znaczników <code>cache_control</code>) albo jednym polem w trybie automatycznym. Minimalny prefiks to od 512 do 4096 tokenów zależnie od modelu. Krótszy po cichu się nie zapisze.</li>
+    <li>OpenAI cache’uje automatycznie prefiksy od 1024 tokenów. Od GPT-5.6 zapis kosztuje 1,25, odczyt 0,1, a wpis żyje co najmniej 30 minut. Starsze modele nie doliczają za zapis i domyślnie trzymają wpis ok. 30 minut, najwyżej 24 godziny; przy Zero Data Retention domyślnie 5–10 minut bezczynności, najwyżej godzinę. Gemini od 2.5 ma cache automatyczny bez gwarancji trafienia i jawny, płatny za godzinę przechowywania.</li>
+    <li>Każde trafienie odnawia czas życia wpisu. U Anthropic liczy się on od startu requestu, więc generacja trwająca 4 minuty zjada większość 5-minutowego wpisu. Użytkownik, który przy takim wpisie odpisze po kwadransie, zaczyna od zapisu.</li>
+  </ul>
+  <h3 class="sub">Jak układać prompt</h3>
+  <ul class="notes">
+    <li>Najpierw to, co stałe: definicje narzędzi, system prompt, duże dokumenty, przykłady. Potem historia, na końcu nowa wiadomość. U Anthropic hierarchia to <code>tools</code> → <code>system</code> → <code>messages</code>, więc zmiana narzędzi unieważnia wszystko.</li>
+    <li>Historię tylko dopisuj. Agent w każdej turze wysyła ją całą (temat „Context window i agent”), a tylko dopisywana historia pozwala każdej turze przeczytać z cache’u wszystko poza najnowszą częścią. Edycja starej wiadomości, kompakcja, wycięcie starego wyniku narzędzia albo przestawienie narzędzi unieważnia cache od tego miejsca. Oszczędzanie okna (temat „Context engineering i pamięć”) trzeba więc ważyć z kosztem chybienia.</li>
+    <li>Typowi zabójcy prefiksu: data i godzina albo identyfikator sesji na początku, niedeterministyczna kolejność kluczy JSON albo narzędzi, zmiana modelu, poziomu myślenia albo schematu odpowiedzi w trakcie rozmowy.</li>
+    <li>Mierz trafienia w <code>usage</code>: <code>cache_read_input_tokens</code> w Anthropic, <code>cached_tokens</code> w OpenAI. Hit rate to tokeny z cache’u przez wszystkie tokeny wejściowe. W Anthropic <code>input_tokens</code> liczy tylko to, co stoi za ostatnim breakpointem, więc całe wejście to <code>input_tokens</code> + <code>cache_creation_input_tokens</code> + <code>cache_read_input_tokens</code>; w OpenAI <code>input_tokens</code> już zawiera <code>cached_tokens</code>. Zero przy powtarzalnym prefiksie znaczy, że coś go zmienia.</li>
+    <li>Opłacalność: przy zapisie 1,25 i odczycie 0,1 wpis zwraca się już przy jednym trafieniu (1,35 zamiast 2 cen wejścia). Godzinny wpis za 2 potrzebuje dwóch trafień. Prefiks, który się nie powtarza, tylko dopłaca za zapis.</li>
+  </ul>
+</section>

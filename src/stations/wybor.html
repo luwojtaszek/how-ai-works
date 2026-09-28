@@ -1,0 +1,54 @@
+<section class="station" id="wybor" data-hue="tok">
+  <h2>Wybór modelu</h2>
+  <p class="lede">Model dobierasz do zadania, nie do rankingu: bierzesz najtańszą konfigurację, czyli model, poziom rozumowania i dostawcę, która przechodzi twój zestaw ewaluacyjny w wymaganym czasie i limitach. Publiczne benchmarki podpowiadają tylko, kogo warto sprawdzić.</p>
+  <div class="lab">
+    <p class="lab-title">Ustaw próg jakości i limit czasu. Zobacz, który model jest najtańszy wśród tych, które przechodzą, a potem przełącz na publiczny ranking</p>
+    <div class="row" role="group" aria-label="Skąd pochodzi wynik">
+      <button class="btn ghost" type="button" id="wbEval" aria-pressed="true">Twój zestaw</button>
+      <button class="btn ghost" type="button" id="wbBoard" aria-pressed="false">Publiczny ranking</button>
+    </div>
+    <div class="row">
+      <label class="ctl"><span>Próg jakości: <b id="wbQv"></b></span><input type="range" id="wbQ" min="60" max="95" step="1" value="80"></label>
+      <label class="ctl"><span>Limit czasu zadania (p95): <b id="wbLv"></b></span><input type="range" id="wbL" min="1" max="20" step="1" value="10"></label>
+    </div>
+    <div id="wbChart" style="margin-top:12px"></div>
+    <div class="legend"><span><i class="wb-k"></i>przechodzi</span><span><i class="wb-k wb-best"></i>najtańszy, który przechodzi</span><span><i class="wb-k wb-out"></i>poniżej progu</span><span><i class="wb-k wb-out wb-slow"></i>za wolny</span><span>A, B: czołowe · C, D, E: średnie · F, G: małe</span></div>
+    <div class="stats"><div class="stat"><b id="wbPick"></b><span>wybrany model</span></div><div class="stat"><b id="wbCost"></b><span>koszt ukończonego zadania</span></div><div class="stat"><b id="wbScore"></b><span>wynik na twoim zestawie</span></div></div>
+    <div class="callout" id="wbMsg" aria-live="polite"></div>
+    <p class="hint">Dane poglądowe: siedem nienazwanych modeli, liczby dobrane ręcznie. Koszt ukończonego zadania: koszt wszystkich prób, także nieudanych i z tokenami rozumowania, po rabacie za cache, podzielony przez liczbę zaliczonych zadań. Pod kropką czas p95 całego zadania.</p>
+  </div>
+  <h3 class="sub">Od zadania do modelu</h3>
+  <ul class="notes">
+    <li>Zaczynasz od zestawu przypadków z prawdziwego ruchu i progu, który ma przejść (temat „Ewaluacje”). Puszczasz go na kilku kandydatach, każdy przypadek kilka razy, i bierzesz najtańszego, który przechodzi.</li>
+    <li>Modele dzielą się na półki. Czołowe (frontier) biorą trudne rozumowanie, długie zadania agentowe i kod. Średnie wystarczają do większości pracy produkcyjnej. Małe i szybkie robią klasyfikację, ekstrakcję, routing i proste kroki w dużej skali.</li>
+    <li>Poziom rozumowania to druga gałka tego samego wyboru. W poradnikach o wyborze modelu Anthropic pisze, że strojenie wysiłku często daje więcej niż zmiana modelu, a OpenAI radzi zostać przy najlżejszym ustawieniu, które spełnia próg jakości (stan na wrzesień 2026). Porównujesz więc pary model i poziom, nie same modele.</li>
+    <li>Jeden model na cały system to rzadko optimum. W kaskadzie najpierw odpowiada tani model, a do droższego albo na wyższy poziom rozumowania trafia tylko to, co odrzuci walidator, testy albo niska pewność (temat „LLM w produkcji”). W agencie dobierasz model do kroku: mały streszcza wyniki narzędzi, czołowy planuje i podejmuje trudne decyzje.</li>
+  </ul>
+  <h3 class="sub">Koszt i czas</h3>
+  <ul class="notes">
+    <li>Liczysz koszt ukończonego zadania, nie cenę za token: wszystkie tokeny wszystkich prób, także nieudanych, dzielisz przez liczbę zaliczonych zadań. Mocniejszy model często kończy w mniej turach i z mniejszą liczbą poprawek. W pomiarach Anthropic na podzbiorze SWE-bench Pro Fable 5.1 na niskim poziomie wysiłku rozwiązał 88,6% zadań za 0,54 USD na rozwiązane zadanie, a Sonnet 5, pięć razy tańszy za token, 77,4% za 0,84 USD. W długim researchu było odwrotnie: Fable 5.1 wyszedł ok. cztery razy drożej na zadanie. To liczby producenta, więc sprawdzasz je na swoim zadaniu.</li>
+    <li>Cennik nie pokazuje trzech rzeczy. Tokeny rozumowania płacisz jak wyjście, także niewidoczne (temat „Modele rozumujące”). Modele różnią się gadatliwością, więc na tym samym zadaniu jeden potrafi wygenerować kilka razy więcej tokenów niż drugi. Rabat za cache też się różni: u Anthropic odczyt kosztuje zwykle 10% ceny wejścia, w Opus 5.5 5%, a w Fable 5.1 2,5% (stan na wrzesień 2026, temat „Prompt caching”). W agencie, który większość wejścia czyta z cache, to potrafi odwrócić porównanie.</li>
+    <li>Czas to dwie liczby: czas do pierwszego tokena (TTFT) i tokeny na sekundę po nim. Wysiłek rozumowania przesuwa obie. Pierwsze słowo odpowiedzi przychodzi dopiero po całym myśleniu, a użyteczne tokeny na sekundę spadają, bo część generowanych tokenów to myślenie, którego użytkownik nie widzi. Dlatego Artificial Analysis mierzy osobno czas do pierwszego tokena odpowiedzi. Wolniejszemu modelowi pomaga streaming, niższy poziom rozumowania albo przeniesienie kroku tam, gdzie nikt nie czeka.</li>
+  </ul>
+  <h3 class="sub">Limity i dane</h3>
+  <ul class="notes">
+    <li>Okno kontekstu z karty modelu to górna granica, nie obietnica: jakość spada na długo przed jego końcem (temat „Context window i agent”), więc testujesz na swoich realnych długościach. Limit wyjścia jest osobny i dużo mniejszy, a myślenie się do niego wlicza.</li>
+    <li>Limity zapytań zależą od poziomu konta (tier), który rośnie z historią wydatków. U Anthropic nowa organizacja może zacząć od niższego tieru, a każdy tier ma miesięczny limit wydatków, po którym API zwraca 429 do początku kolejnego miesiąca (stan na wrzesień 2026). Limity dla konkretnego modelu sprawdzasz przed premierą, nie po niej.</li>
+    <li>Tryb ścisły structured output, równoległe wywołania narzędzi, obrazy, logprobs, batch i prompt caching nie działają w każdym modelu i u każdego dostawcy (temat „Wymuszanie formatu”). Brak jednej funkcji potrafi przekreślić model, który wygrywa na evalu.</li>
+    <li>Miejsce inferencji i miejsce przechowywania danych to dwa osobne ustawienia. Przetwarzanie w wybranym regionie obejmuje tylko część modeli i funkcji, bywa dostępne po akceptacji dostawcy i kosztuje więcej: w OpenAI i Anthropic ok. 10% dla nowszych modeli (stan na wrzesień 2026). Własne API Anthropic przypina tylko USA, a region w UE dają Bedrock i Google Cloud. Zerowa retencja (ZDR) wymaga umowy i nie obejmuje funkcji ze stanem (temat „LLM w produkcji”).</li>
+  </ul>
+  <h3 class="sub">Jak czytać benchmarki</h3>
+  <ul class="notes">
+    <li>Zadania z publicznych zestawów trafiają do danych treningowych, a gdy czołówka zbliża się do sufitu, różnice giną w szumie i w błędach samego zestawu. W lutym 2026 OpenAI przestał raportować SWE-bench Verified: w zbadanej części zadań 59,4% miało wadliwe testy, które odrzucały poprawne rozwiązania, a wszystkie sprawdzone czołowe modele widziały w treningu część zadań i rozwiązań.</li>
+    <li>SWE-bench Verified to 500 poprawek błędów z 12 repozytoriów w Pythonie. Mierzy małe, dobrze opisane łatki w popularnych projektach, a nie pracę w twoim repozytorium, z twoimi konwencjami i zmianami w wielu plikach.</li>
+    <li>LMArena mierzy, którą odpowiedź woli głosujący, a głosujący wolą dłuższe i bogato sformatowane. Po uwzględnieniu stylu (style control, 2024) najsilniejszym czynnikiem okazała się długość, a ranking się przetasował: GPT-4o-mini spadł z 6. na 11. miejsce, a Claude 3 Opus awansował z 16. na 10. To miara preferencji w czacie, nie poprawności w twoim zadaniu.</li>
+    <li>Wynik od producenta i wynik niezależny to różne pomiary. Producent wybiera harness, poziom rozumowania, liczbę prób i podzbiór zadań. Niezależni, jak Artificial Analysis czy Epoch AI, puszczają wszystkie modele w jednym harnessie, a Epoch zauważa, że wynik na SWE-bench mocno zależy od scaffoldu. Porównujesz tylko liczby z jednego źródła i jednego harnessu (temat „Harness agenta kodującego”).</li>
+    <li>Ten sam model u różnych dostawców to nie ten sam produkt: inna kwantyzacja, szablon czatu, parser wywołań narzędzi i ustawienia serwowania. W pomiarze Moonshot z listopada 2025 Kimi K2 Thinking wywoływał narzędzia poprawnie ze schematem w 100% przez oficjalne API, a u kilku zewnętrznych hostów w 83–87%. Testujesz konkretny endpoint, nie nazwę modelu.</li>
+  </ul>
+  <h3 class="sub">Wybór, który przetrwa zmianę</h3>
+  <ul class="notes">
+    <li>Modele wycofuje się szybko. Anthropic uprzedza co najmniej 60 dni wcześniej: Claude Sonnet 4 z maja 2025 dostał datę wycofania w kwietniu 2026 i przestał działać 15 czerwca 2026. Przypinasz konkretną wersję zamiast aliasu, a zestaw ewaluacyjny trzymasz w repozytorium, żeby zmiana modelu była jednym uruchomieniem i canary, a nie projektem (temat „Compute i „głupienie””).</li>
+    <li>Wywołania modelu idą przez jedną cienką warstwę, własną albo gateway, która zna ceny, limity i fallbacki. Wtedy zmiana modelu lub dostawcy to konfiguracja. Prompt i tak trzeba przestroić, bo nowy model inaczej czyta te same instrukcje.</li>
+    <li>Otwarty czy zamknięty model to osobna decyzja o kontroli nad danymi, wersją i kosztem przy dużym ruchu (temat „Open-weight”). A zanim wybierzesz model, sprawdź, czy zadanie w ogóle potrzebuje LLM-a (następna strona, „Kiedy nie używać LLM-a: klasyfikatory i System One”).</li>
+  </ul>
+</section>

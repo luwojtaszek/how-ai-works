@@ -1,0 +1,34 @@
+<section class="station" id="format" data-hue="prob">
+  <h2>Wymuszanie formatu</h2>
+  <p class="lede">Structured output w trybie ścisłym nie prosi modelu o format, tylko go wymusza: w każdym kroku sampler zeruje prawdopodobieństwo tokenów, które złamałyby schemat. Dostajesz gwarancję składni, nie poprawności treści.</p>
+  <div class="lab">
+    <p class="lab-title">Przejdź krokami generowania. Zobacz, które tokeny maska wycina, i zatrzymaj się przy tokenie 4</p>
+    <p class="hint" style="margin-top:0">Schemat: <code>{"label": "spam" | "ham"}</code></p>
+    <div class="out" id="cdOut" style="min-height:2.6em"></div>
+    <div class="bars" id="cdBars" style="margin-top:14px"></div>
+    <div id="cdPlayer" style="margin-top:14px"></div>
+    <div class="callout" id="cdMsg" aria-live="polite"></div>
+    <p class="hint">Prawdopodobieństwa poglądowe. Przekreślone tokeny łamią schemat i dostają zero, a szanse pozostałych są przeskalowane do 100%.</p>
+  </div>
+  <h3 class="sub">Jak działa maskowanie</h3>
+  <ul class="notes">
+    <li>Schemat kompiluje się do automatu. Dla wyrażeń regularnych i schematów bez rekurencji wystarcza automat skończony, dla schematów rekurencyjnych i dowolnych gramatyk potrzebny jest automat ze stosem. Stan automatu mówi, jakie znaki mogą paść dalej.</li>
+    <li>Tokeny nie pokrywają się ze składnią JSON-a, jeden token to na przykład <code>{"</code> albo <code>":"</code>. Dlatego silnik (Outlines, XGrammar) wylicza dla każdego stanu automatu, które tokeny słownika są dozwolone. Pozostałe dostają logit minus nieskończoność, a sampler losuje z tego, co zostało (temat „Następny token”).</li>
+    <li>Narzut na token jest bliski zera, bo większość sprawdzeń liczy się z góry. Płaci się przy pierwszym użyciu schematu: kompilacja dodaje opóźnienie, potem gramatyka jest cache’owana (u Anthropic 24 godziny od ostatniego użycia).</li>
+  </ul>
+  <h3 class="sub">Tryby w API</h3>
+  <ul class="notes">
+    <li>JSON mode gwarantuje poprawny JSON, ale nie zgodność ze schematem. Tryb ścisły gwarantuje schemat: <code>json_schema</code> ze <code>strict: true</code> w OpenAI, <code>output_config.format</code> w Anthropic.</li>
+    <li>Tool calling to ten sam JSON w innej roli: model wypisuje nazwę narzędzia i argumenty (temat „Narzędzia (function calling)”). Bez trybu ścisłego format jest tylko wyuczony, więc argumenty zwykle, ale nie zawsze, pasują do schematu. <code>strict: true</code> przy definicji narzędzia włącza to samo maskowanie. W Responses API OpenAI narzędzia są domyślnie strict, jeśli schemat na to pozwala, a jeśli nie, po cichu wracają do trybu best effort (odpowiedź pokazuje <code>strict: false</code>), więc ustawiaj flagę jawnie.</li>
+    <li>Tryby ścisłe obsługują podzbiór JSON Schema. OpenAI wymaga, by każde pole było w <code>required</code> (pole opcjonalne to typ z <code>null</code>) i by obiekty miały <code>additionalProperties: false</code>, przy limicie 5000 pól i 10 poziomów zagnieżdżenia. Anthropic nie obsługuje m.in. schematów rekurencyjnych i limitów długości tekstu, a dopuszcza najwyżej 20 narzędzi strict na request, 24 pola opcjonalne i 16 pól z typem unii łącznie we wszystkich schematach strict. Powyżej API zwraca błąd „Schema is too complex for compilation”.</li>
+    <li>Maska obejmuje tylko odpowiedź. Myślenie modelu rozumującego zostaje wolne, więc model może najpierw swobodnie rozumować, a potem wypełnić schemat (temat „Modele rozumujące”).</li>
+  </ul>
+  <h3 class="sub">Czego gwarancja nie obejmuje</h3>
+  <ul class="notes">
+    <li>Treści. Model nadal może wpisać zły numer faktury albo zmyśloną datę w poprawnym formacie. Reguły biznesowe (zakresy, sumy, istnienie identyfikatorów) sprawdza kod, a błąd wraca do modelu z konkretnym komunikatem, z limitem prób.</li>
+    <li>Odpowiedzi uciętej limitem długości (<code>stop_reason: "max_tokens"</code>, <code>finish_reason: "length"</code>) ani odmowy: OpenAI zwraca ją w osobnym polu <code>refusal</code>, Anthropic jako <code>stop_reason: "refusal"</code>, i treść może nie pasować do schematu. Sprawdzaj powód zatrzymania przed parsowaniem.</li>
+    <li>Wielkości liter w enumach u Anthropic. Wartości <code>enum</code> i <code>const</code> typu string mogą wrócić z inną wielkością liter („Conversation Topic 3” zamiast „Conversation topic 3”), ze zwykłym powodem zatrzymania i bez błędu, w odpowiedziach JSON i w strict tool use. Porównuj je bez rozróżniania wielkości liter i unikaj wartości, które różnią się tylko nią.</li>
+    <li>Tego, co model chciał powiedzieć. Gdy najbardziej prawdopodobna odpowiedź jest poza schematem, maska wpycha model w najbliższą dozwoloną, jak phishing zamieniony na spam w widżecie. Dodaj wyjście awaryjne: wartość „inne” albo „nie wiem” i pole na komentarz.</li>
+    <li>Jakości rozumowania. Model pisze od lewej do prawej, więc decyzja przed uzasadnieniem każe zdecydować, zanim cokolwiek policzy. Stawiaj pole z uzasadnieniem przed polem z decyzją i wpisz oba do <code>required</code>: Anthropic wypisuje pola wymagane przed opcjonalnymi (OpenAI zachowuje kolejność ze schematu i i tak wymaga wszystkich pól). W badaniu „Let Me Speak Freely?” (2024) ograniczenia formatu obniżały wyniki zadań wymagających rozumowania, częściowo właśnie z tego powodu: w jednym z zadań GPT-3.5 w trybie JSON za każdym razem stawiał odpowiedź przed uzasadnieniem. Wynik jest sporny. Powtórzenie z tymi samymi promptami (.txt, „Say What You Mean”) spadku nie znalazło, a inne prace mierzą koszt samej maski, głównie przy małych modelach i ciasnych schematach (Reddy i in., 2026). Gdy ewaluacje pokazują spadek, pozwól modelowi odpowiedzieć swobodnie, a strukturę wyciągnij drugim, tanim wywołaniem.</li>
+  </ul>
+</section>

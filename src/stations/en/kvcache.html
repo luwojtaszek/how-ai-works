@@ -1,0 +1,64 @@
+<section class="station" id="kvcache" data-hue="cache">
+  <h2>The generation loop and KV cache</h2>
+  <p class="lede">Generation is a loop: one forward pass of the model yields one token, which is appended to the input. The KV cache holds the attention keys and values of all earlier tokens, so each step computes only the new token. The price is GPU memory, which limits context length and the number of concurrent conversations.</p>
+  <div class="lab">
+    <p class="lab-title">Step through with and without the cache. Compare how many tokens each step computes</p>
+    <div class="row">
+      <button class="btn ghost" id="kvOn" type="button" aria-pressed="true">With KV cache</button>
+      <button class="btn ghost" id="kvOff" type="button" aria-pressed="false">Without cache</button>
+    </div>
+    <div id="kvPlayer" style="margin-top:12px"></div>
+    <div class="scroll" style="margin-top:14px"><table class="kv" id="kvT"></table></div>
+    <div class="legend"><span><i style="background:var(--cost)"></i>computed in this step</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>read from the cache</span><span><i style="background:var(--tok-t);box-shadow:inset 0 0 0 2px var(--tok)"></i>new token</span></div>
+    <div class="stats"><div class="stat"><b id="kvNow">0</b><span>tokens computed in this step</span></div><div class="stat"><b id="kvSum">0</b><span>in total since the start</span></div><div class="stat"><b id="kvRead">0</b><span>read from the cache in this step</span></div><div class="stat"><b id="kvPhase">–</b><span id="kvPhaseD">phase</span></div></div>
+  </div>
+  <h3 class="sub">What the cache holds and why it works</h3>
+  <ul class="notes">
+    <li>In every attention layer a token has three projections of its state: query Q, key K and value V (see “Attention”). A new token compares its Q with the keys of all earlier tokens and takes a weighted sum of their values. The KV cache is the K and V of all tokens so far, kept separately for every layer and KV head.</li>
+    <li>Q is not kept. A token’s query is needed only in the step where that token is the last one. Later tokens read only its K and V.</li>
+    <li>Keeping them is valid thanks to the causal mask: the K and V of token <i>i</i> depend only on tokens 0…<i>i</i>, so new tokens don’t change them. This is memoisation. Without it, step <i>n</i> would recompute all <i>n</i> tokens, so generating <i>N</i> tokens would take work growing with <i>N</i>² instead of <i>N</i>.</li>
+    <li>It also works the other way round: a token’s K and V depend on all tokens before it and on its position (RoPE). Changing one token invalidates the cache for everything after it. That is why a provider can reuse a cache only for an identical prefix, and why an agent only ever appends to its history (see “Prompt caching”).</li>
+  </ul>
+  <h3 class="sub">How much memory it takes</h3>
+  <ul class="notes">
+    <li>Per token: 2 (K and V) × layers × KV heads × head dimension × bytes. Llama 3.1 70B in FP16: 2 × 80 × 8 × 128 × 2 B = 327,680 B, about 0.33 MB. A full 128k tokens is 43 GB for a single conversation, against 141 GB for the weights alone.</li>
+    <li>The architecture sets the shape of the cache. GQA keeps one K, V pair per group of query heads (MQA is the extreme case: one pair per layer). Llama 3 70B has 8 KV heads for 64 Q heads; without GQA a 128k-token cache would take 344 GB. DeepSeek’s MLA stores one compressed vector per layer: in DeepSeek-V3 that is 61 × 576 × 2 B ≈ 70 KB per token, almost 5 times less than Llama 70B, even though the model has 671B parameters.</li>
+    <li>Sliding window: some layers see only the last W tokens, so their cache never grows beyond W. Gemma 3 has five such layers (W = 1024) for every full one, which at 128k tokens comes to about 17% of the cache of the same model with only full layers. Hybrid models replace some attention layers with SSM layers that have a fixed-size state.</li>
+    <li>When serving an existing model, precision is the lever left: an FP8 cache takes half the memory. It is an approximation, so check quality on your own evals.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Pick a model, context length and number of conversations. See how many H100s the cache alone takes up</p>
+    <div class="row">
+      <label class="ctl"><span>Model</span><select id="kmModel"><option value="32,8,128">Llama 3.1 8B (32 layers, GQA)</option><option value="80,8,128" selected>Llama 3.1 70B (80 layers, GQA)</option><option value="80,64,128">the same 70B without GQA (64 KV heads)</option><option value="62,16,128,swa">Gemma 3 27B (5 of 6 layers with a 1024 window)</option><option value="61,mla,576">DeepSeek-V3 (61 layers, MLA)</option></select></label>
+      <label class="ctl"><span>Cache precision</span><select id="kmPrec"><option value="2" selected>FP16 (2 bytes)</option><option value="1">FP8 (1 byte)</option></select></label>
+    </div>
+    <div class="row">
+      <label class="ctl"><span>Context: <b id="kmCv"></b></span><input type="range" id="kmCtx" min="10" max="17" step="1" value="17"></label>
+      <label class="ctl"><span>Concurrent conversations: <b id="kmUv"></b></span><input type="range" id="kmUsers" min="1" max="64" step="1" value="8"></label>
+    </div>
+    <div class="stats"><div class="stat"><b id="kmTok"></b><span>on average per token</span></div><div class="stat"><b id="kmReq"></b><span>per conversation</span></div><div class="stat"><b id="kmAll"></b><span>in total</span></div><div class="stat"><b id="kmGpu"></b><span>H100s (80 GB) for the cache alone</span></div></div>
+    <p class="hint">Formula: 2 × layers × KV heads × head dimension × bytes × tokens. Instead of K and V, MLA stores one vector of 576 numbers per layer, so there is no factor of 2. In Gemma 3 every sixth layer is full and the others keep at most the last 1024 tokens. Model weights and server overhead not included. The slider stops at 128k tokens, the longest context these models support.</p>
+  </div>
+  <h3 class="sub">Prefill and decode</h3>
+  <ul class="notes">
+    <li>Prefill processes the whole prompt in a single pass. It multiplies the weights by a matrix of all tokens at once, so every byte of weights read serves hundreds of tokens and the GPU computes at full speed. This is where the prompt’s cache is built. Prefill sets time to first token (TTFT), and attention grows with the square of the length, so a very long prompt increases TTFT faster than linearly.</li>
+    <li>Decode produces one token per conversation per step and multiplies the same weights by a single vector. In FP16 that is about 1 operation per byte of weights for each conversation in the batch, while an H100 needs about 300 before computation becomes the bottleneck (see “Why the GPU is idle”). Step time ≈ (weights + cache of all conversations in the batch) / memory bandwidth.</li>
+    <li>Weights are read once for the whole batch, but each conversation’s cache separately. That is why servers pack many conversations into one step (see “Continuous batching”), why one conversation’s long context slows down the whole batch, and why providers charge several times more for an output token than for an input token.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Increase the context and the number of conversations in the batch. See when reading the cache starts to outweigh reading the weights</p>
+    <div class="row">
+      <label class="ctl"><span>Context: <b id="kdCv"></b></span><input type="range" id="kdCtx" min="10" max="17" step="1" value="15"></label>
+      <label class="ctl"><span>Conversations in the batch: <b id="kdUv"></b></span><input type="range" id="kdUsers" min="1" max="64" step="1" value="8"></label>
+    </div>
+    <div class="stats"><div class="stat"><b id="kdMem"></b><span>used of the GPU’s 80 GB</span></div><div class="stat"><b id="kdStep"></b><span>time per step</span></div><div class="stat"><b id="kdTok"></b><span>tokens/s per conversation</span></div><div class="stat"><b id="kdAll"></b><span>tokens/s in total</span></div><div class="stat"><b id="kdShare"></b><span>of reads are the cache</span></div></div>
+    <div class="callout" id="kdMsg"></div>
+    <p class="hint">An illustrative model as in “Why the GPU is idle”: 8B parameters in FP16 (16 GB of weights, 128 KB of cache per token), a single H100 with 80 GB of memory and 3.35 TB/s. Step time = (weights + cache of all conversations) / bandwidth. This is an upper bound on speed, with no overheads.</p>
+  </div>
+  <h3 class="sub">The cache on the server</h3>
+  <ul class="notes">
+    <li>PagedAttention (vLLM) splits the cache into blocks of a dozen or so tokens, like virtual-memory pages. The server doesn’t reserve space for the maximum length, and a prefix shared by many conversations is stored once. Prompt caching is the same blocks kept after the request and looked up by a hash of the prefix.</li>
+    <li>When memory runs out, the server pauses some conversations and later either recomputes their cache or offloads it to RAM or disk and loads it back. Both cost time but don’t change the result.</li>
+    <li>Evicting some tokens from the cache (StreamingLLM, H2O: the first, the most recent and the most attended tokens stay) saves memory but is an approximation. The model loses access to the evicted text, so quality on long tasks drops.</li>
+  </ul>
+</section>

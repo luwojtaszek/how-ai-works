@@ -1,0 +1,43 @@
+<section class="station" id="agent" data-hue="cache">
+  <h2>The agent loop</h2>
+  <p class="lede">An agent is a model in a loop: it gets a goal and tools, picks a call, your code runs it and sends back the result, until the model answers without a call. It differs from a workflow in one thing: the model, not your code, chooses the next step.</p>
+  <div class="lab">
+    <p class="lab-title">Choose workflow or agent and what is in the calendar on Friday, then press ▶. Watch who picks the next step and how the context grows with every turn</p>
+    <div class="row" id="agModes" role="group" aria-label="Who picks the steps"></div>
+    <div class="row" id="agScen" role="group" aria-label="What is in the calendar on Friday"></div>
+    <div id="agPlayer" style="margin-top:16px"></div>
+    <div class="stages" id="agPath"></div>
+    <div class="ag-now" id="agNow" aria-live="polite"></div>
+    <div class="ag-cal" id="agCal"></div>
+    <div class="stats"><div class="stat"><b id="agLlm"></b><span>model calls</span></div><div class="stat"><b id="agTools"></b><span>tool calls</span></div><div class="stat"><b id="agCum"></b><span>input tokens in total</span></div></div>
+    <div class="win-bar" id="agBar" style="margin-top:14px"></div>
+    <div class="legend" id="agLegend"></div>
+    <p class="hint">The bar shows what the last model call is made of (scale: 3,500 tokens). Token counts are illustrative, not measured. The calendar, tools and model responses are made up to show the flow.</p>
+  </div>
+  <h3 class="sub">The loop in code</h3>
+  <ul class="notes">
+    <li>The loop is a dozen or so lines of ordinary code. Send the model the context and the tool definitions. If the response contains calls, append the model’s response to the context unchanged, run the calls, append their results and send the whole thing again. If it doesn’t, you are done. The model runs nothing; it only writes what it wants to call (see “Tools (function calling)”).</li>
+    <li>In the Anthropic API such a response has <code>stop_reason: "tool_use"</code> and <code>tool_use</code> blocks with an ID. The results go back in the next message, after the assistant’s turn, as <code>tool_result</code> blocks with the same <code>tool_use_id</code>, and you mark an error with <code>is_error: true</code>. In the OpenAI Responses API these are <code>function_call</code> and <code>function_call_output</code> items linked by <code>call_id</code>. Several calls from one response are run in parallel, and all the results are sent back together.</li>
+    <li>The model also thinks between calls (interleaved thinking; in Claude Opus 5.5 thinking can’t be turned off, as of September 2026). The Anthropic API requires the thinking blocks of a tool-use turn to come back complete and unmodified, and rejects edited ones with a 400. In the Responses API you send reasoning items back with the results, or chain requests with <code>previous_response_id</code> (see “Reasoning models”).</li>
+    <li>A response without a call is only the model’s judgement that it is done. Code adds hard stop conditions: a turn limit, a token and cost budget, a time limit, detection of repeated calls. It also handles the other stop reasons, none of which ends the task: a response cut off by the token limit (<code>max_tokens</code>) or the context window (<code>model_context_window_exceeded</code>) is an error to handle, <code>pause_turn</code> (a provider-side tool loop hit its cap) means sending the response back to continue, and <code>refusal</code> needs its own path.</li>
+  </ul>
+  <h3 class="sub">Workflow or agent</h3>
+  <ul class="notes">
+    <li>In a workflow the programmer writes the steps, and the model does narrow jobs inside them, such as extracting data from a request or writing a message. In an agent, code provides the goal and the tools, and the model picks the steps. A workflow is cheaper, faster, repeatable and easy to test, but it handles only what someone anticipated. An agent works around surprises and pays in tokens, time and predictability. The order to try: a single model call, then a workflow, and an agent only when the steps cannot be listed up front.</li>
+    <li>Patterns from Anthropic’s “Building effective agents” (2024): prompt chaining with checks in code between the calls, routing (classify, then a separate path or a cheaper model), parallelisation (independent parts at once, or several attempts and a vote), orchestrator–workers (a model splits the task into subtasks you can’t know in advance) and evaluator–optimizer (one model writes, another grades, until the result passes). In production, a workflow with one agentic step in the middle often wins.</li>
+    <li>Other names for the same ideas. ReAct (Yao et al., 2022) is this loop: the thought is the model’s text or thinking, the action a tool call, the observation its result. Andrew Ng’s four agentic patterns (2024) appear in this guide as the evaluator–optimizer (reflection), “Tools (function calling)” (tool use), the task list in long tasks (planning) and “Multiple agents” (multi-agent collaboration).</li>
+  </ul>
+  <h3 class="sub">Failures in long tasks</h3>
+  <ul class="notes">
+    <li>Return a tool error to the model as an ordinary result, with a hint: not “error 409” but “conflict with Quarterly review, check free slots”. The model then changes its approach, as in the conflict example. An exception that kills the loop wastes all the work done so far. Errors the model can’t fix, such as missing permissions or an exhausted budget, are handled by code.</li>
+    <li>In a long history the agent loses sight of its goal. What helps: a plan, i.e. a task list the agent ticks off and rewrites at the end of the context, notes in files, and history compaction (see “Context engineering and memory”).</li>
+    <li>Agents get stuck: they retry the same call, bounce between two steps, announce a success that never happened. The answer is limits and repeat detection in code, not requests in the prompt. An interrupted agent leaves the world half-changed, e.g. the meeting moved but the message not sent. So state-changing tools are idempotent, you save the loop state after every call so that work can resume after a failure, and a human gets a report of what has already happened.</li>
+  </ul>
+  <h3 class="sub">Cost, permissions and evaluation</h3>
+  <ul class="notes">
+    <li>Every turn sends the whole context again, so total input tokens grow roughly with the square of the number of turns. Latencies add up: every turn is a full model call plus the tool’s run time. The arithmetic is in “The context window and agents”. As long as the history is only appended to, everything but the newest part of each turn is a stable prefix, so with “Prompt caching” it is read from the cache at about a tenth of the input price; the curve stays quadratic, only cheaper.</li>
+    <li>An agent acts on your behalf, so it gets the least privilege it needs. Irreversible or outward-facing actions (sending, paying, deleting) are approved by a human, and code enforces that, not the prompt: in the example, code pauses the loop before the message is sent. Emails, web pages and tool results can contain instructions (see “Prompt injection”).</li>
+    <li>Judge an agent by the end state, not by its summary: is the meeting really on Friday, and did the message go out? A trace, i.e. a record of every turn with its tools, arguments, results and tokens, shows where the agent goes astray and what it costs. The same case passes one time and fails the next, so you compute pass^k: does the agent complete the task on every one of k attempts (see “Evals”).</li>
+    <li>A task that splits into independent parts can be handed out by a lead agent to sub-agents with separate contexts, at the cost of many times more tokens. See “Multiple agents”. How a coding agent puts these pieces together (permissions, sandbox, plan, compaction, subagents) is covered in “The coding-agent harness”.</li>
+  </ul>
+</section>

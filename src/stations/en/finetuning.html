@@ -1,0 +1,58 @@
+<section class="station" id="finetuning" data-hue="att">
+  <h2>Fine-tuning and LoRA</h2>
+  <p class="lede">Fine-tuning is further training of an existing model on your examples: it is good at changing how the model answers and poor at changing what it knows. LoRA does it cheaply by freezing the model and training a small correction, often under 1% of the weights.</p>
+  <div class="lab">
+    <p class="lab-title">Pick a problem and see which rung to start from</p>
+    <div class="row" id="ftProb"></div>
+    <div class="stages" id="ftLadder"></div>
+    <div class="callout" id="ftWhy" aria-live="polite"></div>
+  </div>
+  <h3 class="sub">What it changes and what it doesn’t</h3>
+  <ul class="notes">
+    <li>Fine-tuning shifts the weights so that answers resemble your examples. It is best at teaching what shows up in every answer: format, style and tone, consistent behaviour (when to ask a clarifying question, when to refuse) and a narrow skill such as classification or extracting fields from a document. It also transfers a large model’s behaviour on one task to a smaller, cheaper and faster one, trained on the large model’s answers (see “Distillation”).</li>
+    <li>Facts go into the weights poorly and with risk. Gekhman et al. (2024): examples with knowledge the model didn’t have are learned more slowly than the rest, and once learned, they linearly increase the tendency to hallucinate. Ovadia et al. (2023): RAG beat continued training on raw text, for both known and new knowledge. A fact in the weights also has no source and can’t be corrected without another training run.</li>
+    <li>The order: prompt and context (instructions, examples, structured output), then RAG for knowledge (see “RAG”), fine-tuning last. You change a prompt in a minute and update RAG by adding a document, while fine-tuning means data, training, evals and a new model to maintain. Reach for it when a polished prompt still loses on evals, or when a long prompt full of examples is too expensive at your volume.</li>
+  </ul>
+  <h3 class="sub">Types and where to train</h3>
+  <ul class="notes">
+    <li>SFT (supervised fine-tuning): input → reference answer pairs. The loss is computed only on the answer tokens, as in the SFT stage described in “Training”, but on your examples. The model imitates the references, so their quality sets the ceiling.</li>
+    <li>Preference tuning, e.g. DPO (Rafailov et al., 2023): pairs of a better and a worse answer to the same prompt. The model raises the probability of the better one relative to the worse one, with no separate reward model and no RL loop. It suits tone and things to avoid, because a difference is easier to show than a perfect reference is to write.</li>
+    <li>Reinforcement fine-tuning: the model generates its own answers and a grader scores them. The grader is a function in code, a comparison with the expected result, or a judge model. No reference answers are needed, only a way to score, so it suits tasks with a verifiable result. The model will exploit a leaky grader (reward hacking, see “Training”).</li>
+    <li>Hosted fine-tuning of closed models: you upload a JSONL file of examples, the provider trains and serves the model, and you don’t get the weights. Google Vertex AI offers SFT, preference tuning and RL for Gemini models (September 2026). OpenAI is winding down its platform: since 7 May 2026 it hasn’t accepted organisations that never fine-tuned, since 2 July 2026 it also blocks those with no inference on a fine-tuned model in the last 60 days, and from 6 January 2027 no one will be able to create a new training job.</li>
+    <li>An open-weight model (see “Open-weight models”) can be trained through a managed service: Together AI takes a file of examples, and Thinking Machines’ Tinker gives you an API for your own SFT, DPO or RL loop on LoRA. They run the GPUs, and you download the adapter and serve it anywhere. Training on your own hardware gives full control of the pipeline, but the GPUs and serving are on you.</li>
+  </ul>
+  <h3 class="sub">How LoRA works</h3>
+  <ul class="notes">
+    <li>Full fine-tuning updates every weight. LoRA (Hu et al., 2021) freezes a d × k matrix W and learns only a correction ΔW = B·A, where B is d × r and A is r × k. The rank r (e.g. 8, 16, 64) is much smaller than d and k, so instead of d·k parameters you train r·(d + k): for a 4096 × 4096 matrix and r = 16 that is 131k instead of 16.8 million. The authors assume that the weight change needed to adapt a model has low rank. B starts at zero, so at first ΔW = 0 and the model behaves like the base, and the output is scaled by α/r.</li>
+    <li>The original paper added LoRA mainly to attention. Schulman (Thinking Machines, 2025) shows that LoRA on all layers, especially the MLP, matches full fine-tuning on small and medium datasets, and in RL even at rank 1. It loses when there is more data than the adapter can hold, and it tolerates large batches worse than full fine-tuning. The optimal learning rate is about 10 times higher than for full fine-tuning.</li>
+    <li>QLoRA (Dettmers et al., 2023) is LoRA on a base quantised to 4 bits in the NF4 format (see “Quantisation”). Gradients flow through the frozen base into a 16-bit adapter. The base takes about 4 times less memory, and in the paper fine-tuning a 65B model fitted on a single 48 GB card with no loss of quality compared with 16-bit training.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Change the rank and the model class. See how many weights LoRA trains and how much GPU memory it needs</p>
+    <div class="row" style="align-items:start">
+      <label class="ctl"><span>Model class</span><select id="ftModel"><option value="8">8B: dimension 4096, 32 layers</option><option value="70">70B: dimension 8192, 80 layers</option></select></label>
+      <label class="ctl"><span>Rank r: <b id="ftRv"></b></span><input type="range" id="ftRank" min="0" max="7" step="1" value="4" aria-label="LoRA rank"></label>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="ftOne"></b><span id="ftOneS"></span></div>
+      <div class="stat"><b id="ftAll"></b><span id="ftAllS"></span></div>
+      <div class="stat"><b id="ftPct"></b><span>of the weights that full fine-tuning changes</span></div>
+      <div class="stat"><b id="ftFile"></b><span id="ftFileS"></span></div>
+    </div>
+    <p class="hint">GPU memory for weights and optimiser state:</p>
+    <div class="bars" id="ftMem" style="margin-top:8px"></div>
+    <div class="callout" id="ftFit" aria-live="polite"></div>
+    <p class="hint">Illustrative numbers. Architecture as in Llama 3.1 8B and 70B, LoRA on all seven linear matrices in every layer (Q, K, V, O and three in the MLP). Memory by rule of thumb: full fine-tuning with Adam in mixed precision is about 16 bytes per parameter (weights and gradients in BF16, an FP32 copy of the weights, two Adam moments), LoRA is 2 bytes per frozen weight in BF16, QLoRA about 0.5 bytes (4 bits), plus 16 bytes for every adapter parameter. Activations come on top: they grow with sequence length and batch size. Cards chosen with 20% headroom for activations.</p>
+  </div>
+  <ul class="notes">
+    <li>An adapter is a small file: for an 8B-class model with r = 16, about 42 million parameters, i.e. about 84 MB in BF16 against a 16 GB base. You keep one base and many adapters, e.g. per customer, language or task. vLLM keeps one copy of the base and mixes requests for different adapters in one batch; S-LoRA (Sheng et al., 2023) serves thousands of adapters on a single GPU this way. The price is an extra B·(A·x) multiplication at every step.</li>
+    <li>Merging: after training, B·A can be added to W. The model is then exactly as fast as the base, but every variant is a separate full copy. Several adapters on the same base can also be combined into one without training, by a weighted sum or with TIES and DARE (<code>add_weighted_adapter</code> in Hugging Face PEFT). Skills can interfere with each other in the process, so evaluate a merged adapter like a new model.</li>
+  </ul>
+  <h3 class="sub">Data, evaluation, maintenance</h3>
+  <ul class="notes">
+    <li>Data quality beats quantity. In LIMA (Zhou et al., 2023), 1000 carefully chosen SFT examples were enough for a 65B model to give high-quality answers. The authors conclude that knowledge comes from pretraining and tuning mostly teaches form. The model learns everything that repeats in the data, including typos, inconsistent formatting and bad answers.</li>
+    <li>Set the eval set aside before training and never train on it (see “Evals”). First measure the base with your best prompt on it: that is the bar fine-tuning has to clear. Add out-of-task cases and refusal tests, because fine-tuning weakens safeguards: Qi et al. (2023) stripped them from GPT-3.5 Turbo with 10 examples for less than $0.20, and ordinary, benign datasets weakened them too, just less.</li>
+    <li>Overfitting: training loss falls, validation loss rises, and the model parrots phrases from the examples. Fewer epochs, a lower learning rate and picking the checkpoint by validation loss help. Catastrophic forgetting: the model loses skills outside your data. LoRA forgets less than full fine-tuning, but on large datasets it also learns less (Biderman et al., 2024, on code and maths: the capacity-limited case above).</li>
+    <li>A fine-tuned model is tied to its base. An adapter fits only that exact version of the weights, and with a hosted provider the model disappears along with its base: on 23 October 2026 OpenAI shuts down ft-gpt-4.1-nano, among others. A new base means a new training run, so you version the data, configuration, base version, adapter and eval results together, and run the whole pipeline with one command. With every new base, first check whether a prompt alone is now enough.</li>
+  </ul>
+</section>

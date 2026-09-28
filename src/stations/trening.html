@@ -1,0 +1,33 @@
+<section class="station" id="trening" data-hue="att">
+  <h2>Trening</h2>
+  <p class="lede">Model powstaje w trzech etapach. Pretraining daje język i wiedzę przez przewidywanie następnego tokena, SFT uczy roli asystenta, a RL szlifuje zachowanie i rozumowanie. Po treningu wagi są zamrożone, więc wszystko, czego model nie wie, trzeba mu dać w kontekście.</p>
+  <div class="lab">
+    <p class="lab-title">Kliknij etap i porównaj, co model robi z tym samym promptem</p>
+    <div class="row" id="trStages"></div>
+    <div class="out" id="trOut"></div>
+    <div class="stats" id="trStats"></div>
+    <p class="hint">Odpowiedzi napisane ręcznie, poglądowo.</p>
+  </div>
+  <h3 class="sub">Pretraining</h3>
+  <ul class="notes">
+    <li>Zadanie: przewidzieć następny token w ogromnym zbiorze tekstu i kodu (Llama 3: ok. 15 bln tokenów). Strata to cross-entropy, czyli −log prawdopodobieństwa, które model dał poprawnemu tokenowi. Backpropagation liczy gradient, a optymalizator, zwykle AdamW, przesuwa każdą wagę odrobinę w stronę mniejszego błędu. Każda pozycja w tekście to osobny przykład, więc jeden dokument uczy tysięcy predykcji naraz.</li>
+    <li>Koszt to ok. 6 × parametry × tokeny operacji. Chinchilla (2022) wyliczyła, że przy stałym budżecie optimum to ok. 20 tokenów na parametr. Dziś trenuje się dużo dłużej (Qwen3, 2025: 36 bln tokenów dla każdego rozmiaru, ok. 60 tys. na parametr w modelu 0,6B; Llama 3 8B: prawie 2000 na parametr), bo mniejszy, dłużej trenowany model jest tańszy w inferencji przez całe życie.</li>
+    <li>Przed treningiem dane się filtruje: w Llama 3 usunięto duplikaty na poziomie URL-i, dokumentów (MinHash) i linii, odsiano śmieci heurystykami i wybrano tekst wysokiej jakości klasyfikatorami. Publiczne benchmarki leżą w tym samym internecie i przeciekają do korpusu. Na GSM1k, nowych zadaniach w stylu GSM8K, część modeli wypadła gorzej nawet o 8%, więc wynik publicznego benchmarku może zawyżać to, co zobaczysz na własnym zadaniu (temat „Ewaluacje”).</li>
+    <li>Pod koniec model trenuje się na coraz dłuższych sekwencjach, żeby wydłużyć kontekst, i na małej porcji najlepszych danych, np. kodu i matematyki, przy malejącym learning rate (annealing). Ten etap nazywa się też mid-training.</li>
+    <li>Wynik, czyli model bazowy, jest wyuczony dokańczać dokumenty, a nie odpowiadać. Na „Jak upiec chleb?” może dopisać kolejne pytania z forum. W danych do pretrainingu jest dziś sporo par pytanie–odpowiedź i syntetycznych instrukcji, więc współczesne modele bazowe często i tak odpowiadają, ale zawodnie i bez roli asystenta.</li>
+  </ul>
+  <h3 class="sub">Post-training: SFT i RL</h3>
+  <ul class="notes">
+    <li>SFT to ta sama strata, ale na rozmowach zapisanych w szablonie czatu (zobacz „Jak model widzi czat”) i liczona tylko na tokenach odpowiedzi asystenta. Setki tysięcy do milionów przykładów pisanych przez ludzi i generowanych przez silniejsze modele uczą formatu, roli i wywoływania narzędzi.</li>
+    <li>RLHF: ludzie porównują pary odpowiedzi, na tych porównaniach trenuje się model nagrody, a model językowy optymalizuje się pod jego ocenę (klasycznie algorytmem PPO) z karą KL za odejście od modelu po SFT. W InstructGPT (2022) model 1,3 mld parametrów po takim treningu wygrywał w ocenach ludzi z 175-miliardowym GPT-3. DPO uczy wprost z par lepsza/gorsza, bez osobnego modelu nagrody. Dziś porównania często robi model-sędzia według spisanych zasad (RLAIF, Constitutional AI); w Tülu 3 odpowiedzi oceniał GPT-4o.</li>
+    <li>RLVR: nagrodę sprawdza program, np. testy albo porównanie z poprawnym wynikiem. Model generuje wiele prób, a lepsze są wzmacniane. GRPO porównuje próby na ten sam prompt między sobą, bez osobnego krytyka. Tak powstały modele rozumujące: długi tok myślenia się opłaca, bo zwiększa szansę na nagrodę (zobacz „Modele rozumujące”).</li>
+    <li>RL w środowiskach: to samo dla agentów. Wieloturowe zadania z narzędziami (terminal, repozytorium z testami, symulowane API) są nagradzane za stan końcowy; Kimi K2 (2025) miał wspólny etap RL w prawdziwych i syntetycznych środowiskach. SFT uczy formatu wywołań narzędzi, a tu model ćwiczy długie, wieloetapowe przebiegi.</li>
+    <li>Destylacja: mniejszy model uczy się na odpowiedziach albo rozkładach prawdopodobieństwa większego, dlatego małe modele są lepsze, niż wynikałoby z ich rozmiaru (zobacz „Destylacja”).</li>
+  </ul>
+  <h3 class="sub">Co z tego wynika w praktyce</h3>
+  <ul class="notes">
+    <li>Po treningu wagi są zamrożone. Model nie uczy się z rozmowy, a „pamięć” w aplikacjach to notatki doklejane do kontekstu (zobacz „Context engineering i pamięć”). O świecie po dacie odcięcia wie tylko to, co dostanie w kontekście.</li>
+    <li>RL optymalizuje nagrodę, nie intencję (reward hacking). Model nagradzany za przechodzące testy potrafi je obejść zamiast naprawić kod, a nagradzany ocenami ludzi uczy się im przytakiwać (sycophancy). W RLHF kara KL i różnorodne nagrody to ograniczają, ale nie eliminują. W RLVR dla rozumowania karę KL często się pomija (DAPO, 2025), bo długi tok myślenia musi daleko odejść od modelu startowego, więc tam przed reward hackingiem chroni głównie jakość weryfikatora.</li>
+    <li>Własny trening zaczynasz od gotowego modelu. Fine-tuning dobrze uczy stylu, formatu i wąskich zadań, słabo nowej wiedzy. Wiedza, która się zmienia albo musi mieć źródło, idzie do kontekstu (zobacz „Fine-tuning i LoRA” i „RAG”).</li>
+  </ul>
+</section>

@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+import { UI, content, root, other } from '../i18n.js';
+import { CHANGELOG } from '../changelog.js';
+import { fmtDate } from '../lib/content.js';
+
+const { lang } = Astro.props;
+const ui = UI[lang], c = content(lang), r = root(lang);
+---
+<Base lang={lang} title={ui.whatsNew} description={ui.changelogIntro} alt={`${root(other(lang))}changelog/`}>
+  <section class="station changelog">
+    <p class="crumbs"><a href={r}>{ui.home}</a></p>
+    <h1>{ui.whatsNew}</h1>
+    <p class="lede">{ui.changelogIntro} <a href={`${r}changelog.xml`}>{ui.rss}</a></p>
+    <ol class="log">
+      {CHANGELOG.map((e) => (
+        <li>
+          <time datetime={e.date}>{fmtDate(e.date, lang)}</time>
+          <p>{e[lang]}</p>
+          {(e.added.length > 0 || e.updated.length > 0) && (
+            <p class="log-topics">
+              {e.added.map((id) => <span class="badge-new">{ui.newBadge}</span>)}
+              {[...e.added, ...e.updated].map((id, i) => <>{i > 0 && ', '}<a href={c.path(id)}>{c.titleOf(id)}</a></>)}
+            </p>
+          )}
+        </li>
+      ))}
+    </ol>
+  </section>
+</Base>

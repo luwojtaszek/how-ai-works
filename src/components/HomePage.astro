@@ -1,0 +1,85 @@
+---
+import Base from '../layouts/Base.astro';
+import { UI, content, root, other } from '../i18n.js';
+import { SITE_UPDATED, topic } from '../lib/content.js';
+
+const { lang } = Astro.props;
+const ui = UI[lang], c = content(lang), r = root(lang);
+const first = c.order[0];
+const n = c.topics.length;
+const tematy = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'tematy' : 'tematów';
+// honest total reading time of all topic pages, in hours
+const hours = Math.round(c.order.reduce((sum, id) => sum + topic(lang, id).markdown.split(/\s+/).length, 0) / 200 / 60);
+const T = {
+  en: {
+    eyebrow: 'An interactive guide for engineers',
+    h1: 'How AI works, from the inside',
+    lede: 'How language models work under the hood and what matters when you build agentic systems on top of them. The essence first, then the details, with a widget to play with on every page.',
+    tabJourney: 'One request, start to finish', tabTree: 'How a model picks a word', demoLabel: 'Interactive overview',
+    why: 'Explainers stop at the next token, and agent courses skip what is inside the model. This guide connects the two: why the causal mask lets prompt caching work only on an identical prefix, and why that makes every agent turn cost more.',
+    find: 'What you will find',
+    items: [
+      ['Inside the model', 'Tokens, attention, sampling, training and reasoning, explained through the mechanism, not the hype.'],
+      ['What it costs and why', 'The KV cache, context windows, prompt caching and why the GPU spends most of its time waiting.'],
+      ['Agentic systems', 'The agent loop, tools, MCP, context engineering, RAG and multi-agent set-ups, with their failure modes.'],
+      ['Quality and production', 'Evals, security and reliability, plus a short answer and follow-up questions on every page to check yourself.'],
+    ],
+    start: 'Start from the beginning', scope: `${n} topics in ${c.groups.length} chapters · about ${hours} h`, chapter: 'Chapter',
+    foot: `${n} topics · English and Polish · every page also as plain text for AI assistants:`,
+  },
+  pl: {
+    eyebrow: 'Interaktywny przewodnik dla inżynierów',
+    h1: 'Jak działa AI, od środka',
+    lede: 'Jak działają modele językowe pod spodem i co jest ważne, gdy budujesz na nich systemy agentowe. Najpierw esencja, potem szczegóły, z widżetem do sprawdzenia na każdej stronie.',
+    tabJourney: 'Podróż zapytania', tabTree: 'Jak model wybiera słowo', demoLabel: 'Interaktywny przegląd',
+    why: 'Interaktywne explainery kończą się na następnym tokenie, a kursy o agentach pomijają to, co w środku modelu. Ten przewodnik łączy jedno z drugim: czemu maska przyczynowa sprawia, że prompt caching działa tylko na identycznym prefiksie, i czemu przez to każda tura agenta kosztuje więcej.',
+    find: 'Co tu znajdziesz',
+    items: [
+      ['Model od środka', 'Tokeny, attention, sampling, trening i rozumowanie, wyjaśnione przez mechanizm, a nie przez hype.'],
+      ['Ile to kosztuje i czemu', 'KV cache, okno kontekstu, prompt caching i to, czemu GPU głównie czeka.'],
+      ['Systemy agentowe', 'Pętla agenta, narzędzia, MCP, context engineering, RAG i wielu agentów, razem z tym, jak zawodzą.'],
+      ['Jakość i produkcja', 'Ewaluacje, bezpieczeństwo i niezawodność, a na każdej stronie krótka odpowiedź i pytania pogłębiające do sprawdzenia się.'],
+    ],
+    start: 'Zacznij od początku', scope: `${n} ${tematy} w ${c.groups.length} rozdziałach · ok. ${hours} h`, chapter: 'Rozdział',
+    foot: `${n} ${tematy} · po polsku i angielsku · każda strona także jako tekst dla asystentów AI:`,
+  },
+}[lang];
+---
+<Base lang={lang} alt={root(other(lang))} jsonld={{ '@context': 'https://schema.org', '@type': 'WebSite', name: ui.siteName, description: ui.siteDesc, inLanguage: lang, url: Astro.site ? new URL(r, Astro.site).href : r, dateModified: SITE_UPDATED, author: { '@type': 'Organization', name: 'magnificode.pl', url: 'https://magnificode.pl' } }}>
+  <section class="home" id="home">
+    <p class="home-eyebrow">{T.eyebrow}</p>
+    <h1>{T.h1}</h1>
+    <p class="home-lede">{T.lede}</p>
+    <div class="home-cta">
+      <a class="btn" href={c.path(first)}>{T.start} →</a>
+      <span class="home-cta-note">1.1 {c.titleOf(first)} · {T.scope}</span>
+    </div>
+
+    <figure class="demo" aria-label={T.demoLabel}>
+      <div class="demo-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="journey" aria-selected="true">{T.tabJourney}</button>
+        <button type="button" role="tab" data-tab="tree" aria-selected="false">{T.tabTree}</button>
+      </div>
+      <div class="demo-pane" data-pane="journey" role="tabpanel">
+        <div class="j-stage" id="jStage" aria-live="polite"></div>
+        <div class="demo-bar"><button class="pl-btn pl-play" id="jPlay" type="button"></button><div class="demo-segs" id="jSegs"></div></div>
+      </div>
+      <div class="demo-pane" data-pane="tree" role="tabpanel" hidden>
+        <div class="t-head"><span class="t-lesson" id="tLesson"></span><span class="t-temp" id="tTemp"></span></div>
+        <p class="t-text" aria-live="polite"><span class="t-pr" id="tPrompt"></span><span id="tOut"></span><span class="t-caret" aria-hidden="true"></span></p>
+        <svg class="t-svg" id="tSvg" role="img" aria-label={T.tabTree}></svg>
+        <p class="t-note" id="tNote"></p>
+        <div class="demo-bar"><button class="pl-btn pl-play" id="tPlay" type="button"></button><div class="demo-segs" id="tSegs"></div></div>
+      </div>
+    </figure>
+
+    <h2 class="home-h2">{T.find}</h2>
+    <p class="home-why">{T.why}</p>
+    <ul class="home-find">
+      {T.items.map(([t, d], i) => { const id = ['tokeny', 'kvcache', 'agent', 'produkcja'][i]; const gi = c.groups.findIndex((g) => g[2].includes(id));
+        return <li><a href={c.path(id)}><b>{t}</b><span>{d}</span><small>{T.chapter} {gi + 1} · {c.groups[gi][0]} →</small></a></li>; })}
+    </ul>
+
+    <p class="home-foot">{T.foot} <a href={`${r}llms-full.txt`}>llms-full.txt</a></p>
+  </section>
+</Base>

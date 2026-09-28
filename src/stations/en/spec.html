@@ -1,0 +1,33 @@
+<section class="station" id="spec" data-hue="att">
+  <h2>Speculative decoding</h2>
+  <p class="lede">A cheap mechanism guesses the next few tokens, and the large model checks all of them in one pass, keeping the ones it would have chosen itself. The text is the same as without speculation, but one read of the weights yields several tokens.</p>
+  <div class="lab">
+    <p class="lab-title">Step through three rounds and watch how many tokens one verification accepts and how many large-model passes you save</p>
+    <div id="spPlayer"></div>
+    <p class="spec-line" id="spText" style="margin-top:14px"></p>
+    <p class="hint" id="spWho" aria-live="polite"></p>
+    <div class="spec-row" id="spRow"></div>
+    <div class="legend"><span><i style="background:var(--att-t);box-shadow:inset 0 0 0 2px var(--att)"></i>small model’s proposal</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>accepted</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 2px var(--cost)"></i>rejected</span><span><i style="background:var(--tok-t);box-shadow:inset 0 0 0 2px var(--tok)"></i>large model’s token</span></div>
+    <div class="stats"><div class="stat"><b id="spTok"></b><span>tokens generated</span></div><div class="stat"><b id="spBig"></b><span>large-model passes</span></div><div class="stat"><b id="spBase"></b><span>passes without speculation</span></div><div class="stat"><b id="spTime"></b><span>of the time without speculation</span></div></div>
+    <p class="hint">Proposals and hits are hand-picked. A small-model pass counts as 1/10 of a large-model pass, and a pass that verifies several tokens costs the same as a normal one.</p>
+  </div>
+  <h3 class="sub">How verification works</h3>
+  <ul class="notes">
+    <li>The draft, i.e. the cheap guessing mechanism, proposes γ tokens (usually a few). In one pass the large model computes the distribution at each of those positions, just as in prefill. It keeps the longest matching prefix, inserts its own token at the first mismatch, and adds one more token if everything matches. So every round yields at least one token.</li>
+    <li>Verification is cheap because decode is memory-bound: a pass over five positions reads the same weights as a pass over one and takes almost the same time (see “Why the GPU is idle”).</li>
+    <li>When sampling, a proposal x is accepted with probability min(1, p(x)/q(x)), where p is the large model’s distribution and q the small model’s. After a rejection you sample from max(0, p − q), normalised. The result has exactly the large model’s distribution (Leviathan et al.; Chen et al., 2023), and with greedy decoding the text is identical, up to small numerical differences.</li>
+  </ul>
+  <h3 class="sub">What the gain depends on</h3>
+  <ul class="notes">
+    <li>With acceptance rate α and γ proposals, a round yields on average (1 − α^(γ+1)) / (1 − α) tokens. For α = 0.8 and γ = 4 that is about 3.4 tokens per large-model pass. The time saving is smaller, because the draft costs something too, and rejected proposals are wasted work.</li>
+    <li>Acceptance depends on the text. Code, JSON, repetition and low temperature give a high α; creative text at high temperature a low one. Leviathan et al. measured a 2–3× speed-up on T5-XXL. DeepSeek-V3 reports 85–90% acceptance of the second token from its MTP module and 1.8× more tokens per second.</li>
+    <li>The gain shrinks as the batch grows. The weights are read once for the whole batch anyway, so once a step becomes compute-bound the extra positions cost real compute: with large batches and short contexts, speculation can turn into a loss. The KV cache is different, because every conversation reads its own. With long contexts decode stays memory-bound even at large batch sizes, and a draft that is cheap on cache reads still raises throughput (MagicDec: up to 2.5× for Llama 3.1 8B at batch sizes 32–256; EAGLE-3: 1.38× at batch 64 in SGLang). vLLM recommends speculation mainly for low to medium load, but rates EAGLE and MTP as a medium to high gain under heavy load too.</li>
+  </ul>
+  <h3 class="sub">Variants and choosing in practice</h3>
+  <ul class="notes">
+    <li>A separate small model from the same family with the same tokeniser: easy to use, but it takes memory and has to be served alongside the large one.</li>
+    <li>A draft attached to the large model: extra heads that predict the next positions (Medusa), a light layer working on the large model’s hidden states (EAGLE, now EAGLE-3), or an MTP module the model has from training, as in DeepSeek-V3. These usually guess better than a separate small model. The output stays exact only with standard acceptance and an unchanged large model: Medusa-2, which fine-tunes the large model along with the heads, and Medusa’s “typical acceptance” trade exactness for speed.</li>
+    <li>No model at all: n-gram matching copies the continuation from the prompt (prompt lookup). It works for code editing, RAG and summaries, where the answer repeats parts of the input.</li>
+    <li>Choose the method and γ from the α measured on your own traffic, and check the gain at the target load, not on a single request. In providers’ APIs speculation usually runs invisibly. The exception is features like Predicted Outputs in the OpenAI API, where you supply the expected text yourself, for example the file before an edit (as of September 2026 only on GPT-4o and GPT-4.1 models and without function calling; rejected predicted tokens are billed as output).</li>
+  </ul>
+</section>

@@ -1,0 +1,8 @@
+---
+import TopicPage from '../components/TopicPage.astro';
+import { ORDER } from '../data.js';
+import { SLUG_EN } from '../data.en.js';
+
+export const getStaticPaths = () => ORDER.map((id) => ({ params: { id: SLUG_EN[id] || id }, props: { id } }));
+---
+<TopicPage lang="en" id={Astro.props.id} />

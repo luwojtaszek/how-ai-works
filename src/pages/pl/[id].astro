@@ -1,0 +1,7 @@
+---
+import TopicPage from '../../components/TopicPage.astro';
+import { ORDER } from '../../data.js';
+
+export const getStaticPaths = () => ORDER.map((id) => ({ params: { id } }));
+---
+<TopicPage lang="pl" id={Astro.params.id} />

@@ -1,0 +1,42 @@
+<section class="station" id="multiagent" data-hue="att">
+  <h2>Multiple agents</h2>
+  <p class="lede">A lead agent splits the task and delegates parts to subagents, each working in its own clean context and returning a short result. It helps with independent parts, such as researching many sources at once, and hurts with shared state, such as a change to one codebase. It usually costs several times more tokens.</p>
+  <div class="lab">
+    <p class="lab-title">Change the number of subagents and the type of task. Watch the time, the tokens, the lead agent’s context and the quality of the result</p>
+    <div class="row" id="maTask" role="group" aria-label="Task type"></div>
+    <p class="hint" id="maDesc"></p>
+    <div class="row" style="margin-top:12px"><label class="ctl"><span>Number of subagents: <b id="maNv"></b></span><input type="range" id="maN" min="0" max="5" step="1" value="3"></label></div>
+    <div class="bars ma-g" id="maG" role="img"></div>
+    <div class="legend" id="maLegend"></div>
+    <div class="stats"><div class="stat"><b id="maT"></b><span>from request to result</span></div><div class="stat"><b id="maTok"></b><span id="maTokS"></span></div><div class="stat"><b id="maCtx"></b><span>largest context of the lead agent</span></div><div class="stat"><b id="maQ"></b><span id="maQs"></span></div></div>
+    <div class="callout" id="maMsg" aria-live="polite"></div>
+    <p class="hint">Illustrative numbers, picked by hand, not measured. Tokens are the input and output of all agents combined. The number to the right of each bar is that agent’s largest context; a gap in the bar is waiting. Assumptions: in the research task one library takes an agent 4 minutes, in the code task the dependencies allow at most two parallel paths, and every pair of agents diverges on one shared decision.</p>
+  </div>
+  <h3 class="sub">Lead agent and subagents</h3>
+  <ul class="notes">
+    <li>A subagent is a separate agent loop (see “The agent loop”) that the lead agent calls like a tool: the argument is a brief, the result is a short report. The subagent does not see the lead agent’s history, only its own system prompt and the brief. It may read tens of thousands of tokens of pages or files, and usually hands back 1–2k. This is the context isolation from “Context engineering and memory”.</li>
+    <li>The lead agent, also called the orchestrator, plans, hands out the parts, waits and merges the results. In Anthropic’s research system (described in June 2025) it launches subagents in batches and waits for the whole batch. That simplifies coordination, but the slowest subagent sets the pace, and a subagent cannot be corrected while it works.</li>
+    <li>Other layouts. Pipeline: fixed stages, where one agent’s output is the next one’s input. Handoff: an agent passes the conversation, with its state, to a specialised agent and drops out, for example customer service handing a case to the returns team. Critic loop: one agent writes, another grades the result against criteria and sends back comments until it passes or the round limit runs out. With a subagent the lead agent keeps control; with a handoff it gives control away.</li>
+  </ul>
+  <h3 class="sub">When it helps</h3>
+  <ul class="notes">
+    <li>Breadth-first, parallel work: the task splits into independent directions, such as many companies, sources or hypotheses. Anthropic reports that Claude Opus 4 as the lead agent with Claude Sonnet 4 subagents outperformed Claude Opus 4 alone by 90.2% on its internal research eval. Parallel subagents and parallel tool calls cut the time of complex queries by up to 90%.</li>
+    <li>More tokens per task than one window holds. In the same report, token usage alone explained 80% of the variance in performance on BrowseComp, a benchmark for finding hard-to-locate information. Subagents let you spend those tokens, while only the conclusions reach the lead agent, so its context stays clean.</li>
+    <li>Specialisation: each subagent has its own prompt and a narrower set of tools and permissions. From a shorter list the model picks the right tool more accurately (see “Tools (function calling)”). A read-only subagent can read untrusted content without access to risky actions, but its report can still carry an injected instruction to the lead agent (see “Prompt injection”).</li>
+  </ul>
+  <h3 class="sub">When it hurts</h3>
+  <ul class="notes">
+    <li>Cost and latency. In Anthropic’s data an agent uses about 4 times more tokens than a chat, and a multi-agent system about 15 times more. Each subagent pays for its own system prompt, tools and brief. It starts from zero, so it first gathers context the lead agent already had.</li>
+    <li>Lost context and duplicated work. A subagent knows only what is in its brief, and every summary loses detail. An early version of Anthropic’s system gave short briefs, such as “research the semiconductor shortage”. One subagent researched the 2021 automotive chip crisis, while two others duplicated each other’s work on 2025 supply chains.</li>
+    <li>Conflicting decisions in shared state. Every action carries implicit decisions, and parallel agents cannot see each other’s (Cognition, “Don’t Build Multi-Agents”, June 2025). In their Flappy Bird clone example, one subagent built a Super Mario-style background and another a bird in a different style, leaving the lead agent to glue them together. In code this means the same files edited at once, different names and types, merge conflicts. Anthropic itself notes that most coding tasks have fewer truly parallelisable parts than research.</li>
+    <li>Errors compound, and debugging is hard. A bad split by the lead agent breaks every branch at once, and a small change to its prompt can change subagent behaviour unpredictably. Cemri et al. (2025) analysed more than 1,600 traces from 7 frameworks and described 14 failure modes in three groups: system design, inter-agent misalignment and task verification. On popular benchmarks, multi-agent systems often gained very little.</li>
+  </ul>
+  <h3 class="sub">How to build it</h3>
+  <ul class="notes">
+    <li>Start with one agent with tools; OpenAI’s guide gives the same advice. Add more agents once you show, on the same eval set, a gain worth the extra tokens (see “Evals”). For code, a read-only subagent that searches the repository and answers a specific question is usually enough, while a single agent makes the changes. The exception is a large change that splits into independent units, such as a module-by-module migration: each writing subagent works in its own git worktree or sandbox on its own branch and runs the tests, and its change is merged like an ordinary PR (Claude Code’s <code>/batch</code> works this way). Each unit still has a single writer, the rule Cognition also arrived at in April 2026.</li>
+    <li>The lead agent’s brief is a specification: the goal, output format, tools and sources, boundaries (what not to do, what the others are doing) and an effort budget. Anthropic wrote scaling rules into the prompt: a simple question gets 1 agent and 3–10 tool calls, a comparison 2–4 subagents with 10–15 calls each, complex research more than 10 subagents. For a code change, the shared contract (names, types and interfaces) is agreed before the work is split.</li>
+    <li>Pass large results through files or a store, not through messages. The subagent writes an artefact and returns its path with a short description, so the content does not pass through successive summaries. The lead agent also saves its plan outside its context, because on long tasks the window will run out.</li>
+    <li>Limits are enforced by code, not by the prompt: the number of subagents, nesting depth, a token and time budget per subagent, the number of critic-loop rounds. Without them, early versions of Anthropic’s system spawned 50 subagents for simple queries. Claude Code (as of September 2026) allows three levels of nesting and at most 20 concurrent subagents by default (see “The coding-agent harness”).</li>
+    <li>One trace for the whole task, with a separate span for each subagent: brief, calls, tokens, result. Only then can you tell whether the split, a subagent or the merge failed. Grade the end state, for example the facts and sources in the report or passing tests, not the lead agent’s summary (see “The agent loop”).</li>
+  </ul>
+</section>

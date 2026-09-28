@@ -1,0 +1,38 @@
+<section class="station" id="sampling" data-hue="prob">
+  <h2>The next token</h2>
+  <p class="lede">A model doesn’t return text, only a score (logit) for every token in the vocabulary. Separate code, the sampler, turns the scores into probabilities and draws one token. Every token of an answer is produced this way, one after another.</p>
+  <div class="lab">
+    <p class="lab-title">Change the temperature and top-p, then sample. Compare a question the model knows, one it gets confidently wrong and one where it is guessing</p>
+    <div class="row" id="smpPresets"></div>
+    <p class="hint" id="smpPrompt"></p>
+    <div class="bars" id="smpBars" style="margin-top:14px"></div>
+    <div class="row" style="margin-top:14px">
+      <label class="ctl"><span>Temperature: <b id="smpTv"></b></span><input type="range" id="smpT" min="0" max="2" step="0.05" value="1"></label>
+      <label class="ctl"><span>Top-p: <b id="smpPv"></b></span><input type="range" id="smpP" min="0.1" max="1" step="0.05" value="1"></label>
+    </div>
+    <div class="row"><button class="btn" id="smpGo" type="button">Sample 30 times</button></div>
+    <div class="samples" id="smpOut"></div>
+    <div class="callout" id="smpMsg" aria-live="polite"></div>
+    <p class="hint">Real next-token probabilities from Qwen3-0.6B-Base, a small open model without chat training: its eight most likely tokens, rescaled to 100%. Struck-through bars have been cut by top-p.</p>
+  </div>
+  <h3 class="sub">From logits to a token</h3>
+  <ul class="notes">
+    <li>Softmax with temperature: <code>p = exp(logit / T) / Σ exp(logit / T)</code>. T below 1 sharpens the distribution, above 1 flattens it, T → 0 always picks the top token (greedy), and a very high T pushes the distribution towards uniform. Temperature doesn’t change the order of the tokens, only the gaps between them.</li>
+    <li>Cutting the tail: top-k keeps the k best tokens, top-p (nucleus) the smallest set covering e.g. 90% of the probability, and min-p drops tokens weaker than a fraction of the best one. Top-p and min-p adapt to the model’s confidence: when it is sure, one candidate remains; when it is unsure, dozens. In Hugging Face and vLLM, temperature is applied before truncation, so it affects what survives.</li>
+    <li>The sampled token is appended to the text and can’t be taken back. Every following token has to fit it, so one unlucky token from the tail can drag a whole made-up sentence behind it.</li>
+    <li>The sampler can also zero out tokens that don’t fit a JSON schema. That is how structured output works (see “Enforcing output format”).</li>
+  </ul>
+  <h3 class="sub">Pitfalls</h3>
+  <ul class="notes">
+    <li>Greedy doesn’t mean best. Always picking the most likely token leads to repetition and loops (Holtzman et al., 2019). DeepSeek recommends a temperature of 0.5–0.7 for R1 precisely to prevent endless repetition. Repetition, frequency and presence penalties lower the logits of tokens already used: they curb loops, but also punish legitimate repeats such as identifiers in code or JSON keys.</li>
+    <li>Temperature 0 doesn’t give full reproducibility. GPU computations produce slightly different numbers depending on how many requests landed in the batch, and when logits are nearly tied, that changes the chosen token and the entire rest of the answer. The <code>seed</code> parameter, where an API has one, doesn’t guarantee determinism. When self-hosting, batch-invariant kernels make the output deterministic at some cost in speed (vLLM: <code>VLLM_BATCH_INVARIANT=1</code>).</li>
+    <li>The distribution doesn’t measure truth. A flat distribution can signal ignorance, but also several equally good phrasings. A model can be confident in an error, and the sampler always picks something, so the sentence sounds just as confident. A lower temperature doesn’t cure fabrication; it only makes it repeatable (see “Hallucinations”).</li>
+  </ul>
+  <h3 class="sub">What you set in practice</h3>
+  <ul class="notes">
+    <li>In non-reasoning models: extraction, classification and code at a low temperature, 0–0.3; writing and brainstorming at 0.7–1. Change temperature or top-p, not both at once, and check the effect on an eval set, not on a single sample.</li>
+    <li><code>logprobs</code> in an API show this distribution, usually before temperature and top-p (the default in vLLM). They are useful for a confidence threshold in classification: you have the model answer with a single label token and read the probability of each label. The Claude API doesn’t return them, and OpenAI does only with reasoning off.</li>
+    <li>Several samples at T &gt; 0 plus a majority vote (self-consistency) raise accuracy on tasks with one correct answer, and disagreement between the samples signals uncertainty. It costs as many times more tokens as there are samples.</li>
+    <li>With reasoning models the sampler is often locked (as of September 2026). Claude Opus 4.7 and later, and Claude Sonnet 5, reject non-default <code>temperature</code>, <code>top_p</code> and <code>top_k</code> with a 400 error, and OpenAI with reasoning enabled doesn’t accept <code>temperature</code>, <code>top_p</code> or <code>logprobs</code>. You steer with the reasoning level and the prompt instead. Where a reasoning model does accept them, keep the provider’s recommended values: Google strongly recommends temperature 1.0 for all Gemini 3 models and warns that lower values can cause looping. A low temperature is a tool for non-reasoning models.</li>
+  </ul>
+</section>

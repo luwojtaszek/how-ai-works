@@ -1,0 +1,39 @@
+<section class="station" id="compute" data-hue="cost">
+  <h2>Compute and whether models “get dumber”</h2>
+  <p class="lede">The weights of a pinned model version do not change, but the system that serves them changes all the time: hardware, compilers, the sampler, routing, the app’s system prompt and its defaults. Behind an alias or a model name in a chat app, even the weights can be swapped while the name stays the same. On top of that, the provider has a finite pool of chips that both the training of the next model and today’s users draw from.</p>
+  <div class="lab">
+    <p class="lab-title">Move training and demand. See when inference runs out of capacity and what users see when it does</p>
+    <div class="row">
+      <label class="ctl"><span>Training a new model: <b id="cpTv"></b></span><input type="range" id="cpT" min="0" max="70" step="5" value="30"></label>
+      <label class="ctl"><span>User demand: <b id="cpDv"></b></span><input type="range" id="cpD" min="10" max="100" step="5" value="45"></label>
+    </div>
+    <div class="gpus" id="cpGrid" style="margin-top:14px" aria-hidden="true"></div>
+    <div class="legend"><span><i style="background:var(--tok)"></i>training</span><span><i style="background:var(--muted)"></i>research and evals</span><span><i style="background:var(--cache)"></i>inference in use</span><span><i style="border:1.5px solid var(--line-strong)"></i>free</span><span><i style="background:var(--cost-t);border:1px dashed var(--cost)"></i>requests with no room</span></div>
+    <div class="callout" id="cpMsg" aria-live="polite"></div>
+    <p class="hint">Illustrative: 100 units of capacity, 10 of them permanently reserved for research and evals. The proportions are not any provider’s data.</p>
+  </div>
+  <h3 class="sub">What changes while the weights stay put</h3>
+  <ul class="notes">
+    <li>The same model runs on different hardware and software stacks. Anthropic says it serves Claude on AWS Trainium, NVIDIA GPUs and Google TPUs. A different precision, compiler or sampler implementation produces slightly different numbers at the output, and a bug in any of those places breaks only part of the traffic.</li>
+    <li>A capacity shortage shows up first in latency and availability: queues, longer time to first token, slower tokens as batches grow, overload errors, stricter rate limits. It does not lower quality, but load sets the batch size, and with kernels that are not batch-invariant the same request can get different tokens even at temperature 0.</li>
+    <li>Apps such as a chat or a coding tool change their system prompt, default reasoning effort and the way they manage context. That changes results without changing the model and without any change to the API.</li>
+  </ul>
+  <h3 class="sub">Documented cases</h3>
+  <ul class="notes">
+    <li><b>April 2025</b> (OpenAI, “Expanding on what we missed with sycophancy”). Here the weights did change, under the same name. On 25 April an update to GPT-4o in ChatGPT with new post-training, including an extra reward signal from thumbs-up and thumbs-down ratings, made the model noticeably sycophantic; the rollback began on 28 April. OpenAI counts five major post-training updates to GPT-4o in ChatGPT since its launch.</li>
+    <li><b>August and September 2025</b> (Anthropic postmortem of 17 September 2025). Three overlapping infrastructure bugs, weights unchanged. From 5 August some Sonnet 4 requests went to servers configured for the upcoming 1M-token context, 16% of them at the worst hour on 31 August. From 25 August a misconfiguration of TPU servers caused out-of-place tokens to be inserted, e.g. Thai or Chinese characters in English answers. A change in token selection also exposed a bug in the XLA compiler for TPUs, through which approximate top-k sometimes dropped the most probable token. Fixes landed between 2 and 18 September.</li>
+    <li><b>March and April 2026</b> (postmortem of 23 April 2026). Three changes in Claude Code, the Claude Agent SDK and Claude Cowork; the API was not affected. On 4 March the default reasoning effort was lowered from high to medium to cut latency; this was reverted on 7 April. On 26 March a bug in a mechanism meant to clear old thinking blocks once after an hour of inactivity made it clear them on every following turn, so the model seemed forgetful and repeated itself; fixed on 10 April. On 16 April a length limit on answers was added to the system prompt, which lowered an eval score by 3%; reverted on 20 April.</li>
+    <li>According to both Anthropic postmortems, the causes were infrastructure bugs and product decisions made to reduce latency and response length, not a lack of capacity. In 2025 Anthropic stated plainly that it never reduces model quality due to demand, time of day or server load, and in 2026 that it never intentionally degrades its models.</li>
+  </ul>
+  <h3 class="sub">Hypothesis and illusion</h3>
+  <ul class="notes">
+    <li>The hypothesis: when chips run short before a launch, the provider quietly serves a more heavily quantised or smaller variant. That is technically possible at any provider, but there is no public evidence for it. Treat it as a hypothesis to test by measurement.</li>
+    <li>The illusion: expectations rise, tasks get harder, sessions get longer, and a long context lowers quality on its own (see “The context window and agents”). With sampling, individual bad answers always happen, so anecdotes cannot tell a regression from noise.</li>
+  </ul>
+  <h3 class="sub">How to protect yourself</h3>
+  <ul class="notes">
+    <li>Pin an exact model snapshot ID, not an alias that can move; for Claude from 4.6 on, the dateless ID is itself the snapshot. Set reasoning effort and the token limit explicitly, and temperature only where the model still accepts it: newer Claude models (from Opus 4.7 on) and OpenAI models with reasoning enabled reject non-default values (see “The next token”). Version the prompt and the tool definitions (see “LLMs in production”).</li>
+    <li>Run your own eval set on a schedule against the production endpoint, with several repetitions per case, because differences of a few percent get lost in the noise (see “Evals”). Production traces let you compare behaviour before and after.</li>
+    <li>A pinned version also has a retirement date, so a migration will come anyway; run it against the same eval set. Full reproducibility needs an open model on a frozen stack of your own with deterministic, batch-invariant kernels (see “Open-weight models”).</li>
+  </ul>
+</section>

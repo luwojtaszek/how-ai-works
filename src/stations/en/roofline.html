@@ -1,0 +1,38 @@
+<section class="station" id="roofline" data-hue="cost">
+  <h2>Why the GPU is idle</h2>
+  <p class="lede">During text generation the GPU spends most of each step waiting for the weights and the KV cache to arrive from memory, and computes for only a fraction of that time. This one effect explains batching, quantisation, speculative decoding, and why output tokens cost more than input tokens.</p>
+  <div class="lab">
+    <p class="lab-title">Grow the batch and watch when compute catches up with waiting for memory. Then switch to prefill</p>
+    <div class="row">
+      <button class="btn ghost" id="rfDec" type="button" aria-pressed="true">Decode: one token at a time</button>
+      <button class="btn ghost" id="rfPre" type="button" aria-pressed="false">Prefill: a 2,000-token prompt</button>
+    </div>
+    <label class="ctl" style="margin-top:12px"><span>Conversations in one batch: <b id="rfBv"></b></span><input type="range" id="rfB" min="0" max="8" step="1" value="0"></label>
+    <p class="hint">One model step</p>
+    <div class="win-bar" id="rfBar"></div>
+    <div class="legend"><span><i style="background:var(--prob)"></i>waiting for weights from memory</span><span><i style="background:var(--cost)"></i>computing</span></div>
+    <div class="stats"><div class="stat"><b id="rfUtil"></b><span>of the step the GPU spends computing</span></div><div class="stat"><b id="rfUser"></b><span id="rfUserL">tokens per second for one conversation</span></div><div class="stat"><b id="rfAll"></b><span>tokens per second in total</span></div></div>
+    <div class="callout" id="rfMsg" aria-live="polite"></div>
+    <p class="hint">Illustrative model: 8 billion parameters in BF16 (16 GB of weights) on one H100 SXM with 3.35 TB/s of memory bandwidth and about 400 TFLOPS of realistically achievable compute (about 990 TFLOPS dense BF16 on the spec sheet). Reading and computing overlap, so a step takes as long as the longer of the two. The bar ignores the KV cache and overheads, so it is an upper bound; the message adds the cache for 4,000 tokens of context per conversation.</p>
+  </div>
+  <h3 class="sub">The per-token arithmetic</h3>
+  <ul class="notes">
+    <li>A decode step produces one token per conversation but reads every weight from HBM. An 8B model in BF16 is 16 GB, which takes about 4.8 ms to read at 3.35 TB/s. That caps a single conversation at about 210 tokens per second, regardless of the GPU’s compute power.</li>
+    <li>Arithmetic intensity is the number of operations per byte read from memory. Multiplying a vector by the weights costs 2 operations (a multiply and an add) per parameter, i.e. per 2 bytes in BF16: about 1 operation per byte for each conversation in the batch. An H100 SXM needs about 295 operations per byte on paper (989 TFLOPS / 3.35 TB/s) and about 120 at a realistic 400 TFLOPS. Counting the weights alone, it takes a batch of roughly 100–300 conversations before compute time catches up with read time.</li>
+    <li>Prefill processes the whole prompt in one pass: weights read once serve thousands of tokens, so a single long prompt keeps the GPU fully busy. Prefill sets the time to first token (TTFT); decode sets the time between subsequent tokens.</li>
+  </ul>
+  <h3 class="sub">Where batching stops being free</h3>
+  <ul class="notes">
+    <li>A batch shares the cost of reading the weights, but not the KV cache: each conversation reads its own, so attention in decode stays memory-bound at any batch size. In an 8B model with GQA (like Llama 3 8B) the cache takes about 0.125 MB per token, so a conversation with 32k tokens of context is 4 GB. Sixteen such conversations read 64 GB of cache and only 16 GB of weights every step. “The generation loop and KV cache” covers the mechanism.</li>
+    <li>Past the crossover point every extra conversation makes the step longer for everyone: total throughput grows more and more slowly while the time between tokens rises. A provider picks a point on that curve. Interactive traffic needs smaller batches and fast tokens; batch traffic can be packed tightly.</li>
+    <li>In an MoE model one token reads only the experts it was routed to, but the tokens in a batch spread across different experts, so at larger batch sizes you read almost the whole model (see “Mixture of Experts”).</li>
+  </ul>
+  <h3 class="sub">What it means for the system</h3>
+  <ul class="notes">
+    <li>Single-stream speed ≈ memory bandwidth / bytes read per token (active weights plus KV cache). That is why quantising weights to 8 or 4 bits speeds up decode almost proportionally (see “Quantisation”), and why speculative decoding gets several tokens out of one read of the weights (see “Speculative decoding”).</li>
+    <li>Cost per token is mostly a matter of batch size. Continuous batching and PagedAttention exist to fit the largest possible batch into limited memory (see “Continuous batching”).</li>
+    <li>Output tokens are priced several times higher than input tokens (typically 4–8× at the large providers). Input goes through prefill in parallel, while every output token is a separate decode step that occupies a slot in the batch.</li>
+    <li>Prefill and decode have different bottlenecks and get in each other’s way on a shared GPU. Large deployments split them into separate pools (disaggregated serving): DeepSeek-V3 describes prefill on 32-GPU units and decode on 320-GPU units, and vLLM, SGLang and NVIDIA Dynamo support the split. On a single server, chunked prefill softens the conflict.</li>
+    <li>For decode you choose a GPU by memory bandwidth and capacity, not TFLOPS. The H200 has the same compute as the H100 but 4.8 TB/s and 141 GB of memory, so it generates faster with large models and long contexts. The Blackwell B200 (shipping as of September 2026) has 180 GB and 8 TB/s, but its compute grew just as much (about 280 operations per byte in BF16), so the conclusions here still hold.</li>
+  </ul>
+</section>

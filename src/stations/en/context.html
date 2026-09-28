@@ -1,0 +1,41 @@
+<section class="station" id="context" data-hue="cost">
+  <h2>The context window and agents</h2>
+  <p class="lede">The model remembers nothing between requests; it knows only what it received in the current one. The context window is the token limit of a single request, shared by input and output. An agent resends the whole growing history every turn, so it pays for that history many times over, and answer quality drops as it grows.</p>
+  <div class="lab">
+    <p class="lab-title">Move the agent-turn slider. See what fills the window and how fast the cumulative input cost grows</p>
+    <label class="ctl"><span>Agent turn: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="30" step="1" value="6"></label>
+    <div class="win-bar" id="cxBar" style="margin-top:12px"></div>
+    <div class="legend" id="cxLegend"></div>
+    <div class="stats"><div class="stat"><b id="cxNow"></b><span>input tokens in this turn</span></div><div class="stat"><b id="cxCum"></b><span>input tokens sent since the start</span></div><div class="stat"><b id="cxUsd"></b><span>input cost without caching</span></div><div class="stat"><b id="cxUsdC"></b><span>with prompt caching</span></div></div>
+    <div id="cxChart" style="margin-top:12px"></div>
+    <div class="legend"><span><i style="background:var(--cost)"></i>cumulative input cost without caching</span><span><i style="background:var(--cache)"></i>with prompt caching</span></div>
+    <div class="callout" id="cxMsg" aria-live="polite"></div>
+    <p class="hint">Illustrative numbers. A 200k-token window, 32k of it reserved for the answer and thinking. Each turn adds 6k tokens of tool results and 300 tokens of answer. Rates as in “Prompt caching”: $3 per million input tokens, cache writes at 125%, reads at 10%. Output cost not included.</p>
+  </div>
+  <h3 class="sub">What counts towards the limit</h3>
+  <ul class="notes">
+    <li>Everything in the request: the system prompt, tool definitions (including those from MCP servers), the whole history with tool results, images and PDFs, plus everything the model generates in this turn, thinking included. It is measured in the model’s own tokens, so the same text gives different counts at different providers (see “Tokens”). You can count them before sending with a token-counting endpoint.</li>
+    <li>Part of the overhead is fixed and paid every turn: definitions for a few dozen tools easily add up to tens of thousands of tokens before the agent has done anything (see “Tools (function calling)”).</li>
+  </ul>
+  <h3 class="sub">Input limit and output limit</h3>
+  <ul class="notes">
+    <li>The window covers input and output together. A separate, much smaller output limit applies per request (<code>max_tokens</code>): as of September 2026, Claude models with a 1M-token window generate at most 128k per request, and OpenAI’s GPT-6 models have a 1.05M window, at most 922k of it input, and 128k of output.</li>
+    <li>The API usually rejects input that is too long with an error. Truncating history is a decision made by your application or framework, often silently, starting with the oldest messages.</li>
+    <li>When output hits the limit, generation stops mid-sentence: <code>stop_reason: "max_tokens"</code> in Anthropic (or <code>"model_context_window_exceeded"</code> on Claude 4.5+, when input plus output fill the window), <code>finish_reason: "length"</code> in Chat Completions. JSON is then incomplete, and a reasoning model may never get to the answer. Check the stop reason in code.</li>
+    <li>Long context can cost more per token: above 200k input tokens Gemini 3.1 Pro, and above 272k GPT-6 models, bill the whole request at 2× for input and cache and 1.5× for output. Claude models with a 1M window have a flat rate (September 2026).</li>
+  </ul>
+  <h3 class="sub">Cost grows with every turn</h3>
+  <ul class="notes">
+    <li>In the agent loop (see “The agent loop”), turn <i>t</i> sends everything from earlier turns plus the new result. With a constant increment per turn, cumulative input tokens grow with the square of the number of turns. In the widget, 24 turns already add up to about 2.2M input tokens, even though each request fits in the 200k window.</li>
+    <li>Input dominates in agents: Manus reports an average input-to-output token ratio of about 100:1. The main lever on the bill is therefore prompt caching. The causal mask keeps old tokens’ K and V fixed, so as long as the history is only appended to, every turn reads all of it but the newest part from the cache (see “Prompt caching”). Reads cost about 10% of the price, but the curve stays quadratic.</li>
+    <li>Latency grows too. Prefill of the uncached part lengthens time to first token, and every decode step reads the whole KV cache, so a long context also slows down generation (see “The generation loop and KV cache”).</li>
+    <li>While a tool runs, the model computes nothing, yet the conversation’s KV cache still occupies GPU memory. A busy server can offload the cache to CPU memory or SSD and reload it when the result arrives: faster than recomputing a long history, but not free for time to first token (Glenn Lockwood, September 2026). Through an API you see only the entry lifetime, which at Anthropic counts from the start of the request: generation plus a slow test suite can outlast a 5-minute entry, and the next turn pays for a write and a full prefill of the whole history. For tools that take minutes, the one-hour entry pays off.</li>
+  </ul>
+  <h3 class="sub">Quality drops with length</h3>
+  <ul class="notes">
+    <li>Models perform worse on long input well before the window is full. The needle-in-a-haystack test, finding one sentence that matches the question word for word, comes out almost perfect and says little. In RULER (2024), of 17 models claiming at least 32k tokens, only half kept a satisfactory score at 32k.</li>
+    <li>The drop is bigger when the question and the answer share no words: in NoLiMa (2025), 11 of 13 models fell below half of their short-context score at 32k tokens. Chroma (2025, 18 models) showed degradation from length alone even on simple tasks, stronger with similar but irrelevant passages.</li>
+    <li>Position matters too. In the Lost in the Middle study (2023), models made best use of information at the start and end of the context and markedly worse use of the middle. So put the important instruction and the question at the end, after the long material.</li>
+    <li>Window capacity is not a budget to fill. Test your use case at the lengths you actually send, and keep the window short and relevant. How to do that (trimming tool results, compaction, sub-agents, memory outside the window) is covered in “Context engineering and memory”.</li>
+  </ul>
+</section>

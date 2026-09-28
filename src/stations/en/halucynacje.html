@@ -1,0 +1,43 @@
+<section class="station" id="halucynacje" data-hue="cost">
+  <h2>Hallucinations</h2>
+  <p class="lede">A model has no “I don’t know” mode: it always writes a plausible continuation, in the same confident tone whether it knows the answer or is guessing. Hallucinations cannot be switched off; they can be reduced and measured.</p>
+  <div class="lab">
+    <p class="lab-title">Turn on a source in the context and permission to say “I don’t know”, separately and together. Watch which fabrications disappear, which remain and how many answers you lose along the way</p>
+    <div class="row" id="haluOpts"></div>
+    <div class="scroll" style="margin-top:14px"><table class="ev" id="haluT"></table></div>
+    <div class="stats"><div class="stat"><b id="haluOk"></b><span>correct</span></div><div class="stat"><b id="haluBad"></b><span>fabricated</span></div><div class="stat"><b id="haluIdk"></b><span>“I don’t know”</span></div><div class="stat"><b id="haluRate"></b><span>errors among the answers given</span></div></div>
+    <div class="callout" id="haluMsg" aria-live="polite"></div>
+    <p class="hint">An illustrative simulation, not a measurement of any model: the answers were written by hand to show typical behaviour. Wrenfold, its museum, the parish chronicle and the paper by Lindqvist and Brandt are invented. The set is deliberately made up mostly of hard questions, so the proportions say nothing about how well real models do. Rows whose verdict changed after a click are highlighted.</p>
+  </div>
+  <h3 class="sub">Where they come from</h3>
+  <ul class="notes">
+    <li>The model predicts the next token and always returns one. There is no separate signal for “my knowledge ends here”, and a guessed sentence is as fluent as a true one. A sampled token cannot be taken back: if the answer began with “In 1978”, the rest of the sentence will justify that year (see “The next token”).</li>
+    <li>Facts that appeared once or never in the training data are stored in the weights weakly or not at all. The model saw the capital of Australia thousands of times, and the opening year of a small museum once at most. Kalai et al. (OpenAI, 2025) show that for facts with no learnable pattern, such as birthdays, the hallucination rate after pretraining is roughly at least the fraction of facts that appeared exactly once in the data.</li>
+    <li>Post-training does not remove this, because almost all popular benchmarks grade 0/1: “I don’t know” scores zero, the same as a wrong answer. Under such grading abstaining is never optimal, so a model trained and selected for the score learns to guess, like a student on a test with no negative marking.</li>
+  </ul>
+  <h3 class="sub">Types</h3>
+  <ul class="notes">
+    <li>Fabricated fact: a wrong date, number or name stated confidently. Fabricated source: a paper title, court ruling, link or quote that does not exist. In 2023 a federal court in New York fined lawyers $5,000 for a filing that cited rulings invented by ChatGPT (Mata v. Avianca).</li>
+    <li>Unfaithfulness to the source: the document is in the context, yet the answer contradicts it or adds something it does not contain. In RAG this is the typical generation-stage error, and a dangerous one, because the citation makes the answer look verified. Reasoning error: the facts are right, but the arithmetic is wrong or the conclusion does not follow from the premises.</li>
+    <li>In an agent: a tool call with an invented argument (customer ID, file path, field name), or a report such as “I sent the email” or “the tests pass” when no tool did any such thing. In code: functions, parameters and whole packages that do not exist. An attacker can register a package under a name models tend to invent and wait for an agent to install it.</li>
+  </ul>
+  <h3 class="sub">What helps, and its limits</h3>
+  <ul class="notes">
+    <li>A source in the context with citations (see “RAG”) helps most, but only when retrieval finds the passage containing the answer. Add explicit permission to say “I don’t know” and the instruction “first extract verbatim quotes from the source, then answer based only on them”. A quote can be checked with a plain text search. The price is that the model answers fewer questions.</li>
+    <li>Tools instead of memory: code or a calculator for arithmetic, search and a database for facts, documentation for APIs (see “Tools (function calling)”). A verification step, meaning a separate call that reads the answer together with the sources and strikes out unsupported claims, catches some of the errors but makes mistakes of its own.</li>
+    <li>Lower temperature is not a cure: temperature 0 picks the most probable token, so a fabricated date simply becomes reproducible. Reasoning before answering (see “Reasoning models”) helps with logic and arithmetic, because the model can check its steps, but it cannot add knowledge that is not in the weights. Fine-tuning is a poor way to add it: the model learns new facts slowly, and as it learns them its tendency to fabricate grows (Gekhman et al., 2024).</li>
+  </ul>
+  <h3 class="sub">Confidence threshold and measurement</h3>
+  <div class="lab">
+    <p class="lab-title">Move the confidence threshold below which the model says “I don’t know”. Compare the score under 0/1 grading and under grading with a penalty for errors, and find the point where abstaining pays off</p>
+    <label class="ctl"><span>Answer only when confidence is above: <b id="haluTv"></b></span><input type="range" id="haluTh" min="0" max="0.95" step="0.05" value="0"></label>
+    <div class="stats"><div class="stat"><b id="haluCov"></b><span>of questions answered</span></div><div class="stat"><b id="haluErr"></b><span>errors among the answers</span></div><div class="stat"><b id="haluS1"></b><span>points per 100 questions under 0/1 grading, as in most benchmarks</span></div><div class="stat"><b id="haluS2"></b><span>points per 100 questions when an error costs −1</span></div></div>
+    <div class="callout" id="haluThMsg" aria-live="polite"></div>
+    <p class="hint">An illustrative model: 1,000 questions, half easy and half hard, and perfect calibration, meaning that at 70% confidence it is right 70% of the time. Illustrative numbers, not a benchmark result. Grading with a penalty for errors is the proposal from Kalai et al., “Why Language Models Hallucinate” (2025).</p>
+  </div>
+  <ul class="notes">
+    <li>Choose the threshold by the cost of a mistake and measure it on your own set (see “Evals”): correct, wrong and abstained answers separately, plus questions whose answer is deliberately missing from the sources. Accuracy alone rewards guessing; error rate alone rewards silence.</li>
+    <li>Model confidence from <code>logprobs</code> is not a measure of truth. A model can be confident in an error, confidence is spread across different phrasings of the same answer, and post-training hurts calibration: in the GPT-4 report the base model was well calibrated on MMLU questions, and noticeably worse after post-training. Without sources, consistency is a better signal: sample the same answer several times and check whether the samples mean the same thing (semantic entropy, Farquhar et al., Nature 2024). Guessed facts change between samples; known ones stay put.</li>
+    <li>Check faithfulness and citations in code. First, that the cited passage exists verbatim in the document. Native citations in APIs, for example in Claude, guarantee a correct pointer into the document, but not that the passage supports the claim. Then, claim by claim, whether the passage supports it: an NLI model or an LLM judge with a yes/no verdict.</li>
+  </ul>
+</section>

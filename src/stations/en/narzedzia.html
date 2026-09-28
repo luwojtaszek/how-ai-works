@@ -1,0 +1,46 @@
+<section class="station" id="narzedzia" data-hue="prob">
+  <h2>Tools (function calling)</h2>
+  <p class="lede">The model runs no code. It gets a list of tools, each with a name, a description and an argument schema, and when it decides it needs one, it writes a call instead of an answer: your code runs it and sends back the result.</p>
+  <div class="lab">
+    <p class="lab-title">Change the quality of the tool descriptions and toggle parallel calls, then step through the exchange. Watch which tool the model reaches for, how many requests it costs and whether the answer is true</p>
+    <p class="tl-q"><b>User:</b> What will the weather be like in Manchester tomorrow morning, and will the 8:15 train to London run on time?</p>
+    <div class="row" id="tlModes" role="group" aria-label="Quality of tool descriptions"></div>
+    <div class="row"><button class="btn ghost" id="tlPar" type="button" aria-pressed="true">Parallel calls</button></div>
+    <p class="hint">The definitions sent along with the question: name, arguments and description.</p>
+    <div class="tl-tools" id="tlTools"></div>
+    <div class="tl-pick" id="tlPick"></div>
+    <p class="hint">The bars show how the model spreads its odds across the tools for each part of the question. In this run it picked the tallest bar; with a different sample it could pick another one (see “The next token”). Illustrative numbers, not a measurement of a real model.</p>
+    <div id="tlPlayer" style="margin-top:16px"></div>
+    <div class="stages" id="tlStages"></div>
+    <div class="out tl-json" id="tlJson" tabindex="0" role="region" aria-label="Raw exchange between your code and the model"></div>
+    <div class="callout" id="tlMsg" aria-live="polite"></div>
+    <div class="stats"><div class="stat"><b id="tlDef"></b><span>definition tokens in every request</span></div><div class="stat"><b id="tlReq"></b><span>requests to the model</span></div><div class="stat"><b id="tlCalls"></b><span>tool calls</span></div><div class="stat"><b id="tlTot"></b><span>tokens spent on definitions alone in this conversation</span></div></div>
+    <p class="hint">A simplified, provider-neutral format: no API accepts it as is, and each names the fields differently (OpenAI, for example, returns arguments as a JSON string). Tokens are estimated from the length of the minified definition JSON: about 4 characters per token for English descriptions, closer to 3 for Polish.</p>
+  </div>
+  <h3 class="sub">What a call looks like</h3>
+  <ul class="notes">
+    <li>The model has no access to the internet, a database or your computer. All it can do is write, in an agreed format, “call weather_forecast for Manchester for tomorrow”. The result comes back to it as another message, and it reads it like any other text. How this turns into multi-step work is covered in “The agent loop”.</li>
+    <li>Definitions go into the prompt as text in a format the model knows from training, like the roles in “How a model sees a chat”. A call is ordinary tokens too: the API extracts it and returns it as a separate field with an ID, a name and arguments, and the stop reason says the model is waiting for a result. You run several calls from one response concurrently and send back all the results, each with its call’s ID. When order matters, you turn parallel calls off (<code>parallel_tool_calls: false</code> in OpenAI, <code>disable_parallel_tool_use</code> in Anthropic).</li>
+    <li><code>tool_choice</code>: <code>auto</code> (the default, the model decides), <code>required</code> or <code>any</code> (it must call one of them), a specific tool (e.g. for extracting data into a schema), <code>none</code> (calls not allowed). Forcing a call on every turn won’t let the model finish, so in a loop it is used only at selected steps. Forcing doesn’t work everywhere (as of September 2026): Claude Opus 5.5 and Fable 5.1 reject <code>any</code> and a specific tool with a 400 error. To extract data into a schema there, use structured outputs (see “Enforcing output format”).</li>
+    <li>Some tools are run by the provider: web search or running code in a sandbox happens on their side, and you get the finished result. Less code to write, less control over what ran and where.</li>
+    <li>Computer use and browser agents run the same loop with a screen as the tool: the model gets a screenshot, writes an action (click at x, y, type text), your code performs it and returns a fresh screenshot. Each screenshot is image input, about 1,000–1,800 tokens at Anthropic, and stays in the history, so long sessions prune old ones. Every page the agent looks at is untrusted input: text on screen can steer it like any tool result (see “Prompt injection”).</li>
+  </ul>
+  <h3 class="sub">The description is the only manual</h3>
+  <ul class="notes">
+    <li>The model chooses a tool only by its name, description and schema; it never sees the code. Write the description as you would for a new team member: what the tool does, when to use it, when not to, what format the arguments take and what it returns. For the model, two tools with similar descriptions are a coin toss, as the overlapping-tools variant shows.</li>
+    <li>What helps: names prefixed with the service (<code>rail_status</code>, <code>rail_timetable</code>), unambiguous parameters (<code>user_id</code> rather than <code>user</code>), enums instead of free text, and example calls: in Anthropic’s tests, examples in the definition raised accuracy on complex arguments from 72% to 90%. A few tools built for specific tasks beat a wrapper around every API endpoint.</li>
+    <li>You design the result too. Return only the fields that are needed, readable names instead of internal UUIDs, and trim long lists with a note on how to fetch the rest. Every token of a result stays in the context and is sent on every later turn, unless your harness clears or compacts it (see “Context engineering and memory”).</li>
+    <li>Strict mode (<code>strict</code>) is the constrained decoding from “Enforcing output format”: the arguments always match the schema. It doesn’t guarantee sensible values: the model can still guess a missing parameter or pick the wrong day.</li>
+  </ul>
+  <h3 class="sub">Every tool costs on every request</h3>
+  <ul class="notes">
+    <li>Definitions are text attached to every request, so you pay for them on every turn, even when no tool gets used. The provider adds its own hidden system prompt for tool use on top: a few hundred tokens at Anthropic, depending on the model.</li>
+    <li>Definitions sit at the start of the prompt, so they cache well (see “Prompt caching”). Adding, removing or reordering a tool mid-conversation invalidates the cache for everything after them. OpenAI has <code>allowed_tools</code> for this: it narrows the choice on a given turn without changing the list of definitions.</li>
+    <li>More tools mean a higher bill, less room in the context and a harder choice. OpenAI recommends fewer than 20 functions at a time, noting that this is a soft suggestion. Anthropic gives an example of five MCP servers with 58 tools whose definitions took about 55k tokens before the first question was asked (see “MCP”). At that scale tool search helps: the model sees a tool for searching tools and gets the full definitions only when it needs them.</li>
+  </ul>
+  <h3 class="sub">Errors and security</h3>
+  <ul class="notes">
+    <li>An error is a result too. Instead of aborting, send the model a specific message: what is wrong and how to fix it, and the model usually corrects itself on the next step. Check the arguments in code before running anything. Protect state-changing operations with an idempotency key: after a network error, your code or the model may retry the same call, and the ticket must not be bought twice.</li>
+    <li>A tool is a permission. The model can call it with wrong arguments or under the influence of text it has just read, because tool results (web pages, emails, documents) are untrusted data. Grant the least privilege needed, and make irreversible actions, such as a transfer, a deletion or a send, wait for human confirmation, enforced in code, not in the prompt. More in “Prompt injection”.</li>
+  </ul>
+</section>

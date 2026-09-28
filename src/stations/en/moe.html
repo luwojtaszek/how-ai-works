@@ -1,0 +1,30 @@
+<section class="station" id="moe" data-hue="tok">
+  <h2>Mixture of Experts</h2>
+  <p class="lede">In a Mixture of Experts (MoE) model, the MLP layer is replaced by many “experts”, and a router picks a few of them for each token. The model has a huge number of parameters but computes with only some of them per token: compute like a small model, memory like a large one.</p>
+  <div class="lab">
+    <p class="lab-title">Click the tokens and watch which experts the router picks. At the bottom: how many experts the whole sentence needs</p>
+    <div class="att-row" id="moeToks"></div>
+    <div class="experts" id="moeEx"></div>
+    <div class="stats"><div class="stat"><b>2 of 8</b><span>experts compute for one token</span></div><div class="stat"><b id="moeAll"></b><span>experts needed by the whole sentence, i.e. the batch</span></div><div class="stat"><b>13B of 47B</b><span>parameters active in Mixtral 8×7B</span></div></div>
+    <p class="hint">Simplified: one layer, 8 experts and 2 per token, as in Mixtral 8×7B (2023), and the routing is illustrative, not taken from a real model. The bar under each expert shows how often the tokens in this sentence picked it. The router looks at the token’s state in context, not just its text, so the same token in a different position can go elsewhere.</p>
+  </div>
+  <h3 class="sub">How routing works</h3>
+  <ul class="notes">
+    <li>The router is a small linear layer. From the token’s vector it computes a score for each expert, picks the top k (usually 2–8), and sums their outputs with weights derived from those scores. The choice is made separately in every MoE layer and for every token.</li>
+    <li>Experts replace only the MLP. Attention, embeddings and normalisation are shared, which is why Mixtral 8×7B has about 47 billion parameters rather than 56 billion, of which about 13 billion are active per token. Newer models have many more, smaller experts: DeepSeek-V3 has 256 routed experts and one shared expert in each MoE layer, and picks 8.</li>
+    <li>An “expert” is not a topic specialist. The Mixtral authors found no clear pattern of assignment by the text’s domain; the choice relates more to syntax, e.g. indentation in code consistently goes to the same experts.</li>
+    <li>Without load balancing the router collapses onto a few favourite experts, and the rest of the parameters barely learn. Hence an auxiliary balancing loss in training (since the first sparse MoE layers, simplified in Switch Transformer) or, in DeepSeek-V3, mainly a per-expert bias adjusted during training and used only to pick experts, plus a tiny per-sequence balancing loss.</li>
+  </ul>
+  <h3 class="sub">Consequences for serving</h3>
+  <ul class="notes">
+    <li>Every expert has to sit in memory. DeepSeek-V3 has 671 billion parameters, 37 billion of them active per token. In FP8 that is about 671 GB of weights alone, more than the 640 GB on eight H100s.</li>
+    <li>With one conversation, decode reads only the active experts, so it is as fast as a model of that active size. With a larger batch, tokens spread to almost every expert: a step reads almost the whole model, and each expert gets only part of the batch. For compute to catch up with reading, the batch has to be larger than for a dense model by roughly the ratio of total experts to selected ones (see “Why the GPU is idle”).</li>
+    <li>That is why a large MoE is spread across many GPUs by expert (expert parallelism), with an all-to-all exchange of tokens between GPUs in every layer. DeepSeek-V3 decodes on 320-GPU units, one expert per GPU, and duplicates the most frequently picked experts, because the most loaded expert sets the time of the whole step.</li>
+  </ul>
+  <h3 class="sub">MoE or a dense model</h3>
+  <ul class="notes">
+    <li>MoE gives more quality per unit of compute and cheaper training. A dense model of the same total size is usually better, but computes many times more per token. Most leading open-weight models since 2025 are MoE, which is why two numbers are quoted: total and active parameters (e.g. Qwen3-235B-A22B).</li>
+    <li>On hardware with large but slow memory, like a Mac with unified memory, MoE runs surprisingly fast for a single user, because it reads only the active parameters. gpt-oss-120b (117 billion parameters, 5.1 billion active) fits on a single 80 GB GPU thanks to MXFP4. For the same reason a large MoE runs on one consumer GPU if the expert weights stay in CPU RAM and attention runs on the GPU (llama.cpp <code>--cpu-moe</code> or <code>--n-cpu-moe</code>).</li>
+    <li>Self-hosting a large MoE pays off only with enough traffic to fill a batch across many GPUs. With less traffic, an API or a smaller model is cheaper (see “Open-weight models”).</li>
+  </ul>
+</section>

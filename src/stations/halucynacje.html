@@ -1,0 +1,43 @@
+<section class="station" id="halucynacje" data-hue="cost">
+  <h2>Halucynacje</h2>
+  <p class="lede">Model nie ma trybu „nie wiem”: zawsze dopisze prawdopodobny ciąg dalszy, równie pewnym tonem, gdy zna odpowiedź i gdy zgaduje. Halucynacji nie da się wyłączyć, da się je ograniczać i mierzyć.</p>
+  <div class="lab">
+    <p class="lab-title">Włączaj źródło w kontekście i zgodę na „nie wiem”, osobno i razem. Patrz, które zmyślenia znikają, które zostają i ile odpowiedzi przy tym tracisz</p>
+    <div class="row" id="haluOpts"></div>
+    <div class="scroll" style="margin-top:14px"><table class="ev" id="haluT"></table></div>
+    <div class="stats"><div class="stat"><b id="haluOk"></b><span>poprawne</span></div><div class="stat"><b id="haluBad"></b><span>zmyślone</span></div><div class="stat"><b id="haluIdk"></b><span>„nie wiem”</span></div><div class="stat"><b id="haluRate"></b><span>błędów wśród udzielonych odpowiedzi</span></div></div>
+    <div class="callout" id="haluMsg" aria-live="polite"></div>
+    <p class="hint">Symulacja poglądowa, nie pomiar żadnego modelu: odpowiedzi napisano ręcznie, żeby pokazać typowe zachowania. Wrzosowa Wola, jej muzeum, kronika gminy i artykuł Zielińskiej i Brandta są wymyślone. Zestaw celowo składa się głównie z trudnych pytań, więc proporcje nie mówią nic o skuteczności prawdziwych modeli. Wiersze, w których ocena zmieniła się po kliknięciu, są podświetlone.</p>
+  </div>
+  <h3 class="sub">Skąd się biorą</h3>
+  <ul class="notes">
+    <li>Model przewiduje następny token i zawsze jakiś zwróci. Nie ma osobnego sygnału „tu kończy się moja wiedza”, a zgadnięte zdanie jest tak samo gładkie jak prawdziwe. Wylosowanego tokena nie da się cofnąć: jeśli odpowiedź zaczęła się od „W 1978 roku”, reszta zdania będzie ten rok uzasadniać (temat „Następny token”).</li>
+    <li>Fakty, które w danych treningowych pojawiły się raz albo wcale, są w wagach zapisane słabo albo wcale. Stolicę Australii model widział tysiące razy, rok otwarcia małego muzeum najwyżej raz. Kalai i in. (OpenAI, 2025) pokazują, że dla faktów bez wzorca, takich jak daty urodzenia, odsetek halucynacji po pretrainingu wynosi w przybliżeniu co najmniej tyle, ile odsetek faktów, które w danych wystąpiły dokładnie raz.</li>
+    <li>Post-training tego nie usuwa, bo prawie wszystkie popularne benchmarki oceniają 0/1: za „nie wiem” dają zero, tak samo jak za błąd. Przy takiej ocenie wstrzymanie się nigdy nie jest optymalne, więc model trenowany i wybierany pod wynik uczy się zgadywać, jak uczeń na teście bez punktów ujemnych.</li>
+  </ul>
+  <h3 class="sub">Rodzaje</h3>
+  <ul class="notes">
+    <li>Zmyślony fakt: zła data, liczba albo nazwisko podane pewnym tonem. Zmyślone źródło: tytuł pracy, wyrok, link albo cytat, których nie ma. W 2023 roku sąd federalny w Nowym Jorku ukarał prawników grzywną 5000 USD za pismo z wyrokami wymyślonymi przez ChatGPT (sprawa Mata v. Avianca).</li>
+    <li>Niewierność źródłu: dokument leży w kontekście, a odpowiedź mu przeczy albo dodaje coś, czego w nim nie ma. W RAG to typowy błąd etapu generowania, groźny, bo przypis sprawia, że odpowiedź wygląda na sprawdzoną. Błąd rozumowania: fakty się zgadzają, ale rachunek jest zły albo wniosek nie wynika z przesłanek.</li>
+    <li>W agencie: wywołanie narzędzia z wymyślonym argumentem (identyfikator klienta, ścieżka pliku, nazwa pola) albo meldunek „wysłałem maila”, „testy przechodzą”, choć żadne narzędzie tego nie zrobiło. W kodzie: funkcje, parametry i całe pakiety, które nie istnieją. Atakujący może zarejestrować pakiet o zmyślanej przez modele nazwie i czekać, aż agent go zainstaluje.</li>
+  </ul>
+  <h3 class="sub">Co pomaga i gdzie są granice</h3>
+  <ul class="notes">
+    <li>Źródło w kontekście z przypisami (temat „RAG”) pomaga najbardziej, ale tylko wtedy, gdy wyszukiwanie znajdzie fragment z odpowiedzią. Do tego jawna zgoda na „nie wiem” i polecenie „najpierw wypisz dosłowne cytaty ze źródła, potem odpowiedz tylko na ich podstawie”. Cytat da się sprawdzić zwykłym wyszukiwaniem tekstu. Ceną jest to, że model odpowie na mniej pytań.</li>
+    <li>Narzędzia zamiast pamięci: kod albo kalkulator do rachunków, wyszukiwarka i baza do faktów, dokumentacja do API (temat „Narzędzia (function calling)”). Drugi krok sprawdzający, czyli osobne wywołanie, które czyta odpowiedź razem ze źródłami i skreśla twierdzenia bez pokrycia, łapie część błędów, ale sam też się myli.</li>
+    <li>Niższa temperatura nie leczy: temperatura 0 wybiera najbardziej prawdopodobny token, więc zmyślona data staje się po prostu powtarzalna. Rozumowanie przed odpowiedzią (temat „Modele rozumujące”) pomaga w logice i rachunkach, bo model może sprawdzić kroki, ale wiedzy, której nie ma w wagach, nie doda. Fine-tuning słabo się do tego nadaje: nowe fakty model przyswaja powoli, a gdy już je przyswoi, rośnie jego skłonność do zmyślania (Gekhman i in., 2024).</li>
+  </ul>
+  <h3 class="sub">Próg pewności i pomiar</h3>
+  <div class="lab">
+    <p class="lab-title">Przesuwaj próg pewności, poniżej którego model mówi „nie wiem”. Porównaj punkty w ocenie 0/1 i w ocenie z karą za błąd i sprawdź, przy której opłaca się wstrzymać</p>
+    <label class="ctl"><span>Odpowiadaj tylko przy pewności powyżej: <b id="haluTv"></b></span><input type="range" id="haluTh" min="0" max="0.95" step="0.05" value="0"></label>
+    <div class="stats"><div class="stat"><b id="haluCov"></b><span>pytań z odpowiedzią</span></div><div class="stat"><b id="haluErr"></b><span>błędów wśród odpowiedzi</span></div><div class="stat"><b id="haluS1"></b><span>punktów na 100 pytań w ocenie 0/1, jak w większości benchmarków</span></div><div class="stat"><b id="haluS2"></b><span>punktów na 100 pytań, gdy błąd kosztuje −1</span></div></div>
+    <div class="callout" id="haluThMsg" aria-live="polite"></div>
+    <p class="hint">Poglądowy model: 1000 pytań, połowa łatwych, połowa trudnych, i idealna kalibracja, czyli przy pewności 70% ma rację w 70% przypadków. Liczby poglądowe, nie wynik benchmarku. Ocena z karą za błąd to propozycja z pracy Kalai i in. „Why Language Models Hallucinate” (2025).</p>
+  </div>
+  <ul class="notes">
+    <li>Próg wybierasz pod koszt pomyłki i mierzysz na własnym zestawie (temat „Ewaluacje”): osobno poprawne, błędne i wstrzymane, plus pytania, na które w źródłach celowo nie ma odpowiedzi. Sama trafność nagradza zgadywanie, sam odsetek błędów nagradza milczenie.</li>
+    <li>Pewność modelu z <code>logprobs</code> nie jest miernikiem prawdy. Model bywa pewny błędu, pewność rozkłada się na różne sformułowania tej samej odpowiedzi, a post-training psuje kalibrację: w raporcie o GPT-4 model bazowy był dobrze skalibrowany na pytaniach z MMLU, a po post-trainingu wyraźnie gorzej. Lepszy sygnał bez źródeł daje spójność: kilka próbek tej samej odpowiedzi i sprawdzenie, czy znaczą to samo (semantic entropy, Farquhar i in., Nature 2024). Zgadnięte fakty zmieniają się między próbkami, znane zostają.</li>
+    <li>Wierność i przypisy sprawdzasz kodem. Najpierw, czy cytowany fragment dosłownie istnieje w dokumencie. Natywne cytowania w API, np. w Claude, gwarantują poprawny wskaźnik do dokumentu, ale nie to, że fragment popiera twierdzenie. Potem, twierdzenie po twierdzeniu, czy fragment je potwierdza: model NLI albo sędzia-LLM z oceną tak/nie.</li>
+  </ul>
+</section>

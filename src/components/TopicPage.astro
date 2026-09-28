@@ -1,0 +1,94 @@
+---
+import { existsSync } from 'node:fs';
+import Base from '../layouts/Base.astro';
+import { UI, REPO, content, root, other } from '../i18n.js';
+import { topic, fmtDate } from '../lib/content.js';
+
+const { lang, id } = Astro.props;
+const ui = UI[lang], c = content(lang), r = root(lang);
+const t = topic(lang, id);
+const s = c.st(id), x = c.x(id);
+const idx = c.order.indexOf(id), prev = c.order[idx - 1], next = c.order[idx + 1];
+// chapter.topic numbers, the same as in the table of contents
+const num = (tid) => { const gi = c.groups.findIndex((g) => g[2].includes(tid)); return `${gi + 1}.${c.groups[gi][2].indexOf(tid) + 1}`; };
+
+// station html = <section ...> lede ... </section>; extras go inside it
+// the station's h2 title becomes the page h1 and its h3 sections become h2 (one h1 per page for search engines)
+const html = t.html.replace(/<h2>/, '<h1>').replace(/<\/h2>/, '</h1>').replace(/<h3 class="sub"([^>]*)>([\s\S]*?)<\/h3>/g, '<h2 class="sub"$1>$2</h2>');
+const open = html.indexOf('>') + 1;
+const ledeEnd = html.indexOf('</p>', html.indexOf('class="lede"')) + 4;
+const close = html.lastIndexOf('</section>');
+const mdUrl = Astro.site ? new URL(`${r}${c.slug(id)}.md`, Astro.site).href : `${r}${c.slug(id)}.md`;
+const prompt = ui.aiPrompt(mdUrl, t.title);
+const gi = c.groups.findIndex((g) => g[2].includes(id));
+const desc = t.lede.length > 160 ? t.lede.slice(0, t.lede.lastIndexOf(' ', 157)) + '…' : t.lede;
+// a topic without its own preview image (not generated yet by scripts/og.sh) uses the site one
+const og = existsSync(`public/og/${lang}/${id}.png`) ? `/og/${lang}/${id}.png` : `/og/${lang}/home.png`;
+const abs = (p) => (Astro.site ? new URL(p, Astro.site).href : p);
+const jsonld = [
+  { '@context': 'https://schema.org', '@type': 'TechArticle', headline: t.title, description: desc, inLanguage: lang, dateModified: t.updated,
+    url: abs(c.path(id)), image: abs(og), articleSection: t.group, isAccessibleForFree: true,
+    author: { '@type': 'Organization', name: 'magnificode.pl', url: 'https://magnificode.pl' },
+    isPartOf: { '@type': 'WebSite', name: ui.siteName, url: abs(r) } },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: ui.siteName, item: abs(r) },
+    { '@type': 'ListItem', position: 2, name: `${ui.chapter} ${gi + 1}: ${t.group}`, item: abs(c.path(c.groups[gi][2][0])) },
+    { '@type': 'ListItem', position: 3, name: t.title, item: abs(c.path(id)) }] }];
+const minutes = Math.max(1, Math.round(t.markdown.split(/\s+/).length / 200));
+const report = `${REPO}/issues/new?title=${encodeURIComponent(`${ui.reportError}: ${t.title}`)}&body=${encodeURIComponent(abs(c.path(id)) + '\n\n')}`;
+const fix = `${REPO}/edit/main/src/stations/${lang === 'en' ? 'en/' : ''}${id}.html`;
+const sections = [...t.sections, ...(s ? [{ title: ui.interview, anchor: 'check' }] : []), ...(x.r?.length ? [{ title: ui.sources, anchor: 'sources' }] : [])];
+---
+<Base lang={lang} title={x.ht || t.title} description={desc} jsonld={jsonld} image={og} current={id} sections={sections} md={`${r}${c.slug(id)}.md`} alt={content(other(lang)).path(id)}>
+  <Fragment set:html={html.slice(0, open)} />
+  <div class="page-tools">
+    <p class="crumbs"><a href={r}>{ui.home}</a> / {ui.chapter} {c.groups.findIndex((g) => g[2].includes(id)) + 1} · {t.group}<br><span class="updated"><span>{ui.updated} <time datetime={t.updated}>{fmtDate(t.updated, lang)}</time></span> · <span>{ui.minRead(minutes)}</span></span></p>
+    <details class="ai-menu">
+      <summary>{ui.useAI}</summary>
+      <div class="ai-pop">
+        <button type="button" data-copy-md={`${r}${c.slug(id)}.md`} data-done={ui.copied}>{ui.copyMd}</button>
+        <a href={`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`} target="_blank" rel="noopener">{ui.openIn} ChatGPT ↗</a>
+        <a href={`https://claude.ai/new?q=${encodeURIComponent(prompt)}`} target="_blank" rel="noopener">{ui.openIn} Claude ↗</a>
+        <a href={`${r}${c.slug(id)}.md`}>{ui.viewMd}</a>
+      </div>
+    </details>
+  </div>
+  <Fragment set:html={html.slice(open, ledeEnd)} />
+  {x.lay && <p class="laybox"><b>{ui.lay}</b>{x.lay}</p>}
+  <Fragment set:html={html.slice(ledeEnd, close)} />
+  {s && (
+    <>
+      <h2 class="sub" id="check">{ui.interview}</h2>
+      <div class="say">
+        <p class="say-q">{s.q}</p>
+        <p class="say-a">{s.a}</p>
+        {s.alt && <details class="say-en"><summary>{ui.otherLangAnswer}</summary><p lang={other(lang)}>{s.alt}</p></details>}
+      </div>
+      {x.f?.length > 0 && (
+        <details class="fups">
+          <summary>{ui.followups} ({x.f.length})</summary>
+          <dl>{x.f.map(([q, a]) => <><dt>{q}</dt><dd>{a}</dd></>)}</dl>
+        </details>
+      )}
+    </>
+  )}
+  {x.r?.length > 0 && (
+    <>
+      <h2 class="sub" id="sources">{ui.sources}</h2>
+      <ul class="more">{x.r.map(([title, url]) => <li><a href={url} rel="noopener">{title}</a></li>)}</ul>
+    </>
+  )}
+  <p class="report"><a href={report} rel="noopener">{ui.reportError}</a> · <a href={fix} rel="noopener">{ui.suggestFix}</a></p>
+  <nav class="pager" aria-label={ui.neighbours}>
+    {prev ? <a href={c.path(prev)}><small>{ui.prev}</small>{c.titleOf(prev)}</a> : <a href={r}><small>{ui.back}</small>{ui.home}</a>}
+    {next ? <a href={c.path(next)}><small>{ui.next}</small>{c.titleOf(next)}</a> : <a href={r}><small>{ui.end}</small>{ui.home}</a>}
+  </nav>
+  <Fragment set:html="</section>" />
+  <nav class="topic-nav" aria-label={ui.neighbours}>
+    {prev ? <a class="tn-prev" href={c.path(prev)} title={`${ui.prev}: ${c.titleOf(prev)}`} aria-label={`${ui.prev}: ${c.titleOf(prev)}`}><span aria-hidden="true">←</span><span class="tn-title">{c.titleOf(prev)}</span></a>
+          : <a class="tn-prev" href={r} aria-label={ui.home}><span aria-hidden="true">←</span><span class="tn-title">{ui.home}</span></a>}
+    <span class="tn-pos">{num(id)} · {idx + 1} / {c.order.length}</span>
+    {next ? <a class="tn-next" href={c.path(next)} title={`${ui.next}: ${c.titleOf(next)}`}><span class="tn-title">{c.titleOf(next)}</span><span class="tn-go">{ui.nextShort}</span><span aria-hidden="true">→</span></a>
+          : <a class="tn-next" href={r}><span class="tn-title">{ui.home}</span><span class="tn-go">{ui.home}</span><span aria-hidden="true">→</span></a>}
+  </nav>
+</Base>

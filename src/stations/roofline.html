@@ -1,0 +1,38 @@
+<section class="station" id="roofline" data-hue="cost">
+  <h2>Czemu GPU się nudzi</h2>
+  <p class="lede">Przy generowaniu tekstu karta graficzna przez większość kroku czeka, aż wagi i KV cache przyjadą z pamięci, a liczy tylko przez ułamek tego czasu. To jedno zjawisko tłumaczy batching, kwantyzację, spekulacyjne dekodowanie i to, czemu tokeny wyjściowe są droższe od wejściowych.</p>
+  <div class="lab">
+    <p class="lab-title">Zwiększaj batch i patrz, kiedy liczenie dogoni czekanie na pamięć. Potem przełącz na prefill</p>
+    <div class="row">
+      <button class="btn ghost" id="rfDec" type="button" aria-pressed="true">Decode: po jednym tokenie</button>
+      <button class="btn ghost" id="rfPre" type="button" aria-pressed="false">Prefill: prompt 2000 tokenów</button>
+    </div>
+    <label class="ctl" style="margin-top:12px"><span>Rozmów w jednym batchu: <b id="rfBv"></b></span><input type="range" id="rfB" min="0" max="8" step="1" value="0"></label>
+    <p class="hint">Jeden krok modelu</p>
+    <div class="win-bar" id="rfBar"></div>
+    <div class="legend"><span><i style="background:var(--prob)"></i>czekanie na wagi z pamięci</span><span><i style="background:var(--cost)"></i>liczenie</span></div>
+    <div class="stats"><div class="stat"><b id="rfUtil"></b><span>czasu kroku karta liczy</span></div><div class="stat"><b id="rfUser"></b><span id="rfUserL">tokenów na sekundę dla jednej rozmowy</span></div><div class="stat"><b id="rfAll"></b><span>tokenów na sekundę łącznie</span></div></div>
+    <div class="callout" id="rfMsg" aria-live="polite"></div>
+    <p class="hint">Model poglądowy: 8 mld parametrów w BF16 (16 GB wag), jedna H100 SXM z pamięcią 3,35 TB/s i ok. 400 TFLOPS realnie osiąganej mocy (katalogowo ok. 990 TFLOPS dense BF16). Czytanie i liczenie nakładają się w czasie, więc krok trwa tyle, ile dłuższe z nich. Pasek pomija KV cache i narzuty, więc to górna granica; komunikat dolicza cache przy 4000 tokenów kontekstu na rozmowę.</p>
+  </div>
+  <h3 class="sub">Rachunek na jeden token</h3>
+  <ul class="notes">
+    <li>Krok decode daje jeden token na rozmowę, ale czyta z pamięci HBM wszystkie wagi. Model 8B w BF16 to 16 GB, które przy 3,35 TB/s czyta się ok. 4,8 ms. Sufit to więc ok. 210 tokenów na sekundę dla jednej rozmowy, niezależnie od mocy obliczeniowej karty.</li>
+    <li>Intensywność arytmetyczna to liczba operacji na bajt przeczytany z pamięci. Mnożenie wektora przez wagi to 2 operacje (mnożenie i dodawanie) na parametr, czyli na 2 bajty w BF16: ok. 1 operacja na bajt na każdą rozmowę w batchu. H100 SXM potrzebuje ok. 295 operacji na bajt katalogowo (989 TFLOPS / 3,35 TB/s) i ok. 120 przy realnie osiąganych 400 TFLOPS. Licząc same wagi, dopiero batch rzędu 100–300 rozmów zrównuje liczenie z czytaniem.</li>
+    <li>Prefill przetwarza cały prompt w jednym przebiegu: wagi przeczytane raz obsługują tysiące tokenów, więc już jeden długi prompt w pełni zajmuje kartę. Prefill wyznacza czas do pierwszego tokena (TTFT), decode czas między kolejnymi tokenami.</li>
+  </ul>
+  <h3 class="sub">Gdzie batch przestaje być darmowy</h3>
+  <ul class="notes">
+    <li>Batch dzieli koszt czytania wag, ale nie KV cache: każda rozmowa czyta własny, a attention w decode zostaje ograniczone pamięcią przy każdym batchu. W modelu 8B z GQA (jak Llama 3 8B) cache zajmuje ok. 0,125 MB na token, więc rozmowa z 32 tys. tokenów kontekstu to 4 GB. Szesnaście takich rozmów czyta w każdym kroku 64 GB cache i tylko 16 GB wag. Mechanizm opisuje „Pętla generowania i KV cache”.</li>
+    <li>Za punktem przecięcia każda kolejna rozmowa wydłuża krok wszystkim: łączna przepustowość rośnie coraz wolniej, a czas między tokenami rośnie. Dostawca wybiera punkt na tej krzywej. Ruch interaktywny wymaga mniejszego batcha i szybkich tokenów, a ruch wsadowy można pakować ciasno.</li>
+    <li>W modelu MoE jeden token czyta tylko wybranych ekspertów, ale tokeny z batcha rozchodzą się po różnych ekspertach, więc przy większym batchu czytasz prawie cały model (zobacz „Mixture of Experts”).</li>
+  </ul>
+  <h3 class="sub">Co z tego wynika dla systemu</h3>
+  <ul class="notes">
+    <li>Prędkość jednego strumienia ≈ przepustowość pamięci / bajty czytane na token (aktywne wagi plus KV cache). Stąd kwantyzacja wag do 8 lub 4 bitów przyspiesza decode prawie proporcjonalnie (zobacz „Kwantyzacja”), a spekulacyjne dekodowanie daje kilka tokenów z jednego czytania wag (zobacz „Spekulacyjne dekodowanie”).</li>
+    <li>Koszt na token to przede wszystkim rozmiar batcha. Continuous batching i PagedAttention istnieją po to, żeby w ograniczonej pamięci zmieścić jak największy batch (zobacz „Continuous batching”).</li>
+    <li>Tokeny wyjściowe są w cennikach kilka razy droższe od wejściowych (u dużych dostawców zwykle 4–8 razy). Wejście przechodzi przez prefill równolegle, a każdy token wyjścia to osobny krok decode, który zajmuje miejsce w batchu.</li>
+    <li>Prefill i decode mają inne wąskie gardła i przeszkadzają sobie na wspólnej karcie. Duże wdrożenia rozdzielają je na osobne pule (disaggregated serving): DeepSeek-V3 opisuje prefill na jednostkach po 32 GPU, a decode po 320 GPU. Taki podział obsługują też vLLM, SGLang i NVIDIA Dynamo. Na jednym serwerze konflikt łagodzi chunked prefill.</li>
+    <li>Do decode kartę wybiera się po przepustowości i pojemności pamięci, nie po TFLOPS. H200 ma tę samą moc obliczeniową co H100, ale 4,8 TB/s i 141 GB pamięci, więc przy dużych modelach i długich kontekstach generuje szybciej. Blackwell B200 (dostępny we wrześniu 2026) ma 180 GB i 8 TB/s, ale jego moc obliczeniowa urosła tak samo (ok. 280 operacji na bajt w BF16), więc wnioski z tej strony dalej obowiązują.</li>
+  </ul>
+</section>

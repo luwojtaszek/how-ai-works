@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+import { UI, REPO, root, other } from '../i18n.js';
+
+const { lang } = Astro.props;
+const ui = UI[lang], r = root(lang);
+const T = {
+  en: {
+    lede: 'What AI does in the process, how the content is checked and how to report an error.',
+    s: [
+      ['How it is written', [
+        'Topics, scope and angle are chosen by hand, and so is what goes in. Drafts, widgets and the translation between Polish and English are produced with AI agents (Claude), then reviewed and edited.',
+        'Each page follows one standard: the essence first, then the mechanism, the nuances and what it means for building systems. No filler and no marketing.',
+      ]],
+      ['How it is checked', [
+        'Every page lists the primary sources behind its claims: papers, official documentation and engineering posts. Time-sensitive facts carry a date, such as “as of September 2026”.',
+        'In September 2026 every topic went through a review against primary sources. Separate AI agents checked each page, a second round tried to refute each finding, and only confirmed corrections were applied.',
+        'Widgets use real data where the page says so (for example real tokenisers). Otherwise the numbers are illustrative, and the widget says that.',
+      ]],
+      ['Dates and changes', [
+        '“Last edited” on a page is the date of its last change. It does not mean that every fact on the page was rechecked that day.',
+        `New topics and meaningful changes are listed under <a href="${r}changelog/">${ui.whatsNew}</a>, also as an <a href="${r}changelog.xml">RSS feed</a>.`,
+      ]],
+      ['License', [`The text and images are available under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>: you can quote, translate and adapt them, including in your own materials, as long as you link to the source. The code is MIT. Everything is in the <a href="${REPO}">repository on GitHub</a>.`]],
+      ['For AI assistants', [`The whole guide is available as plain text: <a href="${r}llms.txt">llms.txt</a>, <a href="${r}llms-full.txt">llms-full.txt</a>, and every page as Markdown (the “Use with AI” menu on each page).`]],
+      ['Found an error?', [`Report it as an <a href="${REPO}/issues">issue on GitHub</a>, or fix it yourself in a <a href="${REPO}/pulls">pull request</a>: the whole guide is text in the repository. At the bottom of every page, “${ui.reportError}” opens an issue with the page address filled in, and “${ui.suggestFix}” opens that page’s source for editing. Corrections show up in ${ui.whatsNew}.`]],
+    ],
+  },
+  pl: {
+    lede: 'Co w tym procesie robi AI, jak treść jest sprawdzana i jak zgłosić błąd.',
+    s: [
+      ['Jak powstaje', [
+        'Tematy, zakres i ujęcie są wybierane ręcznie, podobnie jak to, co trafia na stronę. Szkice, widżety i tłumaczenie między polskim a angielskim powstają z pomocą agentów AI (Claude), a potem są przeglądane i redagowane.',
+        'Każda strona trzyma się jednego standardu: najpierw esencja, potem mechanizm, niuanse i to, co z tego wynika przy budowaniu systemów. Bez waty i bez marketingu.',
+      ]],
+      ['Jak jest sprawdzany', [
+        'Każda strona podaje źródła, na których stoją jej twierdzenia: publikacje, oficjalną dokumentację i wpisy inżynierskie. Fakty, które się starzeją, mają datę, np. „stan na wrzesień 2026”.',
+        'We wrześniu 2026 każdy temat przeszedł przegląd względem źródeł pierwotnych. Osobni agenci AI sprawdzili każdą stronę, druga runda próbowała obalić każde znalezisko, a wprowadzone zostały tylko potwierdzone poprawki.',
+        'Widżety używają prawdziwych danych tam, gdzie strona tak mówi (np. prawdziwe tokenizery). W pozostałych liczby są poglądowe i widżet to zaznacza.',
+      ]],
+      ['Daty i zmiany', [
+        '„Ostatnia zmiana” na stronie to data jej ostatniej edycji. Nie oznacza, że tego dnia sprawdzono ponownie każdy fakt na stronie.',
+        `Nowe tematy i istotne zmiany są w <a href="${r}changelog/">${ui.whatsNew}</a>, także jako <a href="${r}changelog.xml">kanał RSS</a>.`,
+      ]],
+      ['Licencja', [`Tekst i obrazy są dostępne na licencji <a href="https://creativecommons.org/licenses/by/4.0/deed.pl">CC BY 4.0</a>: możesz je cytować, tłumaczyć i przerabiać, także we własnych materiałach, pod warunkiem linku do źródła. Kod jest na licencji MIT. Wszystko jest w <a href="${REPO}">repozytorium na GitHubie</a>.`]],
+      ['Dla asystentów AI', [`Cały przewodnik jest dostępny jako tekst: <a href="${r}llms.txt">llms.txt</a>, <a href="${r}llms-full.txt">llms-full.txt</a>, a każda strona jako Markdown (menu „Użyj z AI” na każdej stronie).`]],
+      ['Znalazłeś błąd?', [`Zgłoś go jako <a href="${REPO}/issues">issue na GitHubie</a> albo popraw sam w <a href="${REPO}/pulls">pull requeście</a>: cały przewodnik to tekst w repozytorium. Na dole każdej strony „${ui.reportError}” otwiera issue z wpisanym adresem strony, a „${ui.suggestFix}” otwiera źródło tej strony do edycji. Poprawki trafiają do ${ui.whatsNew}.`]],
+    ],
+  },
+}[lang];
+---
+<Base lang={lang} title={ui.about} description={T.lede} alt={`${root(other(lang))}about/`}>
+  <section class="station changelog">
+    <p class="crumbs"><a href={r}>{ui.home}</a></p>
+    <h1>{ui.about}</h1>
+    <p class="lede">{T.lede}</p>
+    {T.s.map(([h, ps]) => <><h2 class="sub">{h}</h2>{ps.map((p) => <p set:html={p} />)}</>)}
+  </section>
+</Base>
