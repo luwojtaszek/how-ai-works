@@ -99,6 +99,7 @@ a:hover{text-decoration-color:currentColor}
 .search-field svg{width:15px;height:15px;flex:none}
 .search-field span{flex:1}
 kbd{font:500 .72rem var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--muted);background:var(--paper)}
+:root[data-mac] .k-ctrl,:root:not([data-mac]) .k-cmd{display:none}
 .search-btn{display:none}
 #search{width:min(640px,calc(100vw - 24px));max-height:min(620px,calc(100dvh - 48px));margin:8vh auto auto;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);box-shadow:0 20px 60px rgb(0 0 0 / .25)}
 #search[open]{display:flex;flex-direction:column}
