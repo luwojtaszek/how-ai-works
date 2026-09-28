@@ -18,25 +18,25 @@
     <label class="ctl" style="max-width:260px"><span>Model size</span><select id="qModel"><option value="8">8 billion parameters</option><option value="70" selected>70 billion parameters</option><option value="405">405 billion parameters</option></select></label>
     <div class="stats"><div class="stat"><b id="qGb"></b><span id="qGbL">for the weights alone</span></div><div class="stat"><b id="qGb16"></b><span>at 16 bits</span></div></div>
     <div class="fit" id="qFit"></div>
-    <p class="hint">Counted as the weights plus 15% headroom, enough for one person’s short context. Serving many conversations needs much more memory for the KV cache. Block scales add a few per cent.</p>
+    <p class="hint">Calculated as the weights plus 15% headroom, enough for one person’s short context. Serving many conversations needs much more memory for the KV cache. Block scales add a few per cent.</p>
   </div>
-  <h3 class="sub">How it works</h3>
+  <h3 class="sub">How quantisation works</h3>
   <ul class="notes">
     <li>Each weight is divided by a scale, rounded to a number from a small range (−8 to 7 in INT4; a symmetric grid, as in the widget, uses −7 to 7, i.e. 15 levels) and stored like that. At compute time it is multiplied back by the scale. The error is rounding noise, and the network tolerates small noise well.</li>
     <li>Outliers are the problem. One large value stretches the grid, and the rest of the weights land on a few points around zero. That is why the scale is computed separately for small groups, typically 16–128 weights. In the activations of models from about 6.7 billion parameters up, systematic outliers appear in a few channels (Dettmers et al., LLM.int8(), 2022).</li>
-    <li>Post-training quantisation (PTQ) works on a finished model in minutes or hours. GPTQ and AWQ use a small sample of calibration data to round where it hurts the layer’s output least. Quantisation-aware training (QAT) copes better with 4 bits and below, but it requires training, so it is usually done by the model’s author.</li>
+    <li>Post-training quantisation (PTQ) works on a finished model in minutes or hours. GPTQ and AWQ use a small sample of calibration data to round the weights so that the layer’s output changes as little as possible. Quantisation-aware training (QAT) produces a model that copes better with 4 bits and below, but it means extra training, so it is usually done by the model’s author.</li>
   </ul>
-  <h3 class="sub">Formats and what they speed up</h3>
+  <h3 class="sub">Quantisation formats and what they speed up</h3>
   <ul class="notes">
     <li>Weight-only quantisation, e.g. W4A16 (weights in 4 bits, activations in 16), reduces the bytes read in decode, so it speeds up generation at small batch sizes. The multiplication still runs in 16 bits, so prefill and large batches gain almost nothing.</li>
-    <li>FP8 for weights and activations (W8A8) computes on the tensor cores in FP8: an H100 reaches about 1,979 TFLOPS dense in it versus 989 in BF16. So it also speeds up prefill and large batches. Kurtic et al. (2024) measure FP8 W8A8 as practically lossless, INT8 W8A8 at 1–3% loss, and W4A16 as closer to 8 bits than expected.</li>
-    <li>The new 4-bit formats are floating-point numbers with a scale per block. MXFP4 uses blocks of 32 weights with a power-of-two scale, about 4.25 bits per weight; OpenAI released the expert weights of gpt-oss in it. NVFP4 uses blocks of 16 with an FP8 scale plus an extra per-tensor scale, about 4.5 bits, and is computed in hardware on Blackwell GPUs.</li>
+    <li>FP8 for weights and activations (W8A8) lets the tensor cores compute in FP8: an H100 reaches about 1,979 dense TFLOPS versus 989 in BF16. So it also speeds up prefill and large batches. Kurtic et al. (2024) measure FP8 W8A8 as practically lossless, INT8 W8A8 at 1–3% loss, and W4A16 as closer to 8-bit quality than expected.</li>
+    <li>The new 4-bit formats are floating-point numbers with a scale per block. MXFP4 uses blocks of 32 weights with a power-of-two scale, about 4.25 bits per weight; OpenAI released the expert weights of gpt-oss in this format. NVFP4 uses blocks of 16 with an FP8 scale plus an extra per-tensor scale, about 4.5 bits, and has native hardware support on Blackwell GPUs.</li>
     <li>The KV cache gets quantised too. An FP8 cache takes half the memory per token, so with long contexts it frees more room for the batch than squeezing the weights further (see “The generation loop and KV cache”).</li>
   </ul>
-  <h3 class="sub">What you lose and how to decide</h3>
+  <h3 class="sub">What you lose and how to choose a format</h3>
   <ul class="notes">
-    <li>Rule of thumb, depending on the model and method: 8 bits is practically lossless, 4 bits with a good method is a small loss, 3 bits and below drop off fast. Losses show up first in long reasoning, code, maths and less common languages, and a benchmark average can hide them.</li>
+    <li>Rule of thumb, depending on the model and method: 8 bits is practically lossless, 4 bits with a good method is a small loss, and at 3 bits and below quality drops off fast. Losses show up first in long reasoning, code, maths and less common languages, and a benchmark average can hide them.</li>
     <li>For the same memory, a larger model in 4 bits usually beats a smaller one in 16. After more than 35,000 experiments, Dettmers and Zettlemoyer (2022) found 4 bits almost always optimal for a fixed total number of model bits.</li>
-    <li>The choice depends on traffic and hardware. On Hopper GPUs such as the H100, Kurtic et al. recommend W4A16 for single requests and small batches and FP8 W8A8 for heavy traffic with continuous batching. On Blackwell, NVFP4 for weights and activations (W4A4) runs on the FP4 tensor cores at 2–3× the FP8 rate, so 4 bits can win under heavy traffic too, at a somewhat larger loss than FP8: Red Hat measures about 99% of BF16 accuracy for 70B+ models and 95–98% for 7–14B ones. Check quality on your own eval set, because the same model can be quantised differently by different hosts (see “Open-weight models” and “Evals”).</li>
+    <li>The choice depends on traffic and hardware. On Hopper GPUs such as the H100, Kurtic et al. recommend W4A16 for single requests and small batches, and FP8 W8A8 for heavy traffic with continuous batching. On Blackwell, NVFP4 for weights and activations (W4A4) runs on the FP4 tensor cores at 2–3× the FP8 rate, so 4 bits can win under heavy traffic too, at a somewhat larger loss than FP8: Red Hat measures about 99% of BF16 accuracy for 70B+ models and 95–98% for 7–14B ones. Check quality on your own eval set, because the same model can be quantised differently by different hosts (see “Open-weight models” and “Evals”).</li>
   </ul>
 </section>

@@ -1,6 +1,6 @@
 <section class="station" id="macierze" data-hue="tok">
   <h2>Vectors and matrices</h2>
-  <p class="lede">Every token becomes a vector of numbers that passes through dozens of layers. A layer is mostly that vector multiplied by large, fixed weight matrices, which is why a model’s cost is counted in parameters, bytes and operations.</p>
+  <p class="lede">Every token becomes a vector of numbers that passes through dozens of layers. A layer mostly multiplies that vector by large, fixed weight matrices, which is why a model’s cost is counted in parameters, bytes and operations.</p>
   <div class="lab">
     <p class="lab-title">Click a number in the new vector to see which multiplications produced it</p>
     <div class="scroll"><div class="mm" id="mm"></div></div>
@@ -13,7 +13,7 @@
     <li>The embedding is a plain lookup, not a multiplication: the token ID selects a row of a table. In Llama 3 70B the table is 128,256 × 8192 numbers, over 1 billion parameters.</li>
     <li>A layer has two steps. Attention mixes information between tokens (see “Attention”). The MLP processes each token on its own: it expands the vector from 8192 to 28,672 numbers, passes it through a non-linearity (SwiGLU in Llama) and projects it back down. Without the non-linearity, consecutive multiplications could be collapsed into a single matrix. In Llama 3 70B the MLP holds over 80% of a layer’s parameters.</li>
     <li>Each step adds its output to the vector instead of replacing it: <code>x = x + Attn(Norm(x))</code>, then <code>x = x + MLP(Norm(x))</code>. This vector is the residual stream, a shared bus that layers read from and write to. The addition gives the gradient a straight path through dozens of layers, and normalisation (RMSNorm in Llama) keeps the scale of the numbers in check.</li>
-    <li>At the end, the last token’s vector is multiplied by an 8192 × vocabulary-size matrix. That yields one logit per token, and a softmax turns the logits into probabilities (see “The next token”).</li>
+    <li>At the end, the last token’s vector is multiplied by an 8192 × vocabulary-size matrix. That yields one logit per token in the vocabulary, and a softmax turns the logits into probabilities (see “The next token”).</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Click a concept to see its nearest neighbours in vector space</p>
@@ -29,7 +29,7 @@
   <h3 class="sub">What this means for cost</h3>
   <ul class="notes">
     <li>Memory for the weights is parameters × bytes per parameter: a 70B model takes about 140 GB in BF16 and just under 40 GB at 4 bits (see “Quantisation”).</li>
-    <li>Compute: about 2 operations (a multiply and an add) per parameter per token at inference, and about 6 in training because of the backward pass. A 70B model needs about 140 GFLOP per token, plus attention, whose cost grows with context and in Llama 3 70B catches up with the weights at about 100k tokens (see “Attention”). In MoE only the active parameters count (see “Mixture of Experts”).</li>
-    <li>Matrix multiplication is thousands of independent dot products, so it suits GPUs perfectly. Yet when generating a single token, the card mostly waits for the weights to be read from memory (see “Why the GPU is idle”).</li>
+    <li>Compute: about 2 operations (a multiply and an add) per parameter per token at inference, and about 6 in training because of the backward pass. A 70B model needs about 140 GFLOP per token, plus attention, whose cost grows with context and in Llama 3 70B catches up with the weights over a prompt of about 100k tokens (see “Attention”). In MoE only the active parameters count (see “Mixture of Experts”).</li>
+    <li>Matrix multiplication is thousands of independent dot products, so it suits GPUs perfectly. Yet when generating a single token, the GPU mostly waits for the weights to be read from memory (see “Why the GPU is idle”).</li>
   </ul>
 </section>

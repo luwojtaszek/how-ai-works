@@ -1,6 +1,6 @@
 <section class="station" id="spec" data-hue="att">
-  <h2>Spekulacyjne dekodowanie</h2>
-  <p class="lede">Tani mechanizm zgaduje kilka następnych tokenów, a duży model sprawdza je wszystkie w jednym przebiegu i przyjmuje te, które sam by wybrał. Tekst jest taki sam jak bez spekulacji, a z jednego czytania wag powstaje kilka tokenów.</p>
+  <h2>Dekodowanie spekulacyjne</h2>
+  <p class="lede">W dekodowaniu spekulacyjnym tani mechanizm zgaduje kilka następnych tokenów, a duży model sprawdza je w jednym przebiegu i przyjmuje te, które sam by wybrał. Tekst jest taki sam jak bez spekulacji, a z jednego czytania wag powstaje kilka tokenów.</p>
   <div class="lab">
     <p class="lab-title">Przejdź trzy rundy i patrz, ile tokenów przyjmuje jedna weryfikacja i ile przebiegów dużego modelu oszczędzasz</p>
     <div id="spPlayer"></div>
@@ -8,7 +8,7 @@
     <p class="hint" id="spWho" aria-live="polite"></p>
     <div class="spec-row" id="spRow"></div>
     <div class="legend"><span><i style="background:var(--att-t);box-shadow:inset 0 0 0 2px var(--att)"></i>propozycja małego modelu</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>przyjęta</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 2px var(--cost)"></i>odrzucona</span><span><i style="background:var(--tok-t);box-shadow:inset 0 0 0 2px var(--tok)"></i>token dużego modelu</span></div>
-    <div class="stats"><div class="stat"><b id="spTok"></b><span>tokenów wygenerowanych</span></div><div class="stat"><b id="spBig"></b><span>przebiegów dużego modelu</span></div><div class="stat"><b id="spBase"></b><span>przebiegów bez spekulacji</span></div><div class="stat"><b id="spTime"></b><span>tyle czasu, ile bez spekulacji</span></div></div>
+    <div class="stats"><div class="stat"><b id="spTok"></b><span>tokenów wygenerowanych</span></div><div class="stat"><b id="spBig"></b><span>przebiegów dużego modelu</span></div><div class="stat"><b id="spBase"></b><span>przebiegów bez spekulacji</span></div><div class="stat"><b id="spTime"></b><span>czasu potrzebnego bez spekulacji</span></div></div>
     <p class="hint">Propozycje i trafienia dobrane ręcznie. Przebieg małego modelu liczony jako 1/10 przebiegu dużego, a przebieg weryfikujący kilka tokenów tyle samo co zwykły.</p>
   </div>
   <h3 class="sub">Jak działa weryfikacja</h3>
@@ -19,14 +19,14 @@
   </ul>
   <h3 class="sub">Od czego zależy zysk</h3>
   <ul class="notes">
-    <li>Przy współczynniku akceptacji α i γ propozycjach runda daje średnio (1 − α^(γ+1)) / (1 − α) tokenów. Dla α = 0,8 i γ = 4 to ok. 3,4 tokenu na przebieg dużego modelu. Zysk czasu jest mniejszy, bo draft też kosztuje, a odrzucone propozycje to praca wyrzucona.</li>
+    <li>Przy współczynniku akceptacji α i γ propozycjach runda daje średnio (1 − α^(γ+1)) / (1 − α) tokenów. Dla α = 0,8 i γ = 4 to ok. 3,4 tokenu na przebieg dużego modelu. Zysk czasu jest mniejszy, bo draft też kosztuje, a odrzucone propozycje to zmarnowana praca.</li>
     <li>Akceptacja zależy od tekstu. Kod, JSON, powtórzenia i niska temperatura dają wysokie α, a twórczy tekst przy wysokiej temperaturze niskie. Leviathan i in. zmierzyli przyspieszenie 2–3× na T5-XXL. DeepSeek-V3 podaje 85–90% akceptacji drugiego tokena z modułu MTP i 1,8× więcej tokenów na sekundę.</li>
-    <li>Zysk maleje wraz z batchem. Wagi i tak czyta się raz dla całego batcha, więc gdy krok staje się ograniczony mocą obliczeniową, dodatkowe pozycje kosztują realną moc: przy dużym batchu i krótkich kontekstach spekulacja może wyjść na minus. Z KV cache jest inaczej, bo każda rozmowa czyta własny. Przy długich kontekstach decode zostaje ograniczony pamięcią nawet przy dużym batchu, a draft tani w czytaniu cache nadal podnosi przepustowość (MagicDec: do 2,5× dla Llama 3.1 8B przy batchu 32–256; EAGLE-3: 1,38× przy batchu 64 w SGLang). vLLM poleca spekulację głównie przy niskim i średnim obciążeniu, ale EAGLE i MTP ocenia jako średni do dużego zysk także przy dużym.</li>
+    <li>Zysk maleje wraz ze wzrostem batcha. Wagi i tak czyta się raz dla całego batcha, więc gdy krok staje się ograniczony mocą obliczeniową, dodatkowe pozycje kosztują realną moc: przy dużym batchu i krótkich kontekstach spekulacja może wyjść na minus. Z KV cache’em jest inaczej, bo każda rozmowa czyta własny. Przy długich kontekstach decode zostaje ograniczony pamięcią nawet przy dużym batchu, a draft, który czyta niewiele z cache’u, nadal podnosi przepustowość (MagicDec: do 2,5× dla Llama 3.1 8B przy batchu 32–256; EAGLE-3: 1,38× przy batchu 64 w SGLang). vLLM poleca spekulację głównie przy niskim i średnim obciążeniu, ale dla EAGLE i MTP podaje średni lub duży zysk także przy dużym.</li>
   </ul>
   <h3 class="sub">Warianty i wybór w praktyce</h3>
   <ul class="notes">
     <li>Osobny mały model z tej samej rodziny i z tym samym tokenizerem: prosty w użyciu, ale zajmuje pamięć i trzeba go serwować obok dużego.</li>
-    <li>Draft dopięty do dużego modelu: dodatkowe głowice przewidujące kolejne pozycje (Medusa), lekka warstwa pracująca na stanach ukrytych dużego modelu (EAGLE, obecnie EAGLE-3) albo moduł MTP, który model ma z treningu, jak DeepSeek-V3. Zwykle trafia lepiej niż osobny mały model. Wynik jest dokładny tylko przy standardowej akceptacji i niezmienionym dużym modelu: Medusa-2, która dotrenowuje duży model razem z głowicami, i „typical acceptance” z Medusy wymieniają dokładność na szybkość.</li>
+    <li>Draft dopięty do dużego modelu: dodatkowe głowice przewidujące kolejne pozycje (Medusa), lekka warstwa pracująca na stanach ukrytych dużego modelu (EAGLE, obecnie EAGLE-3) albo moduł MTP wytrenowany razem z modelem, jak w DeepSeek-V3. Zwykle trafia lepiej niż osobny mały model. Wynik jest dokładny tylko przy standardowej akceptacji i niezmienionym dużym modelu: Medusa-2, która dotrenowuje duży model razem z głowicami, i „typical acceptance” z Medusy wymieniają dokładność na szybkość.</li>
     <li>Bez żadnego modelu: dopasowanie n-gramów kopiuje ciąg dalszy z promptu (prompt lookup). Działa przy edycji kodu, RAG i streszczeniach, gdzie odpowiedź powtarza fragmenty wejścia.</li>
     <li>Metodę i γ wybierasz na podstawie α zmierzonego na własnym ruchu i sprawdzasz zysk przy docelowym obciążeniu, a nie na pojedynczym żądaniu. W API dostawców spekulacja zwykle działa niewidocznie. Wyjątkiem są funkcje w rodzaju Predicted Outputs w API OpenAI, gdzie sam podajesz przewidywany tekst, na przykład plik przed edycją (stan na wrzesień 2026: tylko modele GPT-4o i GPT-4.1, bez wywołań funkcji; odrzucone przewidywane tokeny są płatne jak wyjście).</li>
   </ul>

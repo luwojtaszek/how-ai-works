@@ -9,6 +9,8 @@ const ui = UI[lang], c = content(lang), r = root(lang);
 const abs = (p) => (Astro.site ? new URL(p, Astro.site).href : p);
 const canonical = abs(Astro.url.pathname);
 const fullTitle = title ? `${title} · ${ui.siteName}` : `${ui.siteName}: ${ui.tagline}`;
+// topic pages: the search title alone fits Google's ~60 chars (it shows the site name separately); social cards keep the suffix
+const pageTitle = current ? title : fullTitle;
 const desc = description || ui.siteDesc;
 const hrefs = { [lang]: Astro.url.pathname, [other(lang)]: alt || root(other(lang)) };
 const gi = current ? c.groups.findIndex((g) => g[2].includes(current)) : -1;
@@ -20,12 +22,14 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>{fullTitle}</title>
+<title>{pageTitle}</title>
 <meta name="description" content={desc}>
+{Astro.props.noindex ? <meta name="robots" content="noindex"> : <>
 <link rel="canonical" href={canonical}>
 <link rel="alternate" hreflang="en" href={abs(hrefs.en)}>
 <link rel="alternate" hreflang="pl" href={abs(hrefs.pl)}>
 <link rel="alternate" hreflang="x-default" href={abs(hrefs.en)}>
+</>}
 <meta property="og:type" content={title ? 'article' : 'website'}>
 <meta property="og:title" content={fullTitle}>
 <meta property="og:description" content={desc}>
@@ -114,6 +118,7 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
       <a href={REPO}>GitHub</a>
       <a href={`${r}changelog.xml`}>RSS</a>
       <a href={`${r}llms.txt`}>llms.txt</a>
+      <a href={hrefs[other(lang)]} hreflang={other(lang)} lang={other(lang)} title={ui.switchLabel}>{ui.switchTo}</a>
     </nav>
     <p class="foot-meta"><span>by <a href="https://magnificode.pl">magnificode.pl</a></span><span>{ui.lastUpdate}: {fmtDate(SITE_UPDATED, lang)}</span></p>
   </footer>

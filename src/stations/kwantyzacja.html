@@ -20,23 +20,23 @@
     <div class="fit" id="qFit"></div>
     <p class="hint">Liczone jako wagi plus 15% zapasu, co wystarcza na krótki kontekst jednej osoby. Obsługa wielu rozmów wymaga dużo więcej pamięci na KV cache. Skale bloków dokładają kilka procent.</p>
   </div>
-  <h3 class="sub">Jak to działa</h3>
+  <h3 class="sub">Jak działa kwantyzacja</h3>
   <ul class="notes">
-    <li>Każdą wagę dzieli się przez skalę, zaokrągla do liczby z małego zakresu (w INT4 od −8 do 7; siatka symetryczna, jak w widżecie, używa od −7 do 7, czyli 15 poziomów) i tak zapisuje. Przy liczeniu mnoży się ją z powrotem przez skalę. Błąd to szum zaokrągleń, a sieć jest na drobny szum odporna.</li>
+    <li>Każdą wagę dzieli się przez skalę, zaokrągla do liczby z małego zakresu (w INT4 od −8 do 7; siatka symetryczna, jak w widżecie, używa wartości od −7 do 7, czyli 15 poziomów) i tak zapisuje. Przy liczeniu mnoży się ją z powrotem przez skalę. Błąd to szum zaokrągleń, a sieć jest na drobny szum odporna.</li>
     <li>Problemem są wartości odstające. Jedna duża liczba rozciąga siatkę i reszta wag ląduje w kilku punktach wokół zera. Dlatego skalę liczy się osobno dla małych grup, zwykle 16–128 wag. W aktywacjach modeli od ok. 6,7 mld parametrów pojawiają się systematyczne wartości odstające w kilku kanałach (Dettmers i in., LLM.int8(), 2022).</li>
-    <li>Kwantyzacja po treningu (PTQ) działa na gotowym modelu w minuty lub godziny. GPTQ i AWQ używają małej próbki danych kalibracyjnych, żeby zaokrąglać tam, gdzie mniej szkodzi wyjściu warstwy. Trening z symulowaną kwantyzacją (QAT) lepiej znosi 4 bity i mniej, ale wymaga treningu, więc robi go zwykle autor modelu.</li>
+    <li>Kwantyzacja po treningu (PTQ) działa na gotowym modelu w minuty lub godziny. GPTQ i AWQ używają małej próbki danych kalibracyjnych, żeby zaokrąglać tak, by jak najmniej zaszkodzić wyjściu warstwy. Trening z symulowaną kwantyzacją (QAT) daje model, który lepiej znosi 4 bity i mniej, ale to dodatkowy trening, więc robi go zwykle autor modelu.</li>
   </ul>
-  <h3 class="sub">Formaty i co przyspieszają</h3>
+  <h3 class="sub">Formaty kwantyzacji i co przyspieszają</h3>
   <ul class="notes">
     <li>Kwantyzacja samych wag, np. W4A16 (wagi w 4 bitach, aktywacje w 16), zmniejsza liczbę bajtów czytanych w decode, więc przyspiesza generowanie przy małym batchu. Mnożenie i tak idzie w 16 bitach, więc prefill i duże batche prawie nie zyskują.</li>
-    <li>FP8 dla wag i aktywacji (W8A8) liczy na rdzeniach tensorowych w FP8: H100 osiąga w nim ok. 1979 TFLOPS dense wobec 989 w BF16. Przyspiesza więc też prefill i duże batche. Kurtic i in. (2024) mierzą FP8 W8A8 jako praktycznie bezstratne, INT8 W8A8 jako 1–3% straty, a W4A16 jako bliższe 8 bitom, niż się spodziewano.</li>
-    <li>Nowe formaty 4-bitowe to liczby zmiennoprzecinkowe ze skalą na blok. MXFP4 ma bloki po 32 wagi i skalę będącą potęgą dwójki, ok. 4,25 bita na wagę; w nim OpenAI wydało wagi ekspertów gpt-oss. NVFP4 ma bloki po 16 ze skalą w FP8 i dodatkową skalą na tensor, ok. 4,5 bita, i jest liczony sprzętowo na kartach Blackwell.</li>
-    <li>KV cache też się kwantyzuje. Cache w FP8 zajmuje połowę pamięci na token, więc przy długich kontekstach daje więcej miejsca na batch niż dalsze ściskanie wag (zobacz „Pętla generowania i KV cache”).</li>
+    <li>FP8 dla wag i aktywacji (W8A8) pozwala liczyć na rdzeniach tensorowych w FP8: H100 osiąga w nim ok. 1979 TFLOPS dense wobec 989 w BF16. Przyspiesza więc też prefill i duże batche. W pomiarach Kurtica i in. (2024) FP8 W8A8 jest praktycznie bezstratne, INT8 W8A8 traci 1–3% dokładności, a W4A16 wypada bliżej 8 bitów, niż się spodziewano.</li>
+    <li>Nowe formaty 4-bitowe to liczby zmiennoprzecinkowe ze skalą na blok. MXFP4 ma bloki po 32 wagi i skalę będącą potęgą dwójki, ok. 4,25 bita na wagę; w nim OpenAI wydało wagi ekspertów gpt-oss. NVFP4 ma bloki po 16 ze skalą w FP8 i dodatkową skalą na tensor, ok. 4,5 bita, i jest obsługiwany sprzętowo przez karty Blackwell.</li>
+    <li>KV cache też się kwantyzuje. Cache w FP8 zajmuje o połowę mniej pamięci na token, więc przy długich kontekstach daje więcej miejsca na batch niż dalsze ściskanie wag (zobacz „Pętla generowania i KV cache”).</li>
   </ul>
-  <h3 class="sub">Co się traci i jak decydować</h3>
+  <h3 class="sub">Co się traci i jak wybrać format</h3>
   <ul class="notes">
     <li>Reguła kciuka, zależna od modelu i metody: 8 bitów praktycznie bez straty, 4 bity z dobrą metodą to niewielka strata, 3 bity i mniej to szybki spadek. Straty pojawiają się najpierw w długim rozumowaniu, kodzie, matematyce i rzadszych językach, a średnia z benchmarków potrafi je ukryć.</li>
     <li>Przy tej samej pamięci większy model w 4 bitach zwykle wypada lepiej niż mniejszy w 16. Dettmers i Zettlemoyer (2022) po ponad 35 tys. eksperymentów uznali 4 bity za prawie zawsze optymalne przy stałej łącznej liczbie bitów modelu.</li>
-    <li>Wybór zależy od ruchu i sprzętu. Na Hopperze, np. H100, Kurtic i in. zalecają W4A16 przy pojedynczych żądaniach i małym batchu, a W8A8 w FP8 przy dużym ruchu z continuous batchingiem. Na Blackwellu NVFP4 dla wag i aktywacji (W4A4) liczy się na rdzeniach FP4 2–3 razy szybciej niż FP8, więc 4 bity mogą wygrać także przy dużym ruchu, kosztem nieco większej straty niż w FP8: Red Hat mierzy ok. 99% dokładności BF16 dla modeli od 70B i 95–98% dla modeli 7–14B. Jakość sprawdzasz na własnym zestawie ewaluacyjnym, bo ten sam model u różnych hostów bywa różnie skwantyzowany (zobacz „Open-weight” i „Ewaluacje”).</li>
+    <li>Wybór zależy od ruchu i sprzętu. Na Hopperze, np. H100, Kurtic i in. zalecają W4A16 przy pojedynczych żądaniach i małym batchu, a W8A8 w FP8 przy dużym ruchu z continuous batchingiem. Na Blackwellu NVFP4 dla wag i aktywacji (W4A4) liczy się na rdzeniach FP4 2–3 razy szybciej niż FP8, więc 4 bity mogą wygrać także przy dużym ruchu, kosztem nieco większej straty niż w FP8: Red Hat mierzy ok. 99% dokładności BF16 dla modeli od 70B i 95–98% dla modeli 7–14B. Jakość sprawdzasz na własnym zestawie ewaluacyjnym, bo ten sam model u różnych hostów bywa różnie skwantyzowany (zobacz „Modele open-weight” i „Ewaluacje”).</li>
   </ul>
 </section>

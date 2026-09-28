@@ -9,13 +9,13 @@
     <div class="callout" id="haluMsg" aria-live="polite"></div>
     <p class="hint">Symulacja poglądowa, nie pomiar żadnego modelu: odpowiedzi napisano ręcznie, żeby pokazać typowe zachowania. Wrzosowa Wola, jej muzeum, kronika gminy i artykuł Zielińskiej i Brandta są wymyślone. Zestaw celowo składa się głównie z trudnych pytań, więc proporcje nie mówią nic o skuteczności prawdziwych modeli. Wiersze, w których ocena zmieniła się po kliknięciu, są podświetlone.</p>
   </div>
-  <h3 class="sub">Skąd się biorą</h3>
+  <h3 class="sub">Skąd się biorą halucynacje</h3>
   <ul class="notes">
     <li>Model przewiduje następny token i zawsze jakiś zwróci. Nie ma osobnego sygnału „tu kończy się moja wiedza”, a zgadnięte zdanie jest tak samo gładkie jak prawdziwe. Wylosowanego tokena nie da się cofnąć: jeśli odpowiedź zaczęła się od „W 1978 roku”, reszta zdania będzie ten rok uzasadniać (temat „Następny token”).</li>
     <li>Fakty, które w danych treningowych pojawiły się raz albo wcale, są w wagach zapisane słabo albo wcale. Stolicę Australii model widział tysiące razy, rok otwarcia małego muzeum najwyżej raz. Kalai i in. (OpenAI, 2025) pokazują, że dla faktów bez wzorca, takich jak daty urodzenia, odsetek halucynacji po pretrainingu wynosi w przybliżeniu co najmniej tyle, ile odsetek faktów, które w danych wystąpiły dokładnie raz.</li>
     <li>Post-training tego nie usuwa, bo prawie wszystkie popularne benchmarki oceniają 0/1: za „nie wiem” dają zero, tak samo jak za błąd. Przy takiej ocenie wstrzymanie się nigdy nie jest optymalne, więc model trenowany i wybierany pod wynik uczy się zgadywać, jak uczeń na teście bez punktów ujemnych.</li>
   </ul>
-  <h3 class="sub">Rodzaje</h3>
+  <h3 class="sub">Rodzaje halucynacji</h3>
   <ul class="notes">
     <li>Zmyślony fakt: zła data, liczba albo nazwisko podane pewnym tonem. Zmyślone źródło: tytuł pracy, wyrok, link albo cytat, których nie ma. W 2023 roku sąd federalny w Nowym Jorku ukarał prawników grzywną 5000 USD za pismo z wyrokami wymyślonymi przez ChatGPT (sprawa Mata v. Avianca).</li>
     <li>Niewierność źródłu: dokument leży w kontekście, a odpowiedź mu przeczy albo dodaje coś, czego w nim nie ma. W RAG to typowy błąd etapu generowania, groźny, bo przypis sprawia, że odpowiedź wygląda na sprawdzoną. Błąd rozumowania: fakty się zgadzają, ale rachunek jest zły albo wniosek nie wynika z przesłanek.</li>
@@ -37,7 +37,7 @@
   </div>
   <ul class="notes">
     <li>Próg wybierasz pod koszt pomyłki i mierzysz na własnym zestawie (temat „Ewaluacje”): osobno poprawne, błędne i wstrzymane, plus pytania, na które w źródłach celowo nie ma odpowiedzi. Sama trafność nagradza zgadywanie, sam odsetek błędów nagradza milczenie.</li>
-    <li>Pewność modelu z <code>logprobs</code> nie jest miernikiem prawdy. Model bywa pewny błędu, pewność rozkłada się na różne sformułowania tej samej odpowiedzi, a post-training psuje kalibrację: w raporcie o GPT-4 model bazowy był dobrze skalibrowany na pytaniach z MMLU, a po post-trainingu wyraźnie gorzej. Lepszy sygnał bez źródeł daje spójność: kilka próbek tej samej odpowiedzi i sprawdzenie, czy znaczą to samo (semantic entropy, Farquhar i in., Nature 2024). Zgadnięte fakty zmieniają się między próbkami, znane zostają.</li>
+    <li>Pewność modelu z <code>logprobs</code> nie jest miernikiem prawdy. Model bywa pewny błędu, pewność rozkłada się na różne sformułowania tej samej odpowiedzi, a post-training psuje kalibrację: w raporcie o GPT-4 model bazowy był dobrze skalibrowany na pytaniach z MMLU, a po post-trainingu wyraźnie gorzej. Bez źródeł lepszy sygnał daje spójność: kilka próbek odpowiedzi na to samo pytanie i sprawdzenie, czy znaczą to samo (semantic entropy, Farquhar i in., Nature 2024). Zgadnięte fakty zmieniają się między próbkami, znane zostają.</li>
     <li>Wierność i przypisy sprawdzasz kodem. Najpierw, czy cytowany fragment dosłownie istnieje w dokumencie. Natywne cytowania w API, np. w Claude, gwarantują poprawny wskaźnik do dokumentu, ale nie to, że fragment popiera twierdzenie. Potem, twierdzenie po twierdzeniu, czy fragment je potwierdza: model NLI albo sędzia-LLM z oceną tak/nie.</li>
   </ul>
 </section>

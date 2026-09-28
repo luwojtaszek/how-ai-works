@@ -2,9 +2,9 @@
   <h2>Pętla generowania i KV cache</h2>
   <p class="lede">Generowanie to pętla: jeden przebieg modelu daje jeden token, który trafia na koniec wejścia. KV cache trzyma klucze i wartości attention wszystkich wcześniejszych tokenów, więc każdy krok liczy tylko nowy token, a ceną jest pamięć GPU, która ogranicza długość kontekstu i liczbę równoległych rozmów.</p>
   <div class="lab">
-    <p class="lab-title">Przejdź krokami z cache’em i bez. Porównaj, ile tokenów liczy każdy krok</p>
+    <p class="lab-title">Przejdź krok po kroku z cache’em i bez. Porównaj, ile tokenów liczy każdy krok</p>
     <div class="row">
-      <button class="btn ghost" id="kvOn" type="button" aria-pressed="true">Z KV cache</button>
+      <button class="btn ghost" id="kvOn" type="button" aria-pressed="true">Z KV cache’em</button>
       <button class="btn ghost" id="kvOff" type="button" aria-pressed="false">Bez cache’u</button>
     </div>
     <div id="kvPlayer" style="margin-top:12px"></div>
@@ -12,19 +12,19 @@
     <div class="legend"><span><i style="background:var(--cost)"></i>policzone w tym kroku</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>odczytane z cache’u</span><span><i style="background:var(--tok-t);box-shadow:inset 0 0 0 2px var(--tok)"></i>nowy token</span></div>
     <div class="stats"><div class="stat"><b id="kvNow">0</b><span>tokenów policzonych w tym kroku</span></div><div class="stat"><b id="kvSum">0</b><span>łącznie od startu</span></div><div class="stat"><b id="kvRead">0</b><span>odczytanych z cache’u w tym kroku</span></div><div class="stat"><b id="kvPhase">–</b><span id="kvPhaseD">faza</span></div></div>
   </div>
-  <h3 class="sub">Co jest w cache’u i czemu wolno</h3>
+  <h3 class="sub">Co jest w KV cache’u i czemu to działa</h3>
   <ul class="notes">
     <li>W każdej warstwie attention token ma trzy rzuty swojego stanu: zapytanie Q, klucz K i wartość V (temat „Attention”). Nowy token porównuje swoje Q z kluczami wszystkich wcześniejszych i bierze ważoną sumę ich wartości. KV cache to K i V wszystkich dotychczasowych tokenów, osobno dla każdej warstwy i głowy KV.</li>
-    <li>Q się nie trzyma. Zapytanie tokena jest potrzebne tylko w kroku, w którym ten token jest ostatni. Późniejsze tokeny czytają już tylko jego K i V.</li>
-    <li>Trzymać wolno dzięki masce przyczynowej: K i V tokena <i>i</i> zależą tylko od tokenów 0…<i>i</i>, więc nowe tokeny ich nie zmieniają. To memoizacja. Bez niej krok <i>n</i> liczyłby od nowa wszystkie <i>n</i> tokenów, więc wygenerowanie <i>N</i> tokenów kosztowałoby pracę rosnącą z <i>N</i>² zamiast z <i>N</i>.</li>
+    <li>Q nie trafia do cache’u. Zapytanie tokena jest potrzebne tylko w kroku, w którym ten token jest ostatni. Późniejsze tokeny czytają już tylko jego K i V.</li>
+    <li>Cache można trzymać dzięki masce przyczynowej: K i V tokena <i>i</i> zależą tylko od tokenów 0…<i>i</i>, więc nowe tokeny ich nie zmieniają. To memoizacja. Bez niej krok <i>n</i> liczyłby od nowa wszystkie <i>n</i> tokenów, więc wygenerowanie <i>N</i> tokenów kosztowałoby pracę projekcji i MLP rosnącą z <i>N</i>² zamiast z <i>N</i> (a koszt attention z <i>N</i>³ zamiast z <i>N</i>²).</li>
     <li>Działa to też w drugą stronę: K i V tokena zależą od wszystkich tokenów przed nim i od jego pozycji (RoPE). Zmiana jednego tokena unieważnia cache wszystkiego za nim. Dlatego dostawca może ponownie użyć cache’u tylko dla identycznego prefiksu, a agent historię tylko dopisuje (temat „Prompt caching”).</li>
   </ul>
-  <h3 class="sub">Ile pamięci zajmuje</h3>
+  <h3 class="sub">Ile pamięci zajmuje KV cache</h3>
   <ul class="notes">
     <li>Na token: 2 (K i V) × warstwy × głowy KV × wymiar głowy × bajty. Llama 3.1 70B w FP16: 2 × 80 × 8 × 128 × 2 B = 327 680 B, ok. 0,33 MB. Pełne 128 tys. tokenów to 43 GB na jedną rozmowę, przy 141 GB samych wag.</li>
-    <li>Kształt cache’u ustala architektura. GQA daje jedną parę K, V na grupę głów zapytań (MQA to skrajność: jedna para na warstwę). Llama 3 70B ma 8 głów KV na 64 głowy Q, bez GQA cache 128 tys. tokenów zająłby 344 GB. MLA z DeepSeek zapisuje jeden skompresowany wektor na warstwę: w DeepSeek-V3 to 61 × 576 × 2 B ≈ 70 KB na token, prawie 5 razy mniej niż Llama 70B, choć model ma 671 mld parametrów.</li>
-    <li>Okno przesuwne: część warstw widzi tylko ostatnie W tokenów, więc ich cache nie rośnie ponad W. Gemma 3 ma pięć takich warstw (W = 1024) na jedną pełną, co przy 128 tys. tokenów daje ok. 17% cache’u tego samego modelu z samymi pełnymi warstwami. Modele hybrydowe zastępują część warstw attention warstwami SSM o stałym stanie.</li>
-    <li>Przy serwowaniu gotowego modelu zostaje precyzja: cache w FP8 zajmuje połowę pamięci. To przybliżenie, więc sprawdź jakość na własnych ewaluacjach.</li>
+    <li>Kształt cache’u ustala architektura. GQA daje jedną parę K, V na grupę głów zapytań (MQA to skrajność: jedna para na warstwę). Llama 3 70B ma 8 głów KV na 64 głowy Q. Bez GQA cache 128 tys. tokenów zająłby 344 GB. MLA z DeepSeek zapisuje jeden skompresowany wektor na warstwę: w DeepSeek-V3 to 61 × 576 × 2 B ≈ 70 KB na token, prawie 5 razy mniej niż Llama 70B, choć model ma 671 mld parametrów.</li>
+    <li>Okno przesuwne: część warstw widzi tylko ostatnie W tokenów, więc ich cache nie rośnie ponad W. Gemma 3 ma pięć takich warstw (W = 1024) na jedną pełną, co przy 128 tys. tokenów daje ok. 17% cache’u tego samego modelu z samymi pełnymi warstwami. Modele hybrydowe zastępują część warstw attention warstwami SSM o stałym rozmiarze stanu.</li>
+    <li>Przy serwowaniu gotowego modelu da się jeszcze zmienić precyzję: cache w FP8 zajmuje połowę pamięci. To przybliżenie, więc sprawdź jakość na własnych ewaluacjach.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Wybierz model, kontekst i liczbę rozmów. Zobacz, ile kart H100 zajmuje sam cache</p>
@@ -58,7 +58,7 @@
   <h3 class="sub">Cache na serwerze</h3>
   <ul class="notes">
     <li>PagedAttention (vLLM) dzieli cache na bloki po kilkanaście tokenów, jak strony pamięci wirtualnej. Serwer nie rezerwuje miejsca na maksymalną długość, a wspólny prefiks wielu rozmów trzyma raz. Prompt caching to te same bloki zachowane po requeście i odszukane po hashu prefiksu.</li>
-    <li>Gdy pamięci brakuje, serwer wstrzymuje część rozmów i potem przelicza ich cache albo zrzuca go do RAM-u lub na dysk i wczytuje z powrotem. Oba sposoby kosztują czas, ale nie zmieniają wyniku.</li>
-    <li>Wyrzucanie części tokenów z cache’u (StreamingLLM, H2O: zostają pierwsze, ostatnie i najczęściej oglądane) oszczędza pamięć, ale jest przybliżeniem. Model traci dostęp do wyrzuconego tekstu, więc jakość na długich zadaniach spada.</li>
+    <li>Gdy pamięci brakuje, serwer wstrzymuje część rozmów i albo zwalnia ich cache i później liczy go od nowa, albo zrzuca go do RAM-u lub na dysk i wczytuje z powrotem. Oba sposoby kosztują czas, ale nie zmieniają wyniku.</li>
+    <li>Wyrzucanie części tokenów z cache’u (StreamingLLM, H2O: zostają pierwsze, ostatnie i te, które dostają najwięcej attention) oszczędza pamięć, ale jest przybliżeniem. Model traci dostęp do wyrzuconego tekstu, więc jakość na długich zadaniach spada.</li>
   </ul>
 </section>

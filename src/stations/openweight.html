@@ -10,15 +10,15 @@
   </div>
   <h3 class="sub">Co dostajesz, a czego nie</h3>
   <ul class="notes">
-    <li>Wagi, kod inferencji i tokenizer wystarczą, żeby model uruchomić, skwantyzować i dotrenować, na przykład LoRA (zobacz „Fine-tuning i LoRA”). Nie wystarczą, żeby go odtworzyć albo sprawdzić, na czym się uczył.</li>
+    <li>Wagi, kod inferencji i tokenizer wystarczą, żeby model uruchomić, skwantyzować i dotrenować, na przykład metodą LoRA (zobacz „Fine-tuning i LoRA”). Nie wystarczą, żeby go odtworzyć albo sprawdzić, na czym się uczył.</li>
     <li>Definicja Open Source AI od OSI (wersja 1.0 z 2024 roku) wymaga wag, pełnego kodu treningu i uruchamiania oraz opisu danych na tyle szczegółowego, żeby kompetentna osoba mogła zbudować podobny system, wszystko na warunkach zatwierdzonych przez OSI: użycie w dowolnym celu bez pytania o zgodę. Samych danych publikować nie trzeba, ale publiczne i zewnętrzne dane treningowe trzeba wymienić i wskazać, skąd je wziąć. Spełnia to niewiele modeli, np. OLMo od Ai2; licencje z ograniczeniami użycia, jak licencja Llama, odpadają już przez same warunki.</li>
-    <li>Licencje różnią się mocno. Apache 2.0 i MIT (np. gpt-oss, Qwen3, DeepSeek-R1) pozwalają prawie na wszystko. Licencje Llama (3.1 i 4) wymagają osobnej zgody Mety, jeśli w dniu premiery modelu twoje produkty miały ponad 700 mln aktywnych użytkowników miesięcznie, oraz oznaczenia „Built with Llama”. Dla modeli multimodalnych (Llama 3.2 Vision, Llama 4 Scout i Maverick) polityka dopuszczalnego użycia w ogóle nie udziela licencji osobom i firmom z siedzibą w UE; nie dotyczy to końcowych użytkowników produktu zbudowanego na takim modelu.</li>
+    <li>Licencje różnią się mocno. Apache 2.0 i MIT (np. gpt-oss, Qwen3, DeepSeek-R1) pozwalają prawie na wszystko. Licencje Llama (3.1 i 4) wymagają osobnej zgody Mety, jeśli w dniu premiery modelu twoje produkty miały ponad 700 mln aktywnych użytkowników miesięcznie, oraz oznaczenia „Built with Llama”. Dla modeli multimodalnych (Llama 3.2 Vision, Llama 4 Scout i Maverick) polityka dopuszczalnego użycia w ogóle nie udziela licencji osobom mieszkającym w UE ani firmom z siedzibą w UE; nie dotyczy to końcowych użytkowników produktu zbudowanego na takim modelu.</li>
   </ul>
-  <h3 class="sub">Po co to firmom</h3>
+  <h3 class="sub">Po co firmom self-hosting</h3>
   <ul class="notes">
     <li>Dane nie opuszczają twojej infrastruktury: własna chmura, serwerownia, nawet sieć bez dostępu do internetu. W branżach regulowanych to bywa jedyna dopuszczalna droga.</li>
-    <li>Wersja jest zamrożona: nikt nie podmieni wag, ustawień ani stosu serwującego bez twojej wiedzy (zobacz „Compute i „głupienie””). To działa tylko wtedy, gdy hostujesz sam.</li>
-    <li>Pełna kontrola nad inferencją: fine-tuning, własna kwantyzacja, dostęp do logitów, dowolne wymuszanie formatu, brak limitów zapytań narzuconych przez dostawcę.</li>
+    <li>Wersja jest zamrożona: nikt nie podmieni wag, ustawień ani stosu serwującego bez twojej wiedzy (zobacz „Czy model głupieje?”). To działa tylko wtedy, gdy hostujesz sam.</li>
+    <li>Pełna kontrola nad modelem i inferencją: fine-tuning, własna kwantyzacja, dostęp do logitów, dowolne wymuszanie formatu, brak limitów zapytań narzuconych przez dostawcę.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Ustaw cenę API, koszt węzła, miesięczny wolumen i to, ile obsłuży jeden węzeł. Zobacz, od jakiego obciążenia własne GPU zaczynają się opłacać</p>
@@ -30,13 +30,13 @@
     </div>
     <div id="beChart" style="margin-top:12px"></div>
     <div class="callout" id="beMsg" aria-live="polite"></div>
-    <p class="hint">Poglądowo. Przepustowość węzła mocno zależy od modelu i proporcji wejścia do wyjścia: 10 mld tokenów miesięcznie to ok. 3900 tokenów na sekundę bez przerwy, a DeepSeek podaje ok. 15 tys. tokenów wyjściowych albo 74 tys. wejściowych na sekundę na węzeł z 8 GPU dla swojego modelu MoE 671B (luty 2025). Cena API to średnia z tokenów wejściowych i droższych wyjściowych. Wykres pomija ludzi do utrzymania, a to zwykle największy koszt self-hostingu.</p>
+    <p class="hint">Poglądowo. Przepustowość węzła mocno zależy od modelu i proporcji wejścia do wyjścia: 10 mld tokenów miesięcznie to ok. 3900 tokenów na sekundę bez przerwy, a DeepSeek podaje ok. 15 tys. tokenów wyjściowych albo 74 tys. wejściowych na sekundę na węzeł z 8 GPU dla swojego modelu MoE 671B (luty 2025). Cena API to średnia z cen tokenów wejściowych i droższych wyjściowych. Wykres pomija pracę ludzi przy utrzymaniu, a to zwykle największy koszt self-hostingu.</p>
   </div>
-  <h3 class="sub">Koszt i pułapki</h3>
+  <h3 class="sub">Koszt self-hostingu i pułapki</h3>
   <ul class="notes">
     <li>Węzeł kosztuje tyle samo przy 5% i przy 90% obciążenia, a ruch ma szczyty i doliny. Realne średnie obciążenie jest dużo niższe niż 100%, więc liczysz koszt przy nim, nie przy pełnym. Do tego ludzie: serwowanie (vLLM, SGLang), monitoring, aktualizacje, bezpieczeństwo. Wagi ładujesz jako safetensors, od zaufanego wydawcy i z przypiętą rewizją: checkpoint w formacie pickle może przy wczytaniu uruchomić kod, a <code>trust_remote_code</code> uruchamia Pythona z repozytorium na twoich serwerach.</li>
     <li>Trzecia droga to ten sam otwarty model z API zewnętrznego hosta: bez własnych GPU i zwykle taniej niż zamknięta czołówka. Dane znów wychodzą na zewnątrz, a host może zmienić kwantyzację albo stos serwujący.</li>
-    <li>Ten sam model u różnych hostów działa różnie: inna kwantyzacja, inny szablon czatu, inna obsługa tool callingu i długiego kontekstu. Moonshot zmierzył to dla Kimi K2 (listopad 2025): poprawność schematu wywołań narzędzi od 100% w oficjalnym API do 72% u jednego z hostów, przez nieaktualne wersje silnika, błędne identyfikatory wywołań i brak wymuszania formatu. Testujesz konkretny endpoint własnym zestawem ewaluacyjnym, nie nazwę modelu (zobacz „Ewaluacje” i „LLM w produkcji”).</li>
+    <li>Ten sam model u różnych hostów działa różnie: inna kwantyzacja, inny szablon czatu, inna obsługa tool callingu i długiego kontekstu. Moonshot zmierzył to dla Kimi K2 (listopad 2025): poprawność schematu wywołań narzędzi od 100% w oficjalnym API do 72% u jednego z hostów, przez nieaktualne wersje silnika, błędne identyfikatory wywołań i brak wymuszania formatu. Testujesz konkretny endpoint własnym zestawem ewaluacyjnym, nie nazwę modelu (zobacz „Ewaluacje” i „LLM na produkcji”).</li>
     <li>W najtrudniejszych zadaniach zamknięta czołówka zwykle wyprzedza modele otwarte. Różnica bywa mała i zmienia się z każdym wydaniem, więc rozstrzyga pomiar na twoim zadaniu, nie ranking.</li>
   </ul>
 </section>
