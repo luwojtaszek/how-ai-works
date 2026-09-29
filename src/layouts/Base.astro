@@ -49,6 +49,8 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
 <script is:inline>
   // default follows the browser; a saved choice exists only when it differs from it
   try { const t = localStorage.getItem('llm-mapa-theme'); if (t) document.documentElement.dataset.theme = JSON.parse(t); } catch (e) {}
+  // desktop sidebar hidden by the reader (set before paint, so the layout never jumps)
+  try { if (localStorage.getItem('llm-mapa-rail')) document.documentElement.dataset.rail = 'hidden'; } catch (e) {}
   // shortcut hint: ⌘ on Apple devices, Ctrl elsewhere (set before paint, so the label never flickers)
   if (/mac|iphone|ipad/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '')) document.documentElement.dataset.mac = '';
 </script>
@@ -57,7 +59,7 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 </head>
 <body>
-<aside class="rail" aria-label={ui.topicList}>
+<aside class="rail" id="rail" aria-label={ui.topicList}>
   <div class="rail-bar">
     <a class="rail-title" href={r}>{ui.siteName}</a>
     <button class="m-current" type="button" popovertarget="toc"><small>{ui.siteName}</small><span><em>{curLabel}</em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></button>
@@ -102,6 +104,17 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
     <p class="rail-ai">{ui.aiNote[0]}<a href={`${r}llms-full.txt`}>{ui.aiNote[1]}</a>{ui.aiNote[2]}</p>
   </div>
 </aside>
+<button class="icon-btn rail-toggle" type="button" aria-controls="rail" aria-expanded="true" aria-label={ui.railHide} title={ui.railHide} data-hide={ui.railHide} data-show={ui.railShow}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></svg>
+</button>
+<script is:inline>
+  // desktop sidebar: hide/show, remembered like the theme; inline so the label and state are right before app.js loads
+  { const b = document.currentScript.previousElementSibling, r = document.documentElement;
+    const sync = () => { const shown = r.dataset.rail !== 'hidden'; b.setAttribute('aria-expanded', String(shown)); b.title = shown ? b.dataset.hide : b.dataset.show; b.setAttribute('aria-label', b.title); };
+    b.addEventListener('click', () => { const hide = !r.dataset.rail; if (hide) r.dataset.rail = 'hidden'; else delete r.dataset.rail; sync();
+      try { if (hide) localStorage.setItem('llm-mapa-rail', '1'); else localStorage.removeItem('llm-mapa-rail'); } catch (e) {} });
+    sync(); }
+</script>
 <dialog id="search" aria-label={ui.searchLabel}>
   <form method="dialog" class="search-box">
     <input id="searchInput" type="search" placeholder={ui.searchPlaceholder} autocomplete="off" aria-controls="searchResults">

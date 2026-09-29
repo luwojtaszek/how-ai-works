@@ -28,7 +28,7 @@ const cnt=(n,one,few,many)=>{const s=String(n);if(/[^\d\s]/.test(s))return many;
 const bytes=b=>b>=1e12?nf(b/1e12,1)+' TB':b>=1e9?nf(b/1e9,1)+' GB':b>=1e6?nf(b/1e6,1)+' MB':nf(b/1e3,0)+' KB';
 const usd=n=>nf(n,n<10?2:0)+' USD';
 function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
-const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const pressed=(btns,active)=>btns.forEach(b=>b.setAttribute('aria-pressed',String(b===active)));
 
 
@@ -269,7 +269,7 @@ function initDesign(){
 /* ---------- theme ---------- */
 $$('.theme-btn').forEach(b=>b.addEventListener('click',()=>{const r=document.documentElement;const sys=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
   const next=(r.dataset.theme||sys)==='dark'?'light':'dark';
-  if(next===sys){delete r.dataset.theme;localStorage.removeItem('llm-mapa-theme');}else{r.dataset.theme=next;store.set('llm-mapa-theme',next);}}));
+  if(next===sys){delete r.dataset.theme;store.del('llm-mapa-theme');}else{r.dataset.theme=next;store.set('llm-mapa-theme',next);}}));
 // "Use with AI" menu: copy the topic's markdown
 $$('[data-copy-md]').forEach(b=>b.addEventListener('click',async()=>{try{const md=await (await fetch(b.dataset.copyMd)).text();await navigator.clipboard.writeText(md);const t=b.textContent;b.textContent=b.dataset.done;setTimeout(()=>{b.textContent=t;},1800);}catch(e){location.href=b.dataset.copyMd;}}));
 // reading progress under the top bar
