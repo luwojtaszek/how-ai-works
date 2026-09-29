@@ -107,6 +107,14 @@ const curLabel = current ? `${gi + 1}.${c.groups[gi][2].indexOf(current) + 1} ${
 <button class="icon-btn rail-toggle" type="button" aria-controls="rail" aria-expanded="true" aria-label={ui.railHide} title={ui.railHide} data-hide={ui.railHide} data-show={ui.railShow}>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></svg>
 </button>
+<script is:inline>
+  // desktop sidebar: hide/show, remembered like the theme; inline so the label and state are right before app.js loads
+  { const b = document.currentScript.previousElementSibling, r = document.documentElement;
+    const sync = () => { const shown = r.dataset.rail !== 'hidden'; b.setAttribute('aria-expanded', String(shown)); b.title = shown ? b.dataset.hide : b.dataset.show; b.setAttribute('aria-label', b.title); };
+    b.addEventListener('click', () => { const hide = !r.dataset.rail; if (hide) r.dataset.rail = 'hidden'; else delete r.dataset.rail; sync();
+      try { if (hide) localStorage.setItem('llm-mapa-rail', '1'); else localStorage.removeItem('llm-mapa-rail'); } catch (e) {} });
+    sync(); }
+</script>
 <dialog id="search" aria-label={ui.searchLabel}>
   <form method="dialog" class="search-box">
     <input id="searchInput" type="search" placeholder={ui.searchPlaceholder} autocomplete="off" aria-controls="searchResults">

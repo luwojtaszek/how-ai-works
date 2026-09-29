@@ -120,7 +120,8 @@ kbd{font:500 .72rem var(--mono);border:1px solid var(--line);border-radius:4px;p
 .search-results mark{background:var(--prob-t);color:inherit;border-radius:2px}
 .search-results .empty{padding:14px 12px;color:var(--muted)}
 
-main{padding:48px clamp(18px,5vw,64px) calc(28px + env(safe-area-inset-bottom,0px));max-width:888px;width:100%;margin-inline:auto}
+/* one 760px column; the cap adds the gutters so the text keeps 760px at every width */
+main{--gutter:clamp(18px,5vw,64px);padding:48px var(--gutter) calc(28px + env(safe-area-inset-bottom,0px));max-width:calc(760px + 2 * var(--gutter));width:100%;margin-inline:auto}
 
 /* ---------- controls ---------- */
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
