@@ -7,7 +7,7 @@ export const GROUPS_EN = {
   'Kontekst i wiedza': ['Context and knowledge', 'What to put into the context window and how to find it in your data.'],
   'Agenci': ['Agents', 'A model in a loop: tools, the standard for connecting them, enforced formats, the coding-agent harness and splitting the work.'],
   'Jakość i bezpieczeństwo': ['Quality and security', 'Hallucinations, measuring quality instead of guessing, and attacks through untrusted content.'],
-  'Produkcja i serwowanie': ['Production and serving', 'A reliable system around the model, and what happens in the data centre.'],
+  'Model na produkcji': ['Production and serving', 'A reliable system around the model, and what happens in the data centre.'],
   'Wybór modelu': ['Choosing a model', 'Matching a model to the task, open weights, alternatives to an LLM, and why a model sometimes seems “dumber”.'],
   'Ćwiczenia i powtórka': ['Practice and review', 'Design scenarios and flashcards for review.'],
 };

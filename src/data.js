@@ -48,7 +48,7 @@ const GROUPS=[
  ['Kontekst i wiedza','Co włożyć do okna kontekstu i jak to znaleźć w swoich danych.',['kontekst','embeddingi','rag']],
  ['Agenci','Model w pętli: narzędzia, standard ich podłączania, wymuszony format, harness agenta kodującego i podział pracy.',['agent','narzedzia','mcp','format','harness','multiagent']],
  ['Jakość i bezpieczeństwo','Zmyślenia, mierzenie jakości zamiast oceny na oko i ataki ukryte w treści.',['halucynacje','evals','injection']],
- ['Produkcja i serwowanie','Niezawodny system wokół modelu i to, co dzieje się w serwerowni.',['produkcja','roofline','batching','spec','kwantyzacja','moe']],
+ ['Model na produkcji','Niezawodny system wokół modelu i to, co dzieje się w serwerowni.',['produkcja','roofline','batching','spec','kwantyzacja','moe']],
  ['Wybór modelu','Jak dobrać model do zadania, otwarte wagi, alternatywy dla LLM-a i to, czemu model bywa „głupszy”.',['wybor','openweight','jev','compute']],
  ['Ćwiczenia i powtórka','Zadania projektowe i fiszki do powtórki.',['design','fiszki']]];
 Object.assign(ST,{
