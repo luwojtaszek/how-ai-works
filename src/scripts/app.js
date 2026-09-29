@@ -270,6 +270,9 @@ function initDesign(){
 $$('.theme-btn').forEach(b=>b.addEventListener('click',()=>{const r=document.documentElement;const sys=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
   const next=(r.dataset.theme||sys)==='dark'?'light':'dark';
   if(next===sys){delete r.dataset.theme;localStorage.removeItem('llm-mapa-theme');}else{r.dataset.theme=next;store.set('llm-mapa-theme',next);}}));
+// desktop sidebar: hide/show, remembered like the theme
+{const b=$('.rail-toggle'),r=document.documentElement;const sync=()=>{const shown=r.dataset.rail!=='hidden';b.setAttribute('aria-expanded',String(shown));b.title=shown?b.dataset.hide:b.dataset.show;b.setAttribute('aria-label',b.title);};
+  b.addEventListener('click',()=>{if(r.dataset.rail){delete r.dataset.rail;localStorage.removeItem('llm-mapa-rail');}else{r.dataset.rail='hidden';store.set('llm-mapa-rail',1);}sync();});sync();}
 // "Use with AI" menu: copy the topic's markdown
 $$('[data-copy-md]').forEach(b=>b.addEventListener('click',async()=>{try{const md=await (await fetch(b.dataset.copyMd)).text();await navigator.clipboard.writeText(md);const t=b.textContent;b.textContent=b.dataset.done;setTimeout(()=>{b.textContent=t;},1800);}catch(e){location.href=b.dataset.copyMd;}}));
 // reading progress under the top bar
