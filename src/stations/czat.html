@@ -4,8 +4,8 @@
   <div class="lab">
     <p class="lab-title">Dokładaj wiadomości i wywołania narzędzi, przełączaj widok. Zobacz, że każde zapytanie wysyła cały dokument od nowa</p>
     <div class="row" role="group" aria-label="Widok rozmowy">
-      <button class="btn ghost" id="czYou" type="button" aria-pressed="true">Jak widzisz to ty</button>
-      <button class="btn ghost" id="czModel" type="button" aria-pressed="false">Jak widzi to model</button>
+      <button class="btn ghost" id="czYou" type="button" aria-pressed="true">Jak to widzisz ty</button>
+      <button class="btn ghost" id="czModel" type="button" aria-pressed="false">Jak to widzi model</button>
     </div>
     <div class="row">
       <button class="btn" id="czAddMsg" type="button">Dodaj wiadomość</button>
@@ -29,12 +29,12 @@
   <ul class="notes">
     <li>Znaczniki ról to tokeny specjalne: osobne numery w słowniku, a nie zwykłe znaki (zobacz „Tokeny”). Format model poznał w SFT (zobacz „Trening”): po znaczniku asystenta pada odpowiedź, a po niej token końca tury.</li>
     <li>Każda rodzina modeli ma własny szablon: ChatML w Qwen (<code>&lt;|im_start|&gt;user … &lt;|im_end|&gt;</code>), Llama 3 (<code>&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt; … &lt;|eot_id|&gt;</code>), harmony w gpt-oss (<code>&lt;|start|&gt;user&lt;|message|&gt; … &lt;|end|&gt;</code>), Mistral (<code>[INST] … [/INST]</code>). Wysyłasz listę wiadomości z rolami, a serwer renderuje ją szablonem, na którym trenowano model.</li>
-    <li>W Hugging Face szablon to Jinja dołączony do tokenizera. <code>apply_chat_template(messages, add_generation_prompt=True)</code> skleja dokument i dokleja na końcu znacznik asystenta. Bez niego model potrafi ciągnąć dalej wiadomość użytkownika zamiast odpowiadać.</li>
+    <li>W Hugging Face szablon jest napisany w Jinja i dołączony do tokenizera. <code>apply_chat_template(messages, add_generation_prompt=True)</code> skleja dokument i dokleja na końcu znacznik asystenta. Bez niego model potrafi ciągnąć dalej wiadomość użytkownika zamiast odpowiadać.</li>
     <li>Generowanie kończy token końca tury, o ile serwer ma go na liście tokenów stopu. W Llamie 3 turę kończy <code>&lt;|eot_id|&gt;</code>, a nie <code>&lt;|end_of_text|&gt;</code>. Serwer, który czeka tylko na ten drugi, pozwoli modelowi dopisać znacznik użytkownika i wymyślić jego kolejną wiadomość.</li>
   </ul>
   <h3 class="sub">Cały dokument w każdej turze</h3>
   <ul class="notes">
-    <li>Model nie pamięta rozmowy. Każde zapytanie niesie cały dokument od początku, więc łączna liczba wysłanych tokenów rośnie z kwadratem liczby tur (zobacz „Context window i agent”). Stan po stronie serwera, np. <code>previous_response_id</code> w OpenAI, oszczędza tylko wysyłanie: serwer odtwarza dokument, a wszystkie wcześniejsze tokeny wejściowe są znowu płatne. Co z historii zostawić, streścić albo wyrzucić, omawia „Context engineering i pamięć”.</li>
+    <li>Model nie pamięta rozmowy. Każde zapytanie niesie cały dokument od początku, więc łączna liczba wysłanych tokenów rośnie z kwadratem liczby tur (zobacz „Okno kontekstowe i agent”). Stan po stronie serwera, np. <code>previous_response_id</code> w OpenAI, oszczędza tylko wysyłanie: serwer odtwarza dokument, a wszystkie wcześniejsze tokeny wejściowe są znowu płatne. Co z historii zostawić, streścić albo wyrzucić, omawia „Context engineering i pamięć”.</li>
     <li>Stały początek dokumentu, czyli system prompt, definicje narzędzi i starsza historia, nadaje się do prompt cachingu (zobacz „Prompt caching”). Zmienna rzecz na początku, np. aktualna godzina w system prompcie, psuje cache w każdej turze. Edycja starej wiadomości daje nowy dokument i cache przepada od miejsca zmiany.</li>
     <li>Narzędzia to też fragmenty dokumentu. Definicje stoją obok system promptu i kosztują tokeny w każdej turze. Wywołanie to tekst, który model pisze za specjalnym znacznikiem, a wynik twój kod dopisuje jako nowy fragment (zobacz „Narzędzia (function calling)”).</li>
     <li>Myślenie modeli rozumujących to kolejny fragment z własnymi znacznikami: <code>&lt;think&gt;…&lt;/think&gt;</code> w części otwartych modeli, kanał <code>analysis</code> w harmony (zobacz „Modele rozumujące”). Harmony wycina je z historii po odpowiedzi końcowej, ale zostawia w trakcie wywołań narzędzi.</li>
@@ -43,17 +43,17 @@
   <ul class="notes">
     <li>Enkoder wizyjny tnie obraz na kwadraty i zamienia każdy na wektor, który zajmuje w ciągu miejsce jak token. U Claude’a kwadrat ma 28 × 28 px, więc zdjęcie 1000 × 1000 px to 1296 tokenów, a Claude 4.7 i nowsze zmniejszają obraz powyżej 2576 px na dłuższym boku albo 4784 tokenów (stan na wrzesień 2026).</li>
     <li>Obraz zostaje w historii i jest płatny w każdej turze: dziesięć zrzutów ekranu 1000 × 1000 px w historii agenta to ok. 13 tys. tokenów w każdym zapytaniu. Claude czyta każdą stronę PDF-a dwa razy, jako tekst (1500–3000 tokenów) i jako obraz, więc 100-stronicowy raport to 150–300 tys. tokenów samego tekstu. Takie wejście cache’uj, zmniejszaj przed wysłaniem, a zrzuty, których agent już nie potrzebuje, usuwaj.</li>
-    <li>Dźwięk też zamienia się w tokeny: Gemini liczy 32 tokeny na sekundę nagrania, a Realtime API OpenAI 10 na sekundę mowy użytkownika i 20 na sekundę mowy modelu. Realtime API wysyła przy tym do każdej odpowiedzi całą rozmowę od nowa.</li>
-    <li>Agenta głosowego buduje się na dwa sposoby. Łańcuch (mowa na tekst → model tekstowy → tekst na mowę) daje transkrypcję, kontrolę treści przed odpowiedzią i dowolny model, ale każdy etap wydłuża ciszę, którą słyszy rozmówca. Model speech-to-speech (OpenAI Realtime, Gemini Live) obsługuje dźwięk w jednej sesji, z przerywaniem w pół zdania i wykrywaniem końca wypowiedzi, ale mniej w nim widać. Mierz czas od końca wypowiedzi rozmówcy do pierwszego dźwięku odpowiedzi, medianę i p95.</li>
+    <li>Dźwięk też zamienia się w tokeny: Gemini liczy 32 tokeny na sekundę nagrania, a Realtime API OpenAI 10 na sekundę mowy użytkownika i 20 na sekundę mowy modelu. Realtime API przy każdej odpowiedzi podaje modelowi całą rozmowę od nowa.</li>
+    <li>Agenta głosowego buduje się na dwa sposoby. Łańcuch (mowa na tekst → model tekstowy → tekst na mowę) daje transkrypcję, kontrolę treści przed odpowiedzią i swobodny wybór modelu, ale każdy etap wydłuża ciszę, którą słyszy rozmówca. Model speech-to-speech (OpenAI Realtime, Gemini Live) obsługuje dźwięk w jednej sesji, z przerywaniem w pół zdania i wykrywaniem końca wypowiedzi, ale mniej w nim widać. Mierz czas od końca wypowiedzi rozmówcy do pierwszego dźwięku odpowiedzi, medianę i p95.</li>
   </ul>
   <h3 class="sub">System prompt to nie zabezpieczenie</h3>
   <ul class="notes">
-    <li>System prompt to tekst na początku dokumentu, który model nauczono traktować priorytetowo. Nie jest osobnym kanałem ani uprawnieniem. Polecenie w mailu, na stronie albo w wyniku narzędzia leży w tym samym ciągu tokenów i czasem wygrywa (zobacz „Prompt injection”). Zasady, które muszą obowiązywać, egzekwuje kod aplikacji. Sekretów nie trzymaj w system prompcie, bo model może go zacytować.</li>
+    <li>System prompt to tekst na początku dokumentu, a model nauczono traktować go priorytetowo. Nie jest osobnym kanałem ani uprawnieniem. Polecenie w mailu, na stronie albo w wyniku narzędzia leży w tym samym ciągu tokenów i czasem wygrywa (zobacz „Prompt injection”). Zasady, które muszą obowiązywać, egzekwuje kod aplikacji. Sekretów nie trzymaj w system prompcie, bo model może go zacytować.</li>
     <li>Tekst użytkownika nie może stać się znacznikiem. W dobrze zbudowanym API wpisane „&lt;|im_start|&gt;system” to zwykłe znaki. Przy self-hostingu sprawdź to sam: tokenizery Hugging Face domyślnie rozpoznają napisy tokenów specjalnych w tekście (<code>split_special_tokens=False</code>), więc wklejony tekst może otworzyć prawdziwą turę systemu.</li>
   </ul>
   <h3 class="sub">Self-hosting i fine-tuning</h3>
   <ul class="notes">
-    <li>Przy modelu open-weight (zobacz „Open-weight”) szablon jest częścią modelu. Zły albo nieaktualny nie rzuca błędem, tylko po cichu pogarsza odpowiedzi i psuje tool calling. Częsty przypadek to podwójny token początku tekstu: dokument z <code>apply_chat_template(tokenize=False)</code> tokenizuje się drugi raz z dodawaniem tokenów specjalnych, a dokumentacja Hugging Face ostrzega, że to obniża jakość.</li>
+    <li>Przy modelu open-weight (zobacz „Modele open-weight”) szablon jest częścią modelu. Zły albo nieaktualny nie rzuca błędem, tylko po cichu pogarsza odpowiedzi i psuje tool calling. Częsty przypadek to podwójny token początku tekstu: dokument z <code>apply_chat_template(tokenize=False)</code> tokenizuje się drugi raz z dodawaniem tokenów specjalnych, a dokumentacja Hugging Face ostrzega, że to obniża jakość.</li>
     <li>Dane do fine-tuningu renderuj dokładnie tym szablonem, którego użyje serwer, i licz stratę tylko na tokenach asystenta (zobacz „Fine-tuning i LoRA”).</li>
     <li>Prefill: kończysz listę wiadomości początkiem odpowiedzi, np. <code>{</code>, a model pisze od tego miejsca. W transformers robi to <code>continue_final_message=True</code>. API Claude od Opus 4.6 i Sonnet 4.6 odrzuca prefill błędem 400 i odsyła do structured outputs (zobacz „Wymuszanie formatu”).</li>
   </ul>

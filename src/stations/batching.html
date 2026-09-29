@@ -11,13 +11,13 @@
     <div class="bgrid" id="cbGrid" style="margin-top:12px"></div>
     <div class="legend"><span><i style="background:var(--tok-t)"></i>rozmowa generuje token</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 1.5px var(--cost)"></i>miejsce stoi puste</span></div>
     <div class="stats"><div class="stat"><b id="cbDone"></b><span>rozmów ukończonych</span></div><div class="stat"><b id="cbIdle"></b><span>pustych kratek (miejsce × krok) do tej pory</span></div><div class="stat"><b id="cbEnd"></b><span>kroków do obsłużenia wszystkich ośmiu</span></div></div>
-    <p class="hint">Osiem rozmów (A–H) o długości od 2 do 9 tokenów. Wiersze m1–m4 to cztery miejsca w batchu, kolumny to kolejne kroki. Poglądowo: pomija prefill, który nowa rozmowa musi wykonać przed pierwszym tokenem.</p>
+    <p class="hint">Osiem rozmów (A–H) o długości od 2 do 9 tokenów. Wiersze m1–m4 to cztery miejsca w batchu, kolumny to kolejne kroki. Poglądowo: symulacja pomija prefill, który nowa rozmowa musi wykonać przed pierwszym tokenem.</p>
   </div>
-  <h3 class="sub">Jak działa harmonogram</h3>
+  <h3 class="sub">Jak działa continuous batching</h3>
   <ul class="notes">
     <li>Batch statyczny ustala skład raz: wszyscy czekają na najdłuższą odpowiedź, a nowe żądania na koniec całej grupy. Długości odpowiedzi nie znasz z góry, więc puste miejsca są regułą, nie wyjątkiem.</li>
     <li>Continuous batching (w literaturze iteration-level scheduling, system Orca, OSDI 2022) decyduje o składzie co krok decode. Skończona rozmowa zwalnia miejsce od razu, a czekająca dołącza w następnym kroku. Działa, bo każdy krok to osobny przebieg modelu, a warstwy poza attention nie zależą od długości sekwencji.</li>
-    <li>Nowa rozmowa zaczyna od prefillu swojego promptu, który na chwilę zabiera kartę rozmowom w trakcie generowania. Chunked prefill tnie długi prompt na kawałki mieszczące się w budżecie tokenów na krok. vLLM V1 włącza go domyślnie i w każdym kroku najpierw układa rozmowy w decode, a prefill dokłada w wolne miejsce.</li>
+    <li>Nowa rozmowa zaczyna od prefillu swojego promptu, który na chwilę zabiera kartę rozmowom w trakcie generowania. Chunked prefill tnie długi prompt na kawałki mieszczące się w budżecie tokenów na krok. vLLM V1 włącza go domyślnie i w każdym kroku najpierw obsługuje rozmowy w fazie decode, a prefill dokłada w wolne miejsce.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Przełącz sposób przydziału pamięci i policz, ile rozmów mieści się w tych samych 32 blokach</p>
@@ -27,20 +27,20 @@
     </div>
     <div class="pblocks" id="pgBlocks" style="margin-top:14px"></div>
     <div class="legend"><span><i style="background:var(--tok-t)"></i>blok zajęty przez rozmowę</span><span><i style="background:repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 6px)"></i>zarezerwowany i pusty</span></div>
-    <div class="stats"><div class="stat"><b id="pgFit"></b><span>rozmów mieści się w pamięci</span></div><div class="stat"><b id="pgWaste"></b><span>pamięci zarezerwowanej na pusto</span></div></div>
+    <div class="stats"><div class="stat"><b id="pgFit"></b><span>rozmów mieści się w pamięci</span></div><div class="stat"><b id="pgWaste"></b><span>pamięci zarezerwowanej, ale pustej</span></div></div>
     <p class="hint">Poglądowo: rezerwacja zakłada maksimum 8 bloków na rozmowę. W prawdziwym serwerze pusta zostaje jeszcze końcówka ostatniego bloku każdej rozmowy.</p>
   </div>
   <h3 class="sub">PagedAttention: pamięć na KV cache</h3>
   <ul class="notes">
     <li>Rezerwacja ciągłego obszaru na maksymalną długość odpowiedzi marnuje pamięć na zapas i fragmentację. Autorzy vLLM zmierzyli w ówczesnych systemach 60–80% straty pamięci na KV cache.</li>
     <li>PagedAttention dzieli KV cache na bloki po kilkanaście tokenów (zwykle 16), przydzielane w miarę generowania i adresowane przez tablicę bloków, jak strony pamięci wirtualnej w systemie operacyjnym. Pusta zostaje tylko końcówka ostatniego bloku, a strata spada poniżej 4%. Więcej rozmów w pamięci to większy batch i niższy koszt na token.</li>
-    <li>Bloki można współdzielić z kopiowaniem przy zapisie (copy-on-write). Wspólny prefiks, na przykład system prompt albo kilka próbek tej samej odpowiedzi, leży w pamięci raz. Na tym opiera się prefix caching w serwerze (zobacz „Prompt caching”). Przy wielu replikach działa tylko wtedy, gdy router kieruje żądania z tym samym prefiksem do repliki, która już go ma (routing świadomy prefiksu, np. w llm-d albo NVIDIA Dynamo).</li>
-    <li>Ceną przydziału na żądanie jest to, że pamięć może się skończyć w trakcie generowania. Serwer wtedy wywłaszcza rozmowę, a później liczy jej KV cache od nowa. W vLLM V1 to domyślny tryb, zamiast przenoszenia cache do pamięci CPU. Użytkownik widzi to jako nagły przestój strumienia.</li>
+    <li>Bloki można współdzielić z kopiowaniem przy zapisie (copy-on-write). Wspólny prefiks, na przykład system prompt albo prompt kilku próbek tej samej odpowiedzi, leży w pamięci raz. Na tym opiera się prefix caching w serwerze (zobacz „Prompt caching”). Przy wielu replikach działa tylko wtedy, gdy router kieruje żądania z tym samym prefiksem do repliki, która już go ma (routing świadomy prefiksu, np. w llm-d albo NVIDIA Dynamo).</li>
+    <li>Ceną przydziału na żądanie jest to, że pamięć może się skończyć w trakcie generowania. Serwer wtedy wywłaszcza rozmowę, a później liczy jej KV cache od nowa. W vLLM V1 to domyślny tryb, a nie przenoszenie cache’u do pamięci CPU. Użytkownik widzi to jako nagły przestój strumienia.</li>
   </ul>
-  <h3 class="sub">Co z tego wynika w produkcji</h3>
+  <h3 class="sub">Przepustowość a opóźnienie na produkcji</h3>
   <ul class="notes">
-    <li>Rozmiar batcha ogranicza pamięć na KV cache (liczba rozmów × długość kontekstu) i budżet opóźnienia między tokenami. Parametry serwera, takie jak <code>max_num_seqs</code> i <code>max_num_batched_tokens</code> w vLLM, ustawiają wprost ten kompromis.</li>
-    <li>Przepustowość rośnie kosztem opóźnienia. Pod obciążeniem czas do pierwszego tokena rośnie przez kolejkę i prefille, a czas między tokenami przez większe batche. Oba mierzysz osobno, w percentylach p50 i p99 (zobacz „LLM w produkcji”).</li>
+    <li>Rozmiar batcha ograniczają pamięć na KV cache (liczba rozmów × długość kontekstu) i budżet opóźnienia między tokenami. Parametry serwera, takie jak <code>max_num_seqs</code> i <code>max_num_batched_tokens</code> w vLLM, ustawiają wprost ten kompromis.</li>
+    <li>Przepustowość rośnie kosztem opóźnienia. Pod obciążeniem czas do pierwszego tokena rośnie przez kolejkę i prefille, a czas między tokenami przez większe batche. Oba mierzysz osobno, w percentylach p50 i p99 (zobacz „LLM na produkcji”).</li>
     <li>Batch API dostawców sprzedaje luźne SLO: u Anthropic 50% taniej, większość paczek kończy się w ciągu godziny, limit to 24 godziny. Dostawca może takim ruchem wypełniać wolne miejsca w batchach i doliny ruchu. Do ewaluacji i przetwarzania wsadowego to najprostsza oszczędność.</li>
   </ul>
 </section>

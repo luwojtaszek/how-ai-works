@@ -1,6 +1,6 @@
 <section class="station" id="wybor" data-hue="tok">
   <h2>Choosing a model</h2>
-  <p class="lede">You choose a model for the task, not for the leaderboard: take the cheapest configuration, meaning model, reasoning effort and provider, that passes your eval set within your latency and limits. Public benchmarks only tell you which candidates are worth testing.</p>
+  <p class="lede">You choose a model for the task, not for the leaderboard: take the cheapest configuration (model, reasoning effort and provider) that passes your eval set within your latency budget and limits. Public benchmarks only tell you which candidates are worth testing.</p>
   <div class="lab">
     <p class="lab-title">Set a quality floor and a latency cap. See which model is the cheapest of those that pass, then switch to the public leaderboard</p>
     <div class="row" role="group" aria-label="Where the score comes from">
@@ -15,27 +15,27 @@
     <div class="legend"><span><i class="wb-k"></i>passes</span><span><i class="wb-k wb-best"></i>cheapest that passes</span><span><i class="wb-k wb-out"></i>below the floor</span><span><i class="wb-k wb-out wb-slow"></i>too slow</span><span>A, B: frontier · C, D, E: mid · F, G: small</span></div>
     <div class="stats"><div class="stat"><b id="wbPick"></b><span>chosen model</span></div><div class="stat"><b id="wbCost"></b><span>cost per completed task</span></div><div class="stat"><b id="wbScore"></b><span>score on your eval set</span></div></div>
     <div class="callout" id="wbMsg" aria-live="polite"></div>
-    <p class="hint">Illustrative data: seven unnamed models, numbers picked by hand. Cost per completed task: the cost of all attempts, failed ones and reasoning tokens included, after the cache discount, divided by the tasks passed. Under each dot: p95 latency of the whole task.</p>
+    <p class="hint">Illustrative data: seven unnamed models, numbers picked by hand. Cost per completed task: the cost of all attempts, failed ones and reasoning tokens included, after the cache discount, divided by the number of tasks passed. Under each dot: p95 latency of the whole task.</p>
   </div>
   <h3 class="sub">From the task to the model</h3>
   <ul class="notes">
-    <li>Start from a set of cases taken from real traffic and the bar it has to clear (see “Evals”). Run it on a few candidates, each case several times, and take the cheapest one that passes.</li>
-    <li>Models come in tiers. Frontier models take hard reasoning, long agentic tasks and code. Mid-tier models cover most production work. Small, fast models handle classification, extraction, routing and simple steps at scale.</li>
+    <li>Start from a set of cases taken from real traffic and the bar a model has to clear (see “Evals”). Run it on a few candidates, each case several times, and take the cheapest one that passes.</li>
+    <li>Models come in tiers. Frontier models take on hard reasoning, long agentic tasks and code. Mid-tier models cover most production work. Small, fast models handle classification, extraction, routing and simple steps at scale.</li>
     <li>Reasoning effort is the second knob of the same choice. In their model-selection guides Anthropic writes that tuning effort is often a better lever than switching models, and OpenAI advises keeping the lightest setting that meets your quality bar (as of September 2026). So you compare model and effort pairs, not bare models.</li>
-    <li>One model for the whole system is rarely optimal. In a cascade a cheap model answers first, and only what a validator, tests or low confidence reject goes to a stronger model or a higher effort (see “LLMs in production”). Inside an agent you pick a model per step: a small one summarises tool results, a frontier one plans and makes the hard calls.</li>
+    <li>One model for the whole system is rarely optimal. In a cascade a cheap model goes first, and only answers that a validator or tests reject, or that come with low confidence, go to a stronger model or a higher effort (see “LLMs in production”). Inside an agent you pick a model per step: a small one summarises tool results, a frontier one plans and makes the hard calls.</li>
   </ul>
   <h3 class="sub">Cost and latency</h3>
   <ul class="notes">
-    <li>Count cost per completed task, not price per token: all tokens from all attempts, failed ones included, divided by the number of tasks passed. A stronger model often finishes in fewer turns with fewer fixes. In Anthropic’s measurements on a SWE-bench Pro subset, Fable 5.1 at low effort solved 88.6% of tasks for 0.54 USD per solved task, while Sonnet 5, five times cheaper per token, solved 77.4% for 0.84 USD. On long research it went the other way: Fable 5.1 cost about four times more per task. These are vendor numbers, so check them on your own task.</li>
+    <li>Count cost per completed task, not price per token: the cost of all tokens from all attempts, failed ones included, divided by the number of tasks passed. A stronger model often finishes in fewer turns with fewer fixes. In Anthropic’s measurements on a SWE-bench Pro subset, Fable 5.1 at low effort solved 88.6% of tasks for 0.54 USD per solved task, while Sonnet 5, five times cheaper per token, solved 77.4% for 0.84 USD. On long research tasks it went the other way: Fable 5.1 cost about four times more per task. These are vendor numbers, so check them on your own task.</li>
     <li>The price list hides three things. Reasoning tokens are billed as output, even when you never see them (see “Reasoning models”). Models differ in verbosity, so on the same task one can generate several times as many tokens as another. The cache discount differs too: at Anthropic a cache read usually costs 10% of the input price, 5% on Opus 5.5 and 2.5% on Fable 5.1 (as of September 2026, see “Prompt caching”). For an agent that reads most of its input from cache, that can flip the comparison.</li>
     <li>Latency is two numbers: time to first token (TTFT) and tokens per second after it. Reasoning effort moves both. The first word of the answer arrives only after all the thinking, and useful tokens per second drop because part of what is generated is thinking the user never sees. That is why Artificial Analysis measures time to first answer token separately. A slower model is helped by streaming, lower effort, or moving the step to where nobody is waiting.</li>
   </ul>
-  <h3 class="sub">Limits and data</h3>
+  <h3 class="sub">Limits, features and data residency</h3>
   <ul class="notes">
     <li>The context window on the model card is an upper bound, not a promise: quality drops long before it is full (see “The context window and agents”), so test at your real lengths. The output limit is separate and much smaller, and thinking counts towards it.</li>
     <li>Rate limits depend on your account tier, which grows with your spending history. At Anthropic a new organisation may start on a lower tier, and each tier has a monthly spend cap after which the API returns 429 until the start of the next month (as of September 2026). Check the limits for the exact model before launch, not after.</li>
     <li>Strict structured output, parallel tool calls, images, logprobs, batch and prompt caching are not available on every model or at every provider (see “Enforcing output format”). One missing feature can rule out the model that wins on your eval.</li>
-    <li>Where inference runs and where data is stored are two separate settings. Processing in a chosen region covers only some models and features, may need the provider’s approval, and costs more: about 10% on newer models at OpenAI and Anthropic (as of September 2026). Anthropic’s own API can pin only the US; an EU region comes through Bedrock or Google Cloud. Zero data retention (ZDR) needs an agreement and does not cover stateful features (see “LLMs in production”).</li>
+    <li>Where inference runs and where data is stored are two separate settings. Processing in a chosen region covers only some models and features, may need the provider’s approval, and costs more: about 10% on newer models at OpenAI and Anthropic (as of September 2026). Anthropic’s own API can pin inference only to the US; for an EU region you go through Bedrock or Google Cloud. Zero data retention (ZDR) needs an agreement and does not cover stateful features (see “LLMs in production”).</li>
   </ul>
   <h3 class="sub">Reading benchmarks</h3>
   <ul class="notes">
@@ -45,10 +45,10 @@
     <li>A vendor-reported score and an independent one are different measurements. The vendor picks the harness, reasoning effort, number of attempts and task subset. Independent evaluators such as Artificial Analysis and Epoch AI run every model in one harness, and Epoch notes that SWE-bench results depend heavily on the scaffold. Compare only numbers from one source and one harness (see “The coding-agent harness”).</li>
     <li>The same model at different providers is not the same product: different quantisation, chat template, tool-call parser and serving settings. In Moonshot’s November 2025 measurement, Kimi K2 Thinking produced schema-valid tool calls 100% of the time through the official API and 83–87% of the time at several third-party hosts. Test the specific endpoint, not the model name.</li>
   </ul>
-  <h3 class="sub">A choice that survives change</h3>
+  <h3 class="sub">Model retirement and switching</h3>
   <ul class="notes">
-    <li>Models are retired fast. Anthropic gives at least 60 days’ notice: Claude Sonnet 4, released in May 2025, got a retirement date in April 2026 and stopped working on 15 June 2026. Pin a specific version instead of an alias, and keep the eval set in your repository, so that switching models is one run plus a canary rather than a project (see “Compute and ‘getting dumber’”).</li>
+    <li>Models are retired fast. Anthropic gives at least 60 days’ notice: Claude Sonnet 4, released in May 2025, had its retirement announced in April 2026 and stopped working on 15 June 2026. Pin a specific version instead of an alias, and keep the eval set in your repository, so that switching models is one run plus a canary rather than a project (see “Is the model getting dumber?”).</li>
     <li>Route model calls through one thin layer, your own or a gateway, that knows prices, limits and fallbacks. Then a change of model or provider is configuration. You will still have to retune the prompt, because a new model reads the same instructions differently.</li>
-    <li>Open or closed is a separate decision about control over data, versions and cost at high volume (see “Open-weight models”). And before you pick a model, check whether the task needs an LLM at all (the next page, “When not to use an LLM: classifiers and System One”).</li>
+    <li>Open or closed is a separate decision about control over data, versions and cost at high volume (see “Open-weight models”). And before you pick a model, check whether the task needs an LLM at all (see “When not to use an LLM: classifiers and System One”).</li>
   </ul>
 </section>

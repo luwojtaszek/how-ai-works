@@ -2,7 +2,7 @@
   <h2>Następny token</h2>
   <p class="lede">Model nie zwraca tekstu, tylko wynik (logit) dla każdego tokena ze słownika. Osobny kod, sampler, zamienia wyniki w prawdopodobieństwa i losuje jeden token. Tak powstaje każdy token odpowiedzi, jeden po drugim.</p>
   <div class="lab">
-    <p class="lab-title">Zmieniaj temperaturę i top-p, a potem losuj. Porównaj pytanie, na które model zna odpowiedź, takie, na które odpowiada pewnie i błędnie, i takie, na które zgaduje</p>
+    <p class="lab-title">Zmieniaj temperaturę i top-p, a potem losuj. Porównaj pytanie, na które model zna odpowiedź, takie, na które odpowiada pewnie i błędnie, i takie, przy którym zgaduje</p>
     <div class="row" id="smpPresets"></div>
     <p class="hint" id="smpPrompt"></p>
     <div class="bars" id="smpBars" style="margin-top:14px"></div>
@@ -17,8 +17,8 @@
   </div>
   <h3 class="sub">Od logitów do tokena</h3>
   <ul class="notes">
-    <li>Softmax z temperaturą: <code>p = exp(logit / T) / Σ exp(logit / T)</code>. T poniżej 1 wyostrza rozkład, powyżej 1 go spłaszcza, T → 0 to zawsze najlepszy token (greedy), a bardzo wysokie T zbliża rozkład do równego. Temperatura nie zmienia kolejności tokenów, tylko odstępy między nimi.</li>
-    <li>Obcinanie ogona: top-k zostawia k najlepszych tokenów, top-p (nucleus) najmniejszy zbiór pokrywający np. 90% prawdopodobieństwa, min-p odrzuca tokeny słabsze niż ułamek najlepszego. Top-p i min-p dopasowują się do pewności modelu: przy pewnym zostaje jeden kandydat, przy niepewnym kilkadziesiąt. W Hugging Face i vLLM temperatura działa przed obcinaniem, więc wpływa na to, co zostanie.</li>
+    <li>Softmax z temperaturą: <code>p = exp(logit / T) / Σ exp(logit / T)</code>. T poniżej 1 wyostrza rozkład, powyżej 1 go spłaszcza, T → 0 to zawsze najlepszy token (greedy), a bardzo wysokie T zbliża rozkład do jednostajnego. Temperatura nie zmienia kolejności tokenów, tylko odstępy między nimi.</li>
+    <li>Obcinanie ogona: top-k zostawia k najlepszych tokenów, top-p (nucleus) najmniejszy zbiór pokrywający np. 90% prawdopodobieństwa, min-p odrzuca tokeny słabsze niż ułamek najlepszego. Top-p i min-p dopasowują się do pewności modelu: gdy model jest pewny, zostaje jeden kandydat, gdy niepewny – kilkadziesiąt. W Hugging Face i vLLM temperatura działa przed obcinaniem, więc wpływa na to, co zostanie.</li>
     <li>Wylosowany token trafia na koniec tekstu i nie da się go cofnąć. Kolejne tokeny muszą do niego pasować, więc jeden pechowy token z ogona potrafi pociągnąć za sobą całe zmyślone zdanie.</li>
     <li>Sampler może też zerować tokeny niezgodne ze schematem JSON. Tak działa structured output (zobacz „Wymuszanie formatu”).</li>
   </ul>
@@ -26,13 +26,13 @@
   <ul class="notes">
     <li>Greedy nie znaczy najlepiej. Wybieranie zawsze najbardziej prawdopodobnego tokena prowadzi do powtórzeń i pętli (Holtzman i in., 2019). DeepSeek zaleca dla R1 temperaturę 0,5–0,7 właśnie przeciw niekończącym się powtórzeniom. Kary za powtórzenia (repetition, frequency, presence penalty) obniżają logity już użytych tokenów: ograniczają pętle, ale karzą też uzasadnione powtórzenia, np. nazwy zmiennych w kodzie czy klucze JSON.</li>
     <li>Temperatura 0 nie daje pełnej powtarzalności. Obliczenia na GPU dają minimalnie inne liczby zależnie od tego, ile requestów trafiło do batcha, a przy prawie równych logitach to zmienia wybrany token i całą resztę odpowiedzi. Parametr <code>seed</code>, tam gdzie API go ma, nie gwarantuje determinizmu. Przy self-hostingu determinizm dają kernele niezależne od batcha, kosztem prędkości (vLLM: <code>VLLM_BATCH_INVARIANT=1</code>).</li>
-    <li>Rozkład nie mierzy prawdy. Płaski rozkład bywa sygnałem niewiedzy, ale też kilku równie dobrych sformułowań. Model bywa pewny błędu, a sampler zawsze coś wybierze i zdanie zabrzmi równie pewnie. Niższa temperatura nie leczy zmyśleń, tylko czyni je powtarzalnymi (zobacz „Halucynacje”).</li>
+    <li>Rozkład nie mierzy prawdy. Płaski rozkład bywa sygnałem niewiedzy, ale też kilku równie dobrych sformułowań. Model bywa pewny błędnej odpowiedzi, a sampler zawsze coś wybierze i zdanie zabrzmi równie pewnie. Niższa temperatura nie leczy zmyśleń, tylko czyni je powtarzalnymi (zobacz „Halucynacje”).</li>
   </ul>
   <h3 class="sub">Co ustawiasz w praktyce</h3>
   <ul class="notes">
     <li>W modelach bez rozumowania: ekstrakcja, klasyfikacja i kod przy niskiej temperaturze, 0–0,3; pisanie i szukanie pomysłów przy 0,7–1. Zmieniaj temperaturę albo top-p, nie oba naraz, i sprawdzaj efekt na zestawie ewaluacyjnym, a nie na jednej próbce.</li>
     <li><code>logprobs</code> w API pokazują ten rozkład, zwykle sprzed temperatury i top-p (domyślnie w vLLM). Przydają się do progu pewności w klasyfikacji: każesz modelowi odpowiedzieć jednym tokenem etykiety i czytasz prawdopodobieństwo każdej etykiety. API Claude ich nie zwraca, a OpenAI tylko przy wyłączonym rozumowaniu.</li>
     <li>Kilka próbek przy T &gt; 0 i głosowanie większością (self-consistency) podnosi trafność w zadaniach z jedną poprawną odpowiedzią, a niezgodność próbek jest sygnałem niepewności. Kosztuje tyle razy więcej tokenów, ile próbek.</li>
-    <li>Przy modelach rozumujących sampler bywa zamknięty (stan na wrzesień 2026). Claude Opus od wersji 4.7 i Claude Sonnet 5 odrzucają niedomyślne <code>temperature</code>, <code>top_p</code> i <code>top_k</code> błędem 400, a OpenAI przy włączonym rozumowaniu nie przyjmuje <code>temperature</code>, <code>top_p</code> ani <code>logprobs</code>. Sterujesz wtedy poziomem rozumowania i promptem. Tam, gdzie model rozumujący je przyjmuje, zostaw wartości zalecane przez dostawcę: Google zdecydowanie zaleca temperaturę 1,0 dla wszystkich modeli Gemini 3 i ostrzega, że niższa może wpędzić model w pętle. Niska temperatura to narzędzie dla modeli bez rozumowania.</li>
+    <li>Przy modelach rozumujących sampler bywa zablokowany (stan na wrzesień 2026). Claude Opus od wersji 4.7 i Claude Sonnet 5 odrzucają błędem 400 wartości <code>temperature</code>, <code>top_p</code> i <code>top_k</code> inne niż domyślne, a OpenAI przy włączonym rozumowaniu nie przyjmuje <code>temperature</code>, <code>top_p</code> ani <code>logprobs</code>. Sterujesz wtedy poziomem rozumowania i promptem. Tam, gdzie model rozumujący je przyjmuje, zostaw wartości zalecane przez dostawcę: Google zdecydowanie zaleca temperaturę 1,0 dla wszystkich modeli Gemini 3 i ostrzega, że niższa może wpędzić model w pętle. Niska temperatura to narzędzie dla modeli bez rozumowania.</li>
   </ul>
 </section>

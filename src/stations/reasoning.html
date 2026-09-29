@@ -1,6 +1,6 @@
 <section class="station" id="reasoning" data-hue="att">
   <h2>Modele rozumujące</h2>
-  <p class="lede">Model rozumujący przed odpowiedzią pisze tok myślenia: próbuje, sprawdza, poprawia się. To ten sam mechanizm token po tokenie, wyuczony w RL na zadaniach ze sprawdzalnym wynikiem, a za tokeny myślenia płacisz jak za wyjście.</p>
+  <p class="lede">Model rozumujący przed odpowiedzią pisze tok myślenia: próbuje, sprawdza, poprawia się. To ten sam mechanizm generowania token po tokenie, wyuczony w RL na zadaniach ze sprawdzalnym wynikiem, a za tokeny myślenia płacisz jak za wyjście.</p>
   <div class="lab">
     <p class="lab-title">Wybierz zadanie i poziom myślenia. Zobacz, gdzie myślenie poprawia wynik, a gdzie tylko kosztuje</p>
     <div class="row" id="rsTask" role="group" aria-label="Zadanie"><span class="rsn-lbl">Zadanie:</span></div>
@@ -21,28 +21,28 @@
   <h3 class="sub">Skąd się bierze myślenie</h3>
   <ul class="notes">
     <li>Nie ma osobnego modułu myślenia. Tok myślenia to zwykłe tokeny z tej samej pętli co odpowiedź (temat „Następny token”), tylko oznaczone jako myślenie. Każdy zapisany krok zostaje w kontekście, więc kolejne tokeny liczą na nim jak na brudnopisie.</li>
-    <li>Pisania brudnopisu model uczy się w RL (temat „Trening”) na zadaniach sprawdzanych automatycznie: matematyce z wynikiem, kodzie z testami. Nagradzany jest głównie wynik, więc utrwala się wszystko, co do niego prowadzi, także sprawdzanie się i cofanie. W DeepSeek-R1-Zero takie zachowania upowszechniły się w samym RL, bez przykładów pisanych przez ludzi, choć modele bazowe czasem przejawiają je już wcześniej (Liu i in., 2025). RLVR głównie sprawia, że model pewniej trafia w odpowiedzi, które model bazowy też potrafił znaleźć: przy wielu próbach (duże pass@k) model bazowy go dogania (Yue i in., 2025).</li>
+    <li>Pisania brudnopisu model uczy się w RL (temat „Trening”) na zadaniach sprawdzanych automatycznie: matematyce ze znanym wynikiem, kodzie z testami. Nagradzany jest głównie wynik, więc utrwala się wszystko, co do niego prowadzi, także sprawdzanie się i cofanie. W DeepSeek-R1-Zero takie zachowania upowszechniły się w samym RL, bez przykładów pisanych przez ludzi, choć modele bazowe czasem przejawiają je już wcześniej (Liu i in., 2025). RLVR głównie sprawia, że model pewniej trafia w odpowiedzi, które model bazowy też potrafił znaleźć: przy wielu próbach (duże pass@k) model bazowy go dogania (Yue i in., 2025).</li>
     <li>To jedna z form test-time compute, czyli dokładania obliczeń w chwili odpowiedzi zamiast budowania większego modelu. Inne to wiele prób z głosowaniem albo wybór najlepszej przez weryfikator. Zysk maleje z długością myślenia, a na części zadań dłuższe myślenie pogarsza wynik (inverse scaling in test-time compute, 2025).</li>
   </ul>
-  <h3 class="sub">Kiedy się opłaca</h3>
+  <h3 class="sub">Kiedy myślenie się opłaca</h3>
   <ul class="notes">
     <li>Pomaga w zadaniach z wieloma krokami, w których łatwo o pomyłkę: rachunkach, kodzie, planowaniu, analizie z wieloma warunkami. Przy prostych faktach, wyszukiwaniu i krótkiej klasyfikacji dokłada tylko koszt i czekanie.</li>
     <li>Wiedzy nie dodaje. Czego model nie wie, tego nie wymyśli: dostaniesz dłuższe i pewniej brzmiące zgadywanie (temat „Halucynacje”).</li>
     <li>Każdy token myślenia to krok decode, który czeka na pamięć (temat „Czemu GPU się nudzi”). Kilka tysięcy tokenów myślenia to dziesiątki sekund przed pierwszym słowem odpowiedzi. W interfejsie pokaż postęp albo streszczenie myślenia. Zadania bez człowieka w pętli puszczaj w tle albo wsadowo.</li>
   </ul>
-  <h3 class="sub">Sterowanie i rachunek</h3>
+  <h3 class="sub">Sterowanie myśleniem i rachunek</h3>
   <ul class="notes">
     <li>Sterujesz poziomem wysiłku (<code>reasoning.effort</code> w OpenAI, <code>effort</code> w Anthropic, <code>thinking_level</code> w Gemini, zależnie od modelu od <code>none</code> do <code>max</code>). Stały budżet tokenów myślenia (<code>budget_tokens</code>, <code>thinking_budget</code>) został tylko w starszych modelach: Claude 4.7 i nowsze odrzucają go błędem 400, a Gemini 3 przyjmuje go już tylko dla zgodności wstecz. Nawet tam jest celem, nie przydziałem. Poziom dobierasz ewaluacją na własnych zadaniach (temat „Ewaluacje”).</li>
     <li>W najnowszych flagowych modelach myślenia nie da się wyłączyć (stan na wrzesień 2026): Claude Opus 5.5 i Fable 5.1 odrzucają <code>thinking: {type: "disabled"}</code> błędem 400, GPT-6 Astra tak samo odrzuca <code>none</code>, a w Gemini 3.x najniższy poziom to <code>minimal</code> albo <code>low</code>. Wybierasz, ile myśleć, a nie czy. W trybie adaptacyjnym model decyduje przy każdym zapytaniu, a przy niższym wysiłku częściej pomija myślenie przy prostych pytaniach.</li>
     <li>Tokeny myślenia są rozliczane jak wyjście, także gdy ich nie widzisz. API zwykle nie zwracają surowego toku myślenia, tylko streszczenie albo pusty blok z zaszyfrowaną treścią, więc <code>usage</code> pokazuje więcej tokenów, niż widać w odpowiedzi.</li>
     <li>Myślenie liczy się do limitu wyjścia (<code>max_tokens</code>, <code>max_output_tokens</code>) i do okna kontekstu. Za niski limit ucina odpowiedź w trakcie myślenia. OpenAI zaleca na start zapas co najmniej 25 tys. tokenów na myślenie i odpowiedź.</li>
-    <li>Sampler jest zwykle zablokowany. Claude Opus od 4.7 odrzuca każde niestandardowe <code>temperature</code>, <code>top_p</code> i <code>top_k</code> błędem 400, z myśleniem czy bez, a OpenAI przy włączonym rozumowaniu nie przyjmuje <code>temperature</code> ani <code>top_p</code> (temat „Następny token”).</li>
+    <li>Sampler jest zwykle zablokowany. Claude Opus od 4.7 odrzuca każdą niestandardową wartość <code>temperature</code>, <code>top_p</code> i <code>top_k</code> błędem 400, z myśleniem czy bez, a OpenAI przy włączonym rozumowaniu nie przyjmuje <code>temperature</code> ani <code>top_p</code> (temat „Następny token”).</li>
   </ul>
   <h3 class="sub">Na co uważać</h3>
   <ul class="notes">
-    <li>Tok myślenia nie musi wiernie opisywać, jak powstała odpowiedź. W badaniu Anthropic (2025) modele korzystały z podsuniętej podpowiedzi, ale przyznawały się do niej w mniejszości przypadków: Claude 3.7 Sonnet w 25%, DeepSeek R1 w 39%. Czytaj go jako wskazówkę przy debugowaniu, nie jako audyt.</li>
-    <li>W agencie model myśli też między wywołaniami narzędzi (interleaved thinking, temat „Pętla agenta”). Bloki myślenia odsyłasz w kolejnym requeście bez zmian, z podpisem albo zaszyfrowaną treścią. Zmieniony blok API odrzuci, pominięty zrywa ciągłość rozumowania.</li>
-    <li>W Claude Opus 5.5 i Fable 5.1 blok jest też związany ze wszystkim, co stoi przed nim. Jeśli twój kod zmieni system prompt, narzędzia albo wcześniejszą wiadomość (np. przytnie stary wynik narzędzia), ponowne odesłanie bloku kończy się błędem 400 na kontach założonych od 31 sierpnia 2026 (na starszych tylko po włączeniu opcji). Edycja kontekstu i kompakcja po stronie serwera nie liczą się jako zmiana. Historię tylko dopisuj, a nowe instrukcje dodawaj jako nowe wiadomości.</li>
+    <li>Tok myślenia nie musi wiernie opisywać, jak powstała odpowiedź. W badaniu Anthropic (2025) modele korzystały z podsuniętej podpowiedzi, ale przyznawały się do niej rzadziej niż w połowie przypadków: Claude 3.7 Sonnet w 25%, DeepSeek R1 w 39%. Czytaj tok myślenia jako wskazówkę przy debugowaniu, nie jako audyt.</li>
+    <li>W agencie model myśli też między wywołaniami narzędzi (interleaved thinking, temat „Pętla agenta”). Bloki myślenia odsyłasz w kolejnym requeście bez zmian, z podpisem albo zaszyfrowaną treścią. API odrzuci zmieniony blok, a pominięty zerwie ciągłość rozumowania.</li>
+    <li>W Claude Opus 5.5, Fable 5.1 i Sonnet 5.5 blok jest też związany ze wszystkim, co stoi przed nim. Jeśli twój kod zmieni system prompt, narzędzia albo wcześniejszą wiadomość (np. przytnie stary wynik narzędzia), ponowne odesłanie bloku kończy się błędem 400 na kontach założonych od 31 sierpnia 2026 (na starszych tylko po włączeniu opcji). Edycja kontekstu i kompakcja po stronie serwera nie liczą się jako zmiana. Historię tylko dopisuj, a nowe instrukcje dodawaj jako nowe wiadomości.</li>
     <li>Myślenie z poprzednich tur jedne modele wycinają z kontekstu, inne zachowują. Zachowane zajmuje okno i jest płatne jak wejście. Wycięte zmienia prefiks od miejsca wycięcia, więc cache za nim chybia. Zmiana poziomu wysiłku albo budżetu w trakcie rozmowy też unieważnia prompt cache, bo ustawienie trafia do promptu (temat „Prompt caching”).</li>
   </ul>
 </section>

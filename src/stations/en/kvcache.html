@@ -16,13 +16,13 @@
   <ul class="notes">
     <li>In every attention layer a token has three projections of its state: query Q, key K and value V (see “Attention”). A new token compares its Q with the keys of all earlier tokens and takes a weighted sum of their values. The KV cache is the K and V of all tokens so far, kept separately for every layer and KV head.</li>
     <li>Q is not kept. A token’s query is needed only in the step where that token is the last one. Later tokens read only its K and V.</li>
-    <li>Keeping them is valid thanks to the causal mask: the K and V of token <i>i</i> depend only on tokens 0…<i>i</i>, so new tokens don’t change them. This is memoisation. Without it, step <i>n</i> would recompute all <i>n</i> tokens, so generating <i>N</i> tokens would take work growing with <i>N</i>² instead of <i>N</i>.</li>
+    <li>Keeping them is valid thanks to the causal mask: the K and V of token <i>i</i> depend only on tokens 0…<i>i</i>, so new tokens don’t change them. This is memoisation. Without it, step <i>n</i> would recompute all <i>n</i> tokens, so generating <i>N</i> tokens would take projection and MLP work growing with <i>N</i>² instead of <i>N</i> (and attention work with <i>N</i>³ instead of <i>N</i>²).</li>
     <li>It also works the other way round: a token’s K and V depend on all tokens before it and on its position (RoPE). Changing one token invalidates the cache for everything after it. That is why a provider can reuse a cache only for an identical prefix, and why an agent only ever appends to its history (see “Prompt caching”).</li>
   </ul>
-  <h3 class="sub">How much memory it takes</h3>
+  <h3 class="sub">How much memory the KV cache takes</h3>
   <ul class="notes">
     <li>Per token: 2 (K and V) × layers × KV heads × head dimension × bytes. Llama 3.1 70B in FP16: 2 × 80 × 8 × 128 × 2 B = 327,680 B, about 0.33 MB. A full 128k tokens is 43 GB for a single conversation, against 141 GB for the weights alone.</li>
-    <li>The architecture sets the shape of the cache. GQA keeps one K, V pair per group of query heads (MQA is the extreme case: one pair per layer). Llama 3 70B has 8 KV heads for 64 Q heads; without GQA a 128k-token cache would take 344 GB. DeepSeek’s MLA stores one compressed vector per layer: in DeepSeek-V3 that is 61 × 576 × 2 B ≈ 70 KB per token, almost 5 times less than Llama 70B, even though the model has 671B parameters.</li>
+    <li>The architecture sets the shape of the cache. GQA keeps one K/V pair per group of query heads (MQA is the extreme case: one pair per layer). Llama 3 70B has 8 KV heads for 64 Q heads; without GQA a 128k-token cache would take 344 GB. DeepSeek’s MLA stores one compressed vector per layer: in DeepSeek-V3 that is 61 × 576 × 2 B ≈ 70 KB per token, almost 5 times less than Llama 70B’s, even though the model has 671B parameters.</li>
     <li>Sliding window: some layers see only the last W tokens, so their cache never grows beyond W. Gemma 3 has five such layers (W = 1024) for every full one, which at 128k tokens comes to about 17% of the cache of the same model with only full layers. Hybrid models replace some attention layers with SSM layers that have a fixed-size state.</li>
     <li>When serving an existing model, precision is the lever left: an FP8 cache takes half the memory. It is an approximation, so check quality on your own evals.</li>
   </ul>
@@ -51,14 +51,14 @@
       <label class="ctl"><span>Context: <b id="kdCv"></b></span><input type="range" id="kdCtx" min="10" max="17" step="1" value="15"></label>
       <label class="ctl"><span>Conversations in the batch: <b id="kdUv"></b></span><input type="range" id="kdUsers" min="1" max="64" step="1" value="8"></label>
     </div>
-    <div class="stats"><div class="stat"><b id="kdMem"></b><span>used of the GPU’s 80 GB</span></div><div class="stat"><b id="kdStep"></b><span>time per step</span></div><div class="stat"><b id="kdTok"></b><span>tokens/s per conversation</span></div><div class="stat"><b id="kdAll"></b><span>tokens/s in total</span></div><div class="stat"><b id="kdShare"></b><span>of reads are the cache</span></div></div>
+    <div class="stats"><div class="stat"><b id="kdMem"></b><span>used of the GPU’s 80 GB</span></div><div class="stat"><b id="kdStep"></b><span>time per step</span></div><div class="stat"><b id="kdTok"></b><span>tokens/s per conversation</span></div><div class="stat"><b id="kdAll"></b><span>tokens/s in total</span></div><div class="stat"><b id="kdShare"></b><span>of reads come from the cache</span></div></div>
     <div class="callout" id="kdMsg"></div>
     <p class="hint">An illustrative model as in “Why the GPU is idle”: 8B parameters in FP16 (16 GB of weights, 128 KB of cache per token), a single H100 with 80 GB of memory and 3.35 TB/s. Step time = (weights + cache of all conversations) / bandwidth. This is an upper bound on speed, with no overheads.</p>
   </div>
   <h3 class="sub">The cache on the server</h3>
   <ul class="notes">
-    <li>PagedAttention (vLLM) splits the cache into blocks of a dozen or so tokens, like virtual-memory pages. The server doesn’t reserve space for the maximum length, and a prefix shared by many conversations is stored once. Prompt caching is the same blocks kept after the request and looked up by a hash of the prefix.</li>
-    <li>When memory runs out, the server pauses some conversations and later either recomputes their cache or offloads it to RAM or disk and loads it back. Both cost time but don’t change the result.</li>
+    <li>PagedAttention (vLLM) splits the cache into blocks of a dozen or so tokens, like virtual-memory pages. The server doesn’t reserve space for the maximum length, and a prefix shared by many conversations is stored once. Prompt caching keeps the same blocks after the request and looks them up by a hash of the prefix.</li>
+    <li>When memory runs out, the server pauses some conversations and either drops their cache and recomputes it later, or offloads it to RAM or disk and loads it back. Both cost time but don’t change the result.</li>
     <li>Evicting some tokens from the cache (StreamingLLM, H2O: the first, the most recent and the most attended tokens stay) saves memory but is an approximation. The model loses access to the evicted text, so quality on long tasks drops.</li>
   </ul>
 </section>

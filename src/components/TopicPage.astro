@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
 import { UI, REPO, content, root, other } from '../i18n.js';
-import { topic, fmtDate } from '../lib/content.js';
+import { topic, fmtDate, publishedOf } from '../lib/content.js';
 
 const { lang, id } = Astro.props;
 const ui = UI[lang], c = content(lang), r = root(lang);
@@ -20,20 +20,18 @@ const ledeEnd = html.indexOf('</p>', html.indexOf('class="lede"')) + 4;
 const close = html.lastIndexOf('</section>');
 const mdUrl = Astro.site ? new URL(`${r}${c.slug(id)}.md`, Astro.site).href : `${r}${c.slug(id)}.md`;
 const prompt = ui.aiPrompt(mdUrl, t.title);
-const gi = c.groups.findIndex((g) => g[2].includes(id));
-const desc = t.lede.length > 160 ? t.lede.slice(0, t.lede.lastIndexOf(' ', 157)) + '…' : t.lede;
+const desc = t.lede.length > 160 ? t.lede.slice(0, t.lede.lastIndexOf(' ', 157)).replace(/[,;:]$/, '').replace(/[^.!?]$/, '$&…') : t.lede;
 // a topic without its own preview image (not generated yet by scripts/og.sh) uses the site one
 const og = existsSync(`public/og/${lang}/${id}.png`) ? `/og/${lang}/${id}.png` : `/og/${lang}/home.png`;
 const abs = (p) => (Astro.site ? new URL(p, Astro.site).href : p);
 const jsonld = [
-  { '@context': 'https://schema.org', '@type': 'TechArticle', headline: t.title, description: desc, inLanguage: lang, dateModified: t.updated,
+  { '@context': 'https://schema.org', '@type': 'TechArticle', headline: t.title, description: desc, inLanguage: lang, datePublished: publishedOf(id), dateModified: t.updated,
     url: abs(c.path(id)), image: abs(og), articleSection: t.group, isAccessibleForFree: true,
     author: { '@type': 'Organization', name: 'magnificode.pl', url: 'https://magnificode.pl' },
     isPartOf: { '@type': 'WebSite', name: ui.siteName, url: abs(r) } },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: ui.siteName, item: abs(r) },
-    { '@type': 'ListItem', position: 2, name: `${ui.chapter} ${gi + 1}: ${t.group}`, item: abs(c.path(c.groups[gi][2][0])) },
-    { '@type': 'ListItem', position: 3, name: t.title, item: abs(c.path(id)) }] }];
+    { '@type': 'ListItem', position: 2, name: t.title, item: abs(c.path(id)) }] }];
 const minutes = Math.max(1, Math.round(t.markdown.split(/\s+/).length / 200));
 const report = `${REPO}/issues/new?title=${encodeURIComponent(`${ui.reportError}: ${t.title}`)}&body=${encodeURIComponent(abs(c.path(id)) + '\n\n')}`;
 const fix = `${REPO}/edit/main/src/stations/${lang === 'en' ? 'en/' : ''}${id}.html`;

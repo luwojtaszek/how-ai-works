@@ -12,6 +12,9 @@ const gitDate = (files) => { try { return execFileSync('git', ['log', '-1', '--f
 export const SITE_UPDATED = CHANGELOG[0]?.date;
 export const updatedOf = (id) => [gitDate([`src/stations/${id}.html`, `src/stations/en/${id}.html`]), ...CHANGELOG.filter((e) => [...e.added, ...e.updated].includes(id)).map((e) => e.date)]
   .filter(Boolean).sort().pop() || SITE_UPDATED;
+// First publication = the changelog entry that added the topic, else the first public version (the oldest entry),
+// so JSON-LD agrees with the site's own "What's new" page.
+export const publishedOf = (id) => CHANGELOG.find((e) => e.added.includes(id))?.date || CHANGELOG.at(-1).date;
 export const fmtDate = (d, lang) => new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 // topics added in the last 45 days (relative to the build) get a "new" badge
 const BUILD = new Date().toISOString().slice(0, 10);

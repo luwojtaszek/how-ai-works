@@ -1,6 +1,6 @@
 <section class="station" id="spec" data-hue="att">
   <h2>Speculative decoding</h2>
-  <p class="lede">A cheap mechanism guesses the next few tokens, and the large model checks all of them in one pass, keeping the ones it would have chosen itself. The text is the same as without speculation, but one read of the weights yields several tokens.</p>
+  <p class="lede">In speculative decoding, a cheap mechanism guesses the next few tokens, and the large model checks all of them in one pass, keeping the ones it would have chosen itself. The output matches decoding without speculation (the same text with greedy decoding, the same distribution with sampling), but one read of the weights yields several tokens.</p>
   <div class="lab">
     <p class="lab-title">Step through three rounds and watch how many tokens one verification accepts and how many large-model passes you save</p>
     <div id="spPlayer"></div>
@@ -17,17 +17,17 @@
     <li>Verification is cheap because decode is memory-bound: a pass over five positions reads the same weights as a pass over one and takes almost the same time (see “Why the GPU is idle”).</li>
     <li>When sampling, a proposal x is accepted with probability min(1, p(x)/q(x)), where p is the large model’s distribution and q the small model’s. After a rejection you sample from max(0, p − q), normalised. The result has exactly the large model’s distribution (Leviathan et al.; Chen et al., 2023), and with greedy decoding the text is identical, up to small numerical differences.</li>
   </ul>
-  <h3 class="sub">What the gain depends on</h3>
+  <h3 class="sub">What the speed-up depends on</h3>
   <ul class="notes">
     <li>With acceptance rate α and γ proposals, a round yields on average (1 − α^(γ+1)) / (1 − α) tokens. For α = 0.8 and γ = 4 that is about 3.4 tokens per large-model pass. The time saving is smaller, because the draft costs something too, and rejected proposals are wasted work.</li>
     <li>Acceptance depends on the text. Code, JSON, repetition and low temperature give a high α; creative text at high temperature a low one. Leviathan et al. measured a 2–3× speed-up on T5-XXL. DeepSeek-V3 reports 85–90% acceptance of the second token from its MTP module and 1.8× more tokens per second.</li>
-    <li>The gain shrinks as the batch grows. The weights are read once for the whole batch anyway, so once a step becomes compute-bound the extra positions cost real compute: with large batches and short contexts, speculation can turn into a loss. The KV cache is different, because every conversation reads its own. With long contexts decode stays memory-bound even at large batch sizes, and a draft that is cheap on cache reads still raises throughput (MagicDec: up to 2.5× for Llama 3.1 8B at batch sizes 32–256; EAGLE-3: 1.38× at batch 64 in SGLang). vLLM recommends speculation mainly for low to medium load, but rates EAGLE and MTP as a medium to high gain under heavy load too.</li>
+    <li>The gain shrinks as the batch grows. The weights are read once for the whole batch anyway, so once a step becomes compute-bound the extra positions cost real compute: with large batches and short contexts, speculation can turn into a loss. The KV cache is different, because every conversation reads its own. With long contexts decode stays memory-bound even at large batch sizes, and a draft that is cheap on cache reads still raises throughput (MagicDec: up to 2.5× for Llama 3.1 8B at batch sizes 32–256; EAGLE-3: 1.38× at batch 64 in SGLang). vLLM recommends speculation mainly for low to medium load, but rates the gain from EAGLE and MTP as medium to high under heavy load too.</li>
   </ul>
-  <h3 class="sub">Variants and choosing in practice</h3>
+  <h3 class="sub">Variants and how to choose</h3>
   <ul class="notes">
     <li>A separate small model from the same family with the same tokeniser: easy to use, but it takes memory and has to be served alongside the large one.</li>
-    <li>A draft attached to the large model: extra heads that predict the next positions (Medusa), a light layer working on the large model’s hidden states (EAGLE, now EAGLE-3), or an MTP module the model has from training, as in DeepSeek-V3. These usually guess better than a separate small model. The output stays exact only with standard acceptance and an unchanged large model: Medusa-2, which fine-tunes the large model along with the heads, and Medusa’s “typical acceptance” trade exactness for speed.</li>
+    <li>A draft attached to the large model: extra heads that predict the next positions (Medusa), a light layer working on the large model’s hidden states (EAGLE, now EAGLE-3), or an MTP module trained together with the model, as in DeepSeek-V3. These usually guess better than a separate small model. The output stays exact only with standard acceptance and an unchanged large model: Medusa-2, which fine-tunes the large model along with the heads, and Medusa’s “typical acceptance” trade exactness for speed.</li>
     <li>No model at all: n-gram matching copies the continuation from the prompt (prompt lookup). It works for code editing, RAG and summaries, where the answer repeats parts of the input.</li>
-    <li>Choose the method and γ from the α measured on your own traffic, and check the gain at the target load, not on a single request. In providers’ APIs speculation usually runs invisibly. The exception is features like Predicted Outputs in the OpenAI API, where you supply the expected text yourself, for example the file before an edit (as of September 2026 only on GPT-4o and GPT-4.1 models and without function calling; rejected predicted tokens are billed as output).</li>
+    <li>Choose the method and γ based on the α measured on your own traffic, and check the gain at the target load, not on a single request. In providers’ APIs speculation usually runs invisibly. The exception is features like Predicted Outputs in the OpenAI API, where you supply the expected text yourself, for example the file before an edit (as of September 2026 only on GPT-4o and GPT-4.1 models and without function calling; rejected predicted tokens are billed as output).</li>
   </ul>
 </section>

@@ -1,6 +1,6 @@
 <section class="station" id="context" data-hue="cost">
-  <h2>Context window i agent</h2>
-  <p class="lede">Model niczego nie pamięta między requestami, wie tylko to, co dostał w bieżącym. Context window to limit tokenów jednego requestu, wspólny dla wejścia i wyjścia, a agent w każdej turze wysyła całą rosnącą historię, więc płaci za nią wielokrotnie, a jakość odpowiedzi spada z długością.</p>
+  <h2>Okno kontekstowe i agent</h2>
+  <p class="lede">Model niczego nie pamięta między requestami, wie tylko to, co dostał w bieżącym. Context window to wspólny limit tokenów wejścia i wyjścia jednego requestu. Agent w każdej turze wysyła całą rosnącą historię, więc płaci za nią wielokrotnie, a jakość odpowiedzi spada wraz z jej długością.</p>
   <div class="lab">
     <p class="lab-title">Przesuń suwak tur agenta. Zobacz, co zapełnia okno i jak szybko rośnie łączny koszt wejścia</p>
     <label class="ctl"><span>Tura agenta: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="30" step="1" value="6"></label>
@@ -20,22 +20,22 @@
   <h3 class="sub">Limit wejścia i limit wyjścia</h3>
   <ul class="notes">
     <li>Okno obejmuje wejście i wyjście razem. Osobno działa limit wyjścia jednego requestu (<code>max_tokens</code>), dużo mniejszy: we wrześniu 2026 modele Claude z oknem 1 mln tokenów generują najwyżej 128 tys. na request, a modele GPT-6 w OpenAI mają okno 1,05 mln, z czego najwyżej 922 tys. na wejście, i 128 tys. wyjścia.</li>
-    <li>Za długie wejście API zwykle odrzuca błędem. Ucięcie historii to decyzja twojej aplikacji albo frameworka, często podejmowana po cichu, od najstarszych wiadomości.</li>
+    <li>API zwykle odrzuca za długie wejście, zwracając błąd. Ucięcie historii od najstarszych wiadomości to decyzja twojej aplikacji albo frameworka, często podejmowana po cichu.</li>
     <li>Gdy wyjście dojdzie do limitu, generacja staje w pół zdania: <code>stop_reason: "max_tokens"</code> w Anthropic (w Claude 4.5+ także <code>"model_context_window_exceeded"</code>, gdy wejście z wyjściem zapełnią okno), <code>finish_reason: "length"</code> w Chat Completions. JSON jest wtedy niepełny, a model rozumujący może nie dojść do odpowiedzi. Sprawdzaj powód zatrzymania w kodzie.</li>
     <li>Długi kontekst bywa droższy za token: Gemini 3.1 Pro powyżej 200 tys. tokenów wejścia i modele GPT-6 powyżej 272 tys. liczą cały request 2 razy drożej za wejście i cache oraz 1,5 razy drożej za wyjście. Modele Claude z oknem 1 mln mają stałą stawkę (wrzesień 2026).</li>
   </ul>
   <h3 class="sub">Koszt rośnie z każdą turą</h3>
   <ul class="notes">
     <li>W pętli agenta (temat „Pętla agenta”) tura <i>t</i> wysyła wszystko z wcześniejszych tur plus nowy wynik. Przy stałym przyroście na turę łączna liczba tokenów wejściowych rośnie z kwadratem liczby tur. W widżecie 24 tury to już ok. 2,2 mln tokenów wejściowych, choć każdy request mieści się w oknie 200 tys.</li>
-    <li>W agentach wejście dominuje: Manus podaje średni stosunek tokenów wejściowych do wyjściowych ok. 100:1. Główną dźwignią na rachunek jest więc prompt caching. Maska przyczynowa utrwala K i V starych tokenów, więc dopóki historię się tylko dopisuje, każda tura czyta z cache’u wszystko poza najnowszą częścią (temat „Prompt caching”). Odczyt kosztuje ok. 10% ceny, ale krzywa zostaje kwadratowa.</li>
-    <li>Rośnie też opóźnienie. Prefill nietrafionej części wydłuża czas do pierwszego tokena, a każdy krok decode czyta cały KV cache, więc długi kontekst spowalnia także pisanie (temat „Pętla generowania i KV cache”).</li>
-    <li>Gdy narzędzie pracuje, model nic nie liczy, a KV cache rozmowy dalej zajmuje pamięć GPU. Obciążony serwer może zrzucić cache do RAM-u albo na SSD i wczytać go z powrotem, gdy przyjdzie wynik: szybciej, niż liczyłby długą historię od nowa, ale nie bez kosztu dla czasu do pierwszego tokena (Glenn Lockwood, wrzesień 2026). Przez API widać tylko czas życia wpisu, a u Anthropic liczy się on od startu requestu: generacja i wolne testy mogą przekroczyć 5-minutowy wpis, a następna tura zapłaci za zapis i pełny prefill całej historii. Przy narzędziach działających minutami opłaca się wpis godzinny.</li>
+    <li>W agentach wejście dominuje: Manus podaje średni stosunek tokenów wejściowych do wyjściowych ok. 100:1. Rachunek obniża więc przede wszystkim prompt caching. Dzięki masce przyczynowej K i V starych tokenów się nie zmieniają, więc dopóki historię się tylko dopisuje, każda tura czyta z cache’u wszystko poza najnowszą częścią (temat „Prompt caching”). Odczyt kosztuje ok. 10% ceny, ale krzywa zostaje kwadratowa.</li>
+    <li>Rośnie też opóźnienie. Prefill części spoza cache’u wydłuża czas do pierwszego tokena, a każdy krok decode czyta cały KV cache, więc długi kontekst spowalnia także pisanie (temat „Pętla generowania i KV cache”).</li>
+    <li>Gdy narzędzie pracuje, model nic nie liczy, a KV cache rozmowy dalej zajmuje pamięć GPU. Obciążony serwer może zrzucić cache do RAM-u albo na SSD i wczytać go z powrotem, gdy przyjdzie wynik: szybciej, niż liczyłby długą historię od nowa, ale nie bez kosztu dla czasu do pierwszego tokena (Glenn Lockwood, wrzesień 2026). Przez API widać tylko czas życia wpisu w cache’u, a u Anthropic liczy się on od startu requestu: generacja i wolne testy mogą trwać dłużej, niż żyje 5-minutowy wpis, a następna tura zapłaci za zapis i pełny prefill całej historii. Przy narzędziach działających minutami opłaca się wpis godzinny.</li>
   </ul>
-  <h3 class="sub">Jakość spada z długością</h3>
+  <h3 class="sub">Context rot: jakość spada z długością kontekstu</h3>
   <ul class="notes">
     <li>Modele działają gorzej na długim wejściu, zanim okno się skończy. Test needle-in-a-haystack, czyli znalezienie jednego zdania pasującego dosłownie do pytania, wychodzi prawie idealnie i niewiele mówi. W RULER (2024) z 17 modeli deklarujących co najmniej 32 tys. tokenów tylko połowa trzymała zadowalający wynik przy 32 tys.</li>
-    <li>Spadek jest większy, gdy pytanie i odpowiedź nie mają wspólnych słów: w NoLiMa (2025) 11 z 13 modeli przy 32 tys. tokenów spadło poniżej połowy swojego wyniku z krótkiego kontekstu. Chroma (2025, 18 modeli) pokazała spadek z samą długością nawet w prostych zadaniach, silniejszy przy podobnych, ale nieistotnych fragmentach.</li>
+    <li>Spadek jest większy, gdy pytanie i odpowiedź nie mają wspólnych słów: w NoLiMa (2025) 11 z 13 modeli przy 32 tys. tokenów spadło poniżej połowy swojego wyniku z krótkiego kontekstu. Chroma (2025, 18 modeli) pokazała spadek wynikający z samej długości, nawet w prostych zadaniach, silniejszy przy podobnych, ale nieistotnych fragmentach.</li>
     <li>Położenie też ma znaczenie. W badaniu Lost in the Middle (2023) modele najlepiej korzystały z informacji na początku i na końcu kontekstu, a wyraźnie gorzej ze środka. Ważną instrukcję i pytanie stawia się więc na końcu, za długim materiałem.</li>
-    <li>Pojemność okna to nie budżet do wypełnienia. Testuj swój przypadek na długościach, które naprawdę wysyłasz, a okno utrzymuj krótkie i trafne. Jak to robić (przycinanie wyników narzędzi, kompakcja, subagenci, pamięć poza oknem), opisuje temat „Context engineering i pamięć”.</li>
+    <li>Pojemność okna to nie budżet do wypełnienia. Testuj swój przypadek na długościach, które naprawdę wysyłasz, a kontekst utrzymuj krótki i trafny. Jak to robić (przycinanie wyników narzędzi, kompakcja, subagenci, pamięć poza oknem), opisuje temat „Context engineering i pamięć”.</li>
   </ul>
 </section>

@@ -1,6 +1,6 @@
 <section class="station" id="openweight" data-hue="tok">
   <h2>Open-weight models</h2>
-  <p class="lede">Open-weight means you can download the weights, i.e. the model’s trained matrices, and run it on your own hardware. It is not the same as open source: you usually don’t get the data or the training code, and the licence may restrict use.</p>
+  <p class="lede">Open-weight means you can download a model’s weights, i.e. its trained matrices, and run it on your own hardware. It is not the same as open source: you usually don’t get the data or the training code, and the licence may restrict use.</p>
   <div class="lab">
     <p class="lab-title">Switch the model type and see what comes in the package and what follows from it</p>
     <div class="row" id="owTypes"></div>
@@ -14,11 +14,11 @@
     <li>The OSI’s Open Source AI Definition (version 1.0, 2024) requires the weights, the complete training and inference code, and a description of the data detailed enough for a skilled person to build a similar system, all under OSI-approved terms: use for any purpose without asking permission. The data itself need not be published, but the public and third-party training data must be listed with where to get it. Few models meet it, e.g. Ai2’s OLMo; licences with use restrictions, such as Llama’s, fail it on terms alone.</li>
     <li>Licences vary a lot. Apache 2.0 and MIT (e.g. gpt-oss, Qwen3, DeepSeek-R1) allow almost anything. The Llama licences (3.1 and 4) require a separate licence from Meta if your products had more than 700 million monthly active users on the model’s release date, plus a “Built with Llama” notice. For the multimodal models (Llama 3.2 Vision, Llama 4 Scout and Maverick) the acceptable use policy does not grant the licence at all to individuals and companies based in the EU; end users of a product built on them are exempt.</li>
   </ul>
-  <h3 class="sub">Why companies want it</h3>
+  <h3 class="sub">Why companies self-host</h3>
   <ul class="notes">
     <li>Data never leaves your infrastructure: your own cloud, your own data centre, even an air-gapped network. In regulated industries this is sometimes the only acceptable route.</li>
-    <li>The version is frozen: nobody swaps the weights, settings or serving stack without you knowing (see “Compute and “getting dumber””). This holds only if you host it yourself.</li>
-    <li>Full control over inference: fine-tuning, your own quantisation, access to logits, any kind of output-format enforcement, no rate limits imposed by a provider.</li>
+    <li>The version is frozen: nobody swaps the weights, settings or serving stack without you knowing (see “Is the model getting dumber?”). This holds only if you host it yourself.</li>
+    <li>Full control over the model and inference: fine-tuning, your own quantisation, access to logits, any kind of output-format enforcement, no rate limits imposed by a provider.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Set the API price, the node cost, the monthly volume and what one node can serve. See at what load your own GPUs start to pay off</p>
@@ -30,11 +30,11 @@
     </div>
     <div id="beChart" style="margin-top:12px"></div>
     <div class="callout" id="beMsg" aria-live="polite"></div>
-    <p class="hint">Illustrative. Node throughput depends heavily on the model and the input/output mix: 10 billion tokens a month is about 3,900 tokens per second non-stop, while DeepSeek reports about 15k output or 74k input tokens per second per 8-GPU node for its 671B MoE model (February 2025). The API price is an average of input tokens and the more expensive output tokens. The chart leaves out the people needed to run it, usually the largest cost of self-hosting.</p>
+    <p class="hint">Illustrative. Node throughput depends heavily on the model and the input/output mix: 10 billion tokens a month is about 3,900 tokens per second non-stop, while DeepSeek reports about 15k output or 74k input tokens per second per 8-GPU node for its 671B MoE model (February 2025). The API price is an average of the input-token price and the more expensive output-token price. The chart leaves out the people needed to run the nodes, usually the largest cost of self-hosting.</p>
   </div>
-  <h3 class="sub">Cost and pitfalls</h3>
+  <h3 class="sub">Self-hosting costs and pitfalls</h3>
   <ul class="notes">
-    <li>A node costs the same at 5% and at 90% load, and traffic has peaks and troughs. Real average load is far below 100%, so you calculate the cost at that load, not at full load. On top of that come people: serving (vLLM, SGLang), monitoring, updates, security. Load weights as safetensors from a trusted publisher at a pinned revision: a pickle checkpoint can run code when loaded, and <code>trust_remote_code</code> runs the repository’s Python on your servers.</li>
+    <li>A node costs the same at 5% and at 90% load, and traffic has peaks and troughs. Real average load is far below 100%, so you calculate the cost at that load, not at full load. On top of that you need people for serving (vLLM, SGLang), monitoring, updates and security. Load weights as safetensors from a trusted publisher at a pinned revision: a pickle checkpoint can run code when loaded, and <code>trust_remote_code</code> runs the repository’s Python on your servers.</li>
     <li>A third route is the same open model through a third-party host’s API: no GPUs of your own, and usually cheaper than the closed frontier models. Data leaves your infrastructure again, and the host may change the quantisation or the serving stack.</li>
     <li>The same model behaves differently at different hosts: different quantisation, a different chat template, different handling of tool calling and long context. Moonshot measured this for Kimi K2 (November 2025): tool-call schema accuracy ranged from 100% on the official API to 72% at one host, because of outdated serving versions, malformed tool-call IDs and no constrained decoding. Test the specific endpoint with your own eval set, not the model name (see “Evals” and “LLMs in production”).</li>
     <li>On the hardest tasks the closed frontier models usually lead the open ones. The gap can be small and shifts with every release, so a measurement on your task decides, not a leaderboard.</li>

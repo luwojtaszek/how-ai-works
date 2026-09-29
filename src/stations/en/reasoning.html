@@ -9,40 +9,40 @@
     <div class="stats">
       <div class="stat"><b id="rsThink"></b><span>thinking tokens</span></div>
       <div class="stat"><b id="rsTime"></b><span>generation time</span></div>
-      <div class="stat"><b id="rsCost"></b><span>cost of 1000 such requests</span></div>
+      <div class="stat"><b id="rsCost"></b><span>cost of 1,000 such requests</span></div>
     </div>
     <div class="rsn-cmp">
       <div><p class="rsn-h">Chance of a correct answer</p><div class="bars" id="rsOkBars"></div></div>
       <div><p class="rsn-h">Output tokens including the answer</p><div class="bars" id="rsTokBars"></div></div>
     </div>
     <div class="callout" id="rsMsg" aria-live="polite"></div>
-    <p class="hint">Illustrative numbers, not a benchmark result or a measurement. Price $10 per million output tokens, 80 tokens per second, output only, excluding input and time to first token. The chain of thought shown is abridged; a real one is often many times longer. The answer is a single example sample. Not every model lets you switch thinking off.</p>
+    <p class="hint">Illustrative numbers, not a benchmark result or a measurement. Price $10 per million output tokens, 80 tokens per second, output only, excluding input and time to first token. The chain of thought shown is abridged; a real one is often many times longer. The answer shown is a single sample. Not every model lets you switch thinking off.</p>
   </div>
   <h3 class="sub">Where thinking comes from</h3>
   <ul class="notes">
-    <li>There is no separate thinking module. The chain of thought is ordinary tokens from the same loop as the answer (see “The next token”), just marked as thinking. Every step written down stays in the context, so later tokens build on it like on scratch paper.</li>
-    <li>The model learns to write this scratch paper through RL (see “Training”) on automatically checked tasks: maths with a known answer, code with tests. The reward goes mainly to the result, so whatever leads to it gets reinforced, including self-checking and backtracking. In DeepSeek-R1-Zero these behaviours became frequent through RL alone, without human-written examples, though base models already show them occasionally (Liu et al., 2025). RLVR mostly makes the model reach, more reliably, answers the base model could already find: given enough samples (large pass@k), the base model catches up (Yue et al., 2025).</li>
-    <li>It is one form of test-time compute: spending more computation at answer time instead of building a bigger model. Others are sampling several attempts and voting, or picking the best one with a verifier. Gains shrink as thinking gets longer, and on some tasks longer thinking makes results worse (inverse scaling in test-time compute, 2025).</li>
+    <li>There is no separate thinking module. The chain of thought is ordinary tokens from the same loop as the answer (see “The next token”), just marked as thinking. Every step written down stays in the context, so later tokens build on it, as you would on scratch paper.</li>
+    <li>The model learns to use this scratch paper through RL (see “Training”) on automatically checked tasks: maths with a known answer, code with tests. The reward goes mainly to the result, so whatever leads to it gets reinforced, including self-checking and backtracking. In DeepSeek-R1-Zero these behaviours became frequent through RL alone, without human-written examples, though base models already show them occasionally (Liu et al., 2025). RLVR mostly makes the model reach, more reliably, answers the base model could already find: given enough samples (large pass@k), the base model catches up (Yue et al., 2025).</li>
+    <li>Thinking is one form of test-time compute: spending more computation at answer time instead of building a bigger model. Others are sampling several attempts and voting, or picking the best one with a verifier. Gains shrink as thinking gets longer, and on some tasks longer thinking makes results worse (inverse scaling in test-time compute, 2025).</li>
   </ul>
-  <h3 class="sub">When it pays off</h3>
+  <h3 class="sub">When to use a reasoning model</h3>
   <ul class="notes">
-    <li>It helps on multi-step tasks where mistakes come easily: calculations, code, planning, analysis with many conditions. On simple facts, lookups and short classification it only adds cost and waiting.</li>
-    <li>It adds no knowledge. What the model doesn’t know it won’t work out: you get a longer, more confident-sounding guess (see “Hallucinations”).</li>
+    <li>Thinking helps on multi-step tasks where mistakes are easy to make: calculations, code, planning, analysis with many conditions. On simple facts, lookups and short classification it only adds cost and latency.</li>
+    <li>It adds no knowledge. What the model doesn’t know, it won’t work out: you get a longer, more confident-sounding guess (see “Hallucinations”).</li>
     <li>Every thinking token is a decode step that waits on memory (see “Why the GPU is idle”). A few thousand thinking tokens means tens of seconds before the first word of the answer. In a UI, show progress or a summary of the thinking. Run tasks with no human in the loop in the background or as batch jobs.</li>
   </ul>
-  <h3 class="sub">Controls and the bill</h3>
+  <h3 class="sub">Reasoning effort, token limits and billing</h3>
   <ul class="notes">
     <li>You control the effort level (<code>reasoning.effort</code> in OpenAI, <code>effort</code> in Anthropic, <code>thinking_level</code> in Gemini, from <code>none</code> to <code>max</code> depending on the model). A fixed thinking-token budget (<code>budget_tokens</code>, <code>thinking_budget</code>) survives only on older models: Claude 4.7 and later reject it with a 400, and Gemini 3 accepts it only for backward compatibility. Even there it is a target, not an allocation. You pick the level with evals on your own tasks (see “Evals”).</li>
     <li>On the newest flagship models thinking can’t be switched off (as of September 2026): Claude Opus 5.5 and Fable 5.1 reject <code>thinking: {type: "disabled"}</code> with a 400, GPT-6 Astra rejects <code>none</code> the same way, and in Gemini 3.x the lowest level is <code>minimal</code> or <code>low</code>. You choose how much to think, not whether. In adaptive mode the model decides per request, and at lower effort it skips thinking on simple requests more often.</li>
     <li>Thinking tokens are billed as output, even when you can’t see them. APIs usually don’t return the raw chain of thought, only a summary or an empty block with encrypted content, so <code>usage</code> shows more tokens than you can see in the response.</li>
-    <li>Thinking counts towards the output limit (<code>max_tokens</code>, <code>max_output_tokens</code>) and the context window. Set the limit too low and the response is cut off mid-thought. OpenAI recommends reserving at least 25,000 tokens for reasoning and output when you start.</li>
-    <li>The sampler is usually locked. Claude Opus from 4.7 rejects any non-default <code>temperature</code>, <code>top_p</code> or <code>top_k</code> with a 400, with or without thinking, and OpenAI with reasoning enabled doesn’t accept <code>temperature</code> or <code>top_p</code> (see “The next token”).</li>
+    <li>Thinking counts towards the output limit (<code>max_tokens</code>, <code>max_output_tokens</code>) and the context window. Set the limit too low and the response is cut off mid-thought. OpenAI recommends reserving at least 25,000 tokens for reasoning and output when you start experimenting.</li>
+    <li>The sampler is usually locked. Claude Opus 4.7 and later reject any non-default <code>temperature</code>, <code>top_p</code> or <code>top_k</code> with a 400, with or without thinking, and OpenAI with reasoning enabled doesn’t accept <code>temperature</code> or <code>top_p</code> (see “The next token”).</li>
   </ul>
   <h3 class="sub">What to watch out for</h3>
   <ul class="notes">
-    <li>The chain of thought need not faithfully describe how the answer came about. In an Anthropic study (2025), models used a planted hint but admitted it only in a minority of cases: Claude 3.7 Sonnet 25% of the time, DeepSeek R1 39%. Read it as a debugging clue, not an audit.</li>
+    <li>The chain of thought need not faithfully describe how the answer came about. In an Anthropic study (2025), models used a planted hint but admitted to using it only in a minority of cases: Claude 3.7 Sonnet 25% of the time, DeepSeek R1 39%. Read the chain of thought as a debugging clue, not an audit.</li>
     <li>In an agent the model also thinks between tool calls (interleaved thinking, see “The agent loop”). You send thinking blocks back unchanged in the next request, with their signature or encrypted content. The API rejects a modified block, and an omitted one breaks the continuity of reasoning.</li>
-    <li>On Claude Opus 5.5 and Fable 5.1 a block is also bound to everything before it. If your own code changes the system prompt, the tools or an earlier message (for example by trimming an old tool result), replaying the block returns a 400 on accounts created from 31 August 2026 (older ones only when they opt in). Server-side context editing and compaction don’t count as changes. Keep the history append-only and add new instructions as new messages.</li>
-    <li>Some models strip thinking from previous turns, others keep it. Kept thinking takes up the window and is billed as input. Stripped thinking changes the prefix from that point, so the cache misses after it. Changing the effort level or budget mid-conversation also invalidates the prompt cache, because the setting goes into the prompt (see “Prompt caching”).</li>
+    <li>On Claude Opus 5.5, Fable 5.1 and Sonnet 5.5 a block is also bound to everything before it. If your own code changes the system prompt, the tools or an earlier message (for example by trimming an old tool result), replaying the block returns a 400 on accounts created from 31 August 2026 (older ones only when they opt in). Server-side context editing and compaction don’t count as changes. Keep the history append-only and add new instructions as new messages.</li>
+    <li>Some models strip thinking from previous turns, others keep it. Kept thinking takes up space in the context window and is billed as input. Stripped thinking changes the prefix from the point where it was removed, so the cache misses from there on. Changing the effort level or budget mid-conversation also invalidates the prompt cache, because the setting goes into the prompt (see “Prompt caching”).</li>
   </ul>
 </section>
