@@ -2,8 +2,7 @@
 import { existsSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
 import { UI, REPO, content, root, other } from '../i18n.js';
-import { topic, fmtDate } from '../lib/content.js';
-import { CHANGELOG } from '../changelog.js';
+import { topic, fmtDate, publishedOf } from '../lib/content.js';
 
 const { lang, id } = Astro.props;
 const ui = UI[lang], c = content(lang), r = root(lang);
@@ -25,10 +24,8 @@ const desc = t.lede.length > 160 ? t.lede.slice(0, t.lede.lastIndexOf(' ', 157))
 // a topic without its own preview image (not generated yet by scripts/og.sh) uses the site one
 const og = existsSync(`public/og/${lang}/${id}.png`) ? `/og/${lang}/${id}.png` : `/og/${lang}/home.png`;
 const abs = (p) => (Astro.site ? new URL(p, Astro.site).href : p);
-// published = the changelog entry that added the topic, else the first public version (the oldest entry)
-const published = CHANGELOG.find((e) => e.added.includes(id))?.date || CHANGELOG.at(-1).date;
 const jsonld = [
-  { '@context': 'https://schema.org', '@type': 'TechArticle', headline: t.title, description: desc, inLanguage: lang, datePublished: published, dateModified: t.updated,
+  { '@context': 'https://schema.org', '@type': 'TechArticle', headline: t.title, description: desc, inLanguage: lang, datePublished: publishedOf(id), dateModified: t.updated,
     url: abs(c.path(id)), image: abs(og), articleSection: t.group, isAccessibleForFree: true,
     author: { '@type': 'Organization', name: 'magnificode.pl', url: 'https://magnificode.pl' },
     isPartOf: { '@type': 'WebSite', name: ui.siteName, url: abs(r) } },

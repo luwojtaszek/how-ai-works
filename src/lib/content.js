@@ -12,6 +12,10 @@ const gitDate = (files) => { try { return execFileSync('git', ['log', '-1', '--f
 export const SITE_UPDATED = CHANGELOG[0]?.date;
 export const updatedOf = (id) => [gitDate([`src/stations/${id}.html`, `src/stations/en/${id}.html`]), ...CHANGELOG.filter((e) => [...e.added, ...e.updated].includes(id)).map((e) => e.date)]
   .filter(Boolean).sort().pop() || SITE_UPDATED;
+// First publication = the commit that added the topic's station files, or an earlier changelog `added` date.
+const gitAdded = (files) => { try { return execFileSync('git', ['log', '--diff-filter=A', '--format=%cs', '--', ...files], { encoding: 'utf8' }).trim().split('\n').pop() || null; } catch (e) { return null; } };
+export const publishedOf = (id) => [gitAdded([`src/stations/${id}.html`, `src/stations/en/${id}.html`]), ...CHANGELOG.filter((e) => e.added.includes(id)).map((e) => e.date)]
+  .filter(Boolean).sort()[0] || updatedOf(id);
 export const fmtDate = (d, lang) => new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 // topics added in the last 45 days (relative to the build) get a "new" badge
 const BUILD = new Date().toISOString().slice(0, 10);

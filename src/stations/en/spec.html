@@ -1,6 +1,6 @@
 <section class="station" id="spec" data-hue="att">
   <h2>Speculative decoding</h2>
-  <p class="lede">In speculative decoding, a cheap mechanism guesses the next few tokens, and the large model checks all of them in one pass, keeping the ones it would have chosen itself. The text is the same as without speculation, but one read of the weights yields several tokens.</p>
+  <p class="lede">In speculative decoding, a cheap mechanism guesses the next few tokens, and the large model checks all of them in one pass, keeping the ones it would have chosen itself. The output matches decoding without speculation (the same text with greedy decoding, the same distribution with sampling), but one read of the weights yields several tokens.</p>
   <div class="lab">
     <p class="lab-title">Step through three rounds and watch how many tokens one verification accepts and how many large-model passes you save</p>
     <div id="spPlayer"></div>

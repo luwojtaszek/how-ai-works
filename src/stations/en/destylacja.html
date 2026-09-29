@@ -28,7 +28,7 @@
   </ul>
   <h3 class="sub">On-policy distillation</h3>
   <ul class="notes">
-    <li>Both methods above train on the teacher’s text. When generating, the student makes mistakes the teacher never makes, lands in situations it never saw in training, and the errors compound.</li>
+    <li>Both methods above train on text the student didn’t write: the teacher’s answers or an existing dataset. When generating, the student makes mistakes the teacher never makes, lands in situations it never saw in training, and the errors compound.</li>
     <li>In on-policy distillation the student generates the answer and the teacher, in one forward pass, computes the probability of each of its tokens. The loss is a per-token reverse KL: the lower the teacher’s probability for a token, the bigger the penalty. It works like RL, but with every token graded instead of one reward for the whole answer. Reverse KL pushes the student towards one of the teacher’s ways of answering instead of spreading across several.</li>
     <li>Qwen3 (2025) trained its 0.6B to 14B and 30B-A3B models this way, with Qwen3-32B or 235B-A22B as the teacher: first SFT on the teacher’s answers, then an on-policy stage. On Qwen3-8B that stage reached 74.4% on AIME 2024 in 1,800 GPU hours, while RL from the same starting point reached 67.6% in 17,920 hours. Thinking Machines spelled out the method in “On-Policy Distillation” (October 2025).</li>
   </ul>
@@ -45,7 +45,7 @@
   </ul>
   <h3 class="sub">Limits</h3>
   <ul class="notes">
-    <li>The student is capped by the teacher and copies its errors and biases; the R1 authors note that going further needs a stronger base and more RL. Hard labels even lock in guesses: if the teacher sampled a name it didn’t know, the student learns to state it with confidence.</li>
+    <li>The student rarely surpasses the teacher and copies its errors and biases; the R1 authors note that going further needs a stronger base and more RL. Hard labels even lock in guesses: if the teacher sampled a name it didn’t know, the student learns to state it with confidence.</li>
     <li>Too big a gap between teacher and student also hurts. In Gemma 3’s ablation the smaller teacher won with short training and the larger one only with long training. Li et al. (2025): models up to 3B don’t consistently gain from strong teachers’ long reasoning traces and learn better from a mix of short and long ones.</li>
     <li>Style transfers more easily than skill. Gudibande et al. (2023): raters judged models trained on ChatGPT’s answers competitive, but targeted tests showed they closed almost none of the gap outside tasks well covered in the data. Scores on benchmarks close to the distillation data transfer; robustness to unusual inputs, much less.</li>
   </ul>

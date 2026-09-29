@@ -28,7 +28,7 @@
   </ul>
   <h3 class="sub">Destylacja on-policy</h3>
   <ul class="notes">
-    <li>Obie powyższe metody uczą na tekstach nauczyciela. Przy generowaniu uczeń popełnia błędy, których nauczyciel nie robi, trafia na sytuacje, których w treningu nie widział, i błędy się kumulują.</li>
+    <li>Obie powyższe metody uczą na tekstach, których uczeń sam nie napisał: odpowiedziach nauczyciela albo gotowym zbiorze. Przy generowaniu uczeń popełnia błędy, których nauczyciel nie robi, trafia na sytuacje, których w treningu nie widział, i błędy się kumulują.</li>
     <li>W destylacji on-policy uczeń sam generuje odpowiedź, a nauczyciel w jednym przebiegu liczy prawdopodobieństwo każdego jej tokena. Strata to odwrotna KL na każdym tokenie: im mniej prawdopodobny token dla nauczyciela, tym większa kara. To jak RL, tylko z oceną każdego tokena zamiast jednej nagrody za całość. Odwrotna KL skłania ucznia do trzymania się jednego ze sposobów nauczyciela zamiast rozmywania się między kilkoma.</li>
     <li>W Qwen3 (2025) tak trenowano modele od 0,6B do 14B i 30B-A3B z nauczycielem Qwen3-32B albo 235B-A22B: najpierw SFT na odpowiedziach nauczyciela, potem etap on-policy. Na Qwen3-8B ten etap dał 74,4% w AIME 2024 kosztem 1800 godzin GPU, a RL z tego samego punktu 67,6% kosztem 17 920 godzin. Thinking Machines rozpisali metodę we wpisie „On-Policy Distillation” (październik 2025).</li>
   </ul>
@@ -45,7 +45,7 @@
   </ul>
   <h3 class="sub">Ograniczenia destylacji</h3>
   <ul class="notes">
-    <li>Uczeń nie przerośnie nauczyciela i kopiuje jego błędy i uprzedzenia; autorzy R1 zaznaczają, że pójście dalej wymaga silniejszej bazy i większego RL. Etykiety twarde utrwalają nawet zgadywanie: jeśli nauczyciel wylosował imię, którego nie znał, uczeń nauczy się podawać je z pewnością.</li>
+    <li>Uczeń rzadko przerasta nauczyciela i kopiuje jego błędy i uprzedzenia; autorzy R1 zaznaczają, że pójście dalej wymaga silniejszej bazy i większego RL. Etykiety twarde utrwalają nawet zgadywanie: jeśli nauczyciel wylosował imię, którego nie znał, uczeń nauczy się podawać je z pewnością.</li>
     <li>Zbyt duża różnica między nauczycielem a uczniem też szkodzi. W ablacji Gemmy 3 mniejszy nauczyciel wygrywał przy krótkim treningu, a większy dopiero przy długim. Li i in. (2025): modele do 3B nie zawsze zyskują na długich śladach rozumowania silnych nauczycieli i lepiej uczą się z mieszanki krótkich i długich.</li>
     <li>Styl przenosi się łatwiej niż umiejętności. Gudibande i in. (2023): oceniający uznali modele trenowane na odpowiedziach ChatGPT za konkurencyjne, ale testy celowane pokazały, że poza zadaniami dobrze pokrytymi w danych nie nadrobiły prawie nic. Przenosi się wynik na benchmarku bliskim danym destylacji, a odporność na nietypowe wejścia – słabiej.</li>
   </ul>
