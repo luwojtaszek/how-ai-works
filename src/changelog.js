@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-09-30',
+    added: [],
+    updated: ['evals', 'reasoning', 'promptcache', 'narzedzia'],
+    en: 'Evals: how to tune a prompt against the set without fitting the cases, how to check the set itself, and which sources of noise aren’t the model. Reasoning models: what higher effort changes in an agent and what it doesn’t fix. Correction: on the newest Claude models a system instruction, a tool and the effort level can change mid-conversation without invalidating the prompt cache.',
+    pl: 'Ewaluacje: jak poprawiać prompt pod zestaw, nie dopasowując go do samych przypadków, jak sprawdzić sam zestaw i jakie źródła szumu nie pochodzą od modelu. Modele rozumujące: co wyższy wysiłek zmienia w pracy agenta, a czego nie naprawia. Poprawka: w najnowszych modelach Claude instrukcję systemową, narzędzie i poziom wysiłku można zmienić w trakcie rozmowy bez unieważniania prompt cache.',
+  },
+  {
     date: '2026-09-26',
     added: [],
     updated: [],
