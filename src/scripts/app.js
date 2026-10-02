@@ -311,24 +311,25 @@ const bpePairs=ws=>{const m=new Map();for(const[t,c]of ws)for(let i=0;i<t.length
 function bpeTrain(ws){const st=[{ws,pairs:bpePairs(ws)}];
   for(;;){const{ws,pairs}=st[st.length-1],p=pairs[0];if(!p)break;const nx=ws.map(([t,c])=>[bpeMerge(t,p[0],p[1]),c]);st.push({ws:nx,pairs:bpePairs(nx),m:p});}
   return st;}
-// a token chip; tapping it shows its UTF-8 bytes in a bubble kept inside the widget card
-const bpeChip=(t,isNew)=>h('button',{type:'button',class:'chip '+([...t].length>1?'c0':'bpe-l')+(isNew?' bpe-new':''),onclick:e=>{const c=e.currentTarget,had=c.querySelector('.bpe-tip');$$('.bpe-tip').forEach(x=>x.remove());if(had)return;
-  const b=[...new TextEncoder().encode(t)],n=b.length,tip=h('span',{class:'bpe-tip'},n+' '+tr(cnt(n,'bajt','bajty','bajtów'),n===1?'byte':'bytes')+': '+b.join(' '));c.append(tip);
-  tip.style.left=Math.min(0,c.closest('.lab').getBoundingClientRect().right-12-tip.getBoundingClientRect().right)+'px';}},showTok(t));
+// a token chip; clicking it shows its UTF-8 bytes in a bubble kept inside the widget card (screen readers get them in the label)
+const bpeChip=(t,isNew)=>{const b=[...new TextEncoder().encode(t)],n=b.length,bytes=n+' '+tr(cnt(n,'bajt','bajty','bajtów'),n===1?'byte':'bytes')+': '+b.join(' ');
+  return h('button',{type:'button',class:'chip '+([...t].length>1?'c0':'bpe-l')+(isNew?' bpe-new':''),'aria-label':showTok(t)+', '+bytes,onclick:e=>{const c=e.currentTarget,had=c.querySelector('.bpe-tip');$$('.bpe-tip').forEach(x=>x.remove());if(had)return;
+    const tip=h('span',{class:'bpe-tip','aria-hidden':'true'},bytes);c.append(tip);
+    tip.style.left=Math.min(0,c.closest('.lab').getBoundingClientRect().right-12-tip.getBoundingClientRect().right)+'px';}},showTok(t));};
 const bpePairEl=([a,b,c],top)=>h('span',{class:'bpe-pair'+(top?' top':'')},bpeChip(a),bpeChip(b),h('b',{},c+'×'));
 
 // three stages as in real training: text -> table of word counts -> merges until the chosen vocabulary size
 function initBpe(){const sl=$('#bpeRange');
   // illustrative corpus: counts chosen so that no step is a tie
   const W=tr([['kot',10],['lot',5],['łoś',13],['noś',4],['koty',6]],[['cat',10],['bat',5],['bar',13],['car',4],['cats',6]]);
-  const alpha=[...new Set(W.flatMap(([w])=>[...w]))],A=alpha.length,ST=bpeTrain(W.map(([w,c])=>[[...w],c])),MAX=ST.length-1;
+  const alpha=[...new Set(W.flatMap(([w])=>[...w]))],A=alpha.length,states=bpeTrain(W.map(([w,c])=>[[...w],c])),MAX=states.length-1;
   // self-check, surfaced by scripts/qa.sh as a console error: the expected merge order, with no tie for first place along the way
-  if(ST.slice(1).map(x=>x.m[0]+x.m[1]).join(' ')!==tr('ot oś kot łoś koty lot noś','at ar cat bar cats bat car')||ST.some(x=>x.pairs[1]&&x.pairs[0][2]===x.pairs[1][2]))console.error('initBpe: unexpected merge order or a tie in the example corpus');
+  if(states.slice(1).map(x=>x.m[0]+x.m[1]).join(' ')!==tr('ot oś kot łoś koty lot noś','at ar cat bar cats bat car')||states.some(x=>x.pairs[1]&&x.pairs[0][2]===x.pairs[1][2]))console.error('initBpe: unexpected merge order or a tie in the example corpus');
   const r=rng(7),TXT=W.flatMap(([w,c])=>Array(c).fill(w));for(let i=TXT.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[TXT[i],TXT[j]]=[TXT[j],TXT[i]];}
   sl.min=A;sl.max=A+MAX;sl.setAttribute('value',A+4);$('#bpeText').textContent=TXT.join(' ');
   const M=()=>+sl.value-A,toks=n=>n+' '+tr(cnt(n,'token','tokeny','tokenów'),n===1?'token':'tokens'),merges=n=>n+' '+tr(cnt(n,'scalenie','scalenia','scaleń'),n===1?'merge':'merges');
   const pair=p=>`${p[0]} + ${p[1]} (${p[2]} ${tr('razy','times')})`;let pl;
-  function render(step){const m=M(),s=Math.max(0,step-1),{ws,pairs,m:mg}=ST[s],nw=step>1?mg[0]+mg[1]:null,done=step===m+1,top=pairs[0];let msg;
+  function render(step){const m=M(),s=Math.max(0,step-1),{ws,pairs,m:mg}=states[s],nw=step>1?mg[0]+mg[1]:null,done=step===m+1,top=pairs[0];let msg;
     $('#bpeSize').textContent=`${A+m} (${A} ${tr(cnt(A,'litera','litery','liter'),'letters')} + ${merges(m)})`;
     if(!step)msg=tr(`Etap 1: tekst. Trening słownika zaczyna się od tekstu: tutaj ${TXT.length} słów, w praktyce duża próbka danych treningowych modelu. Rozmiar słownika wybiera się wcześniej (suwak powyżej) i to on zdecyduje, kiedy trening się skończy.`,
       `Stage 1: text. Vocabulary training starts from text: ${TXT.length} words here, a large sample of the model’s training data in practice. The vocabulary size is chosen beforehand (the slider above), and it decides when training stops.`);
@@ -343,12 +344,12 @@ function initBpe(){const sl=$('#bpeRange');
               :tr(`W jednym tokenie: ${whole.join(', ')}. W kawałkach: ${parts.join(', ')}.`,`Single tokens: ${whole.join(', ')}. In pieces: ${parts.join(', ')}.`)));}
     $('#bpeMsg').textContent=msg;
     $('#bpeText').hidden=!!step;$('#bpeTabL').hidden=$('#bpeTab').hidden=!step;$('#bpePairsL').hidden=$('#bpePairs').hidden=!step||!pairs.length;
-    $('#bpeTabL').textContent=tr('Tabela (słowo × liczba wystąpień): ','Table (word × occurrences): ')+toks(ws.reduce((a,[t,c])=>a+t.length*c,0));
+    $('#bpeTabL').textContent=tr('Tabela (słowo × liczba wystąpień). Cały tekst: ','Table (word × occurrences). The whole text: ')+toks(ws.reduce((a,[t,c])=>a+t.length*c,0));
     $('#bpeTab').replaceChildren(...ws.map(([t,c])=>h('span',{class:'bpe-w'},h('span',{},t.map(x=>bpeChip(x,x===nw))),h('small',{},'×'+c))));
     $('#bpePairsL').textContent=done?tr('Pozostałe pary (trening skończony)','Remaining pairs (training has stopped)'):tr('Pary sąsiadów. Najczęstsza zostanie scalona','Adjacent pairs. The most frequent one gets merged');
     $('#bpePairs').replaceChildren(...pairs.map((p,i)=>bpePairEl(p,i===0&&!done)));
     $('#bpeVocL').textContent=tr(`Słownik: ${A+s} z ${toks(A+m)}`,`Vocabulary: ${A+s} of ${toks(A+m)}`);
-    $('#bpeVoc').replaceChildren(...alpha.map(x=>bpeChip(x)),...ST.slice(1,s+1).map((x,i)=>bpeChip(x.m[0]+x.m[1],i===s-1&&step>1)));}
+    $('#bpeVoc').replaceChildren(...alpha.map(x=>bpeChip(x)),...states.slice(1,s+1).map((x,i)=>bpeChip(x.m[0]+x.m[1],i===s-1&&step>1)));}
   pl=player($('#bpePlayer'),{steps:()=>M()+1,render,interval:3200});PLAYERS.push(pl);
   sl.addEventListener('input',()=>{pl.stop();pl.set(Math.min(pl.step,M()+1));});
   document.addEventListener('click',e=>{if(!e.target.closest('#bpe .chip'))$$('.bpe-tip').forEach(x=>x.remove());});}
