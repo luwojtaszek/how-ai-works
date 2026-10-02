@@ -16,11 +16,27 @@
     <p class="hint">Kropka · oznacza spację. Kawałek w rodzaju \xc5 to pojedynczy bajt: tokenizer rozciął jedną literę na dwa tokeny. Tiktokenizer (link w źródłach) policzy tokeny dowolnego tekstu.</p>
   </div>
   <h3 class="sub">Jak powstaje słownik tokenów</h3>
+  <div class="lab" id="bpe">
+    <p class="lab-title">Wybierz rozmiar słownika i przejdź trening krok po kroku: od tekstu, przez tabelę liczników, do scaleń</p>
+    <div class="row"><label class="ctl"><span>Docelowy rozmiar słownika: <b id="bpeSize"></b></span><input type="range" id="bpeRange" step="1"></label></div>
+    <div id="bpePlayer"></div>
+    <div class="callout" id="bpeMsg" aria-live="polite"></div>
+    <p id="bpeText"></p>
+    <div class="tok-lbl" id="bpeTabL"></div>
+    <div id="bpeTab"></div>
+    <div class="tok-lbl" id="bpePairsL"></div>
+    <div class="row" id="bpePairs"></div>
+    <div class="tok-lbl" id="bpeVocL"></div>
+    <div class="row" id="bpeVoc"></div>
+    <p class="hint">Kliknij token, żeby zobaczyć jego bajty. Dla czytelności pokazujemy litery. Prawdziwy słownik startuje od bajtów, a polska litera z ogonkiem, np. ł, to dwa bajty.</p>
+    <p class="hint">Skala: tutaj 38 słów, 8 liter i najwyżej 7 scaleń. W GPT-4o to 256 możliwych bajtów i ok. 200 tys. scaleń.</p>
+  </div>
   <ul class="notes">
-    <li>Słownik buduje algorytm BPE (byte-pair encoding). Startuje od 256 możliwych bajtów i na dużym korpusie w kółko scala najczęstszą sąsiednią parę w nowy token, aż dojdzie do zadanego rozmiaru. Częste słowa stają się jednym tokenem, rzadkie składają się z kawałków.</li>
-    <li>Przed BPE wyrażenie regularne dzieli tekst na słowa, liczby i interpunkcję, więc scalanie nie przekracza tych granic. Spacja przykleja się do następnego słowa. W tokenizerze GPT-4o „strawberry” poprzedzone spacją to jeden token, a bez spacji, np. na początku tekstu, trzy: st|raw|berry (wpisz samo słowo w widżet).</li>
-    <li>BPE działa na bajtach UTF-8, więc każdy tekst da się zakodować i nie ma tokena „nieznane słowo”. Rzadkie połączenia rozpadają się na bajty: w GPT-4o słowo „Źdźbło” ze spacją przed nim to sześć tokenów, a spacja z „Ź” dzieli się na dwa kawałki, z których żaden nie jest całym znakiem. Tokenizery oparte na SentencePiece osiągają to samo przez byte fallback.</li>
-    <li>Rozmiar słownika to decyzja projektowa: GPT-4 ma ok. 100 tys. tokenów, GPT-4o ok. 200 tys., Llama 3 128 tys. (100 tys. z tokenizera OpenAI plus 28 tys. dla języków innych niż angielski), Gemma 3 262 tys. Większy słownik daje krótsze sekwencje, ale większą tabelę embeddingów i warstwę wyjściową.</li>
+    <li>Słownik buduje algorytm BPE (byte-pair encoding), raz, przed treningiem modelu: w kółko scala najczęstszą parę sąsiednich tokenów w nowy token, aż słownik dojdzie do rozmiaru wybranego z góry. To zwykłe liczenie, bez sieci neuronowej, a widżet powyżej pokazuje je krok po kroku.</li>
+    <li>Rozmiar słownika to decyzja projektowa: GPT-4 ma ok. 100 tys. tokenów, GPT-4o ok. 200 tys., Llama 3 128 tys. (100 tys. z tokenizera OpenAI plus 28 tys. dla języków innych niż angielski), Gemma 3 262 tys. Większy słownik zwykle tnie ten sam tekst na mniej tokenów, ale każdy token ma własny wektor w tabeli embeddingów i w warstwie wyjściowej, więc obie rosną razem ze słownikiem (zobacz „Wektory i macierze”).</li>
+    <li>Tekst, z którego powstaje słownik, to zwykle próbka danych, na których będzie trenowany sam model: wszystkie języki i kod razem, bo mają wspólny słownik. Dostawcy rzadko ją ujawniają, ale jej skład widać w słowniku: pierwsze scalenia w GPT-4o to dwie i cztery spacje, typowe dla wcięć w kodzie. Język, którego w próbce jest mało, dostaje mało własnych tokenów (zobacz „Koszt i limity” poniżej).</li>
+    <li>Zanim policzy się pierwszą parę, wyrażenie regularne tnie tekst na słowa, liczby i znaki interpunkcyjne, a pary liczy się tylko wewnątrz każdego z nich. Dlatego w językach, które oddzielają słowa spacjami, żaden token nie łączy końca jednego słowa z początkiem następnego. Spacja należy do słowa, które po niej stoi. W tokenizerze GPT-4o „strawberry” poprzedzone spacją to jeden token, a bez spacji, np. na początku tekstu, trzy: st|raw|berry (wpisz samo słowo w pierwszy widżet).</li>
+    <li>BPE działa na bajtach UTF-8, więc każdy tekst da się zakodować i nie ma tokena „nieznane słowo”. Rzadki ciąg znaków nie ma własnego tokena, więc składa się z kilku mniejszych, w skrajnym przypadku z pojedynczych bajtów: w GPT-4o słowo „Źdźbło” ze spacją przed nim to sześć tokenów, a litera „Ź” jest rozcięta na dwa, z których żaden nie jest całym znakiem. Tokenizery oparte na SentencePiece osiągają to samo przez byte fallback.</li>
     <li>Słownik ma też tokeny specjalne: koniec tekstu, znaczniki ról, wywołanie narzędzia. To osobne numery, których w dobrze zbudowanym API nie da się wpisać zwykłym tekstem. Rozmowa to jeden ciąg tokenów z takimi znacznikami (zobacz „Jak model widzi czat”).</li>
   </ul>
   <h3 class="sub">Skutki widoczne w odpowiedziach</h3>
@@ -31,7 +47,7 @@
   </ul>
   <h3 class="sub">Koszt i limity</h3>
   <ul class="notes">
-    <li>W tokenach liczy się cenę, context window, <code>max_tokens</code>, limity zapytań na minutę i prędkość generowania. Polski tekst zużywa ich więcej: na całym tekście tego przewodnika polska wersja ma ok. 1,4 raza więcej tokenów niż angielska w tokenizerze GPT-4o (3,2 wobec 4,5 znaku na token) i ok. 1,6 raza więcej w Llama 3 (liczby pokazuje widżet). Ta sama treść jest więc droższa, szybciej zapełnia okno i dłużej się generuje.</li>
+    <li>W tokenach liczy się cenę, context window, <code>max_tokens</code>, limity zapytań na minutę i prędkość generowania. Polski tekst zużywa ich więcej: na całym tekście tego przewodnika polska wersja ma ok. 1,4 raza więcej tokenów niż angielska w tokenizerze GPT-4o (3,2 wobec 4,5 znaku na token) i ok. 1,6 raza więcej w Llama 3 (liczby pokazuje pierwszy widżet). Ta sama treść jest więc droższa, szybciej zapełnia okno i dłużej się generuje.</li>
     <li>Tokenizer należy do modelu. Ten sam tekst to inna liczba tokenów u różnych dostawców, a czasem między wersjami jednego modelu: według Anthropic nowy tokenizer Claude Opus 4.7 (kwiecień 2026) zamienia ten sam tekst nawet na ok. 35% więcej tokenów niż Opus 4.6, przy tej samej cenie za token. Cen za milion tokenów nie porównuj wprost. Policz tokeny na własnych danych tokenizerem modelu albo endpointem dostawcy, np. <code>count_tokens</code> w API Claude.</li>
   </ul>
 </section>

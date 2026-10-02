@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-10-03',
+    added: [],
+    updated: ['tokeny'],
+    en: 'Tokens: a new step-through widget walks a small, simplified example through the stages of BPE training: from text, through a table of word counts, to merges that stop at the size you choose. Clicking a token shows its bytes. A new note explains what text the vocabulary is built from and what its first merges reveal, and the notes on vocabulary size and bytes are simpler.',
+    pl: 'Tokeny: nowy widżet przeprowadza mały, uproszczony przykład przez etapy treningu BPE: od tekstu, przez tabelę liczników słów, do scaleń, które kończą się na wybranym rozmiarze. Kliknięcie tokena pokazuje jego bajty. Nowa notka wyjaśnia, z jakiego tekstu powstaje słownik i co zdradzają jego pierwsze scalenia, a opis rozmiaru słownika i bajtów jest prostszy.',
+  },
+  {
     date: '2026-09-30',
     added: [],
     updated: ['evals', 'reasoning', 'promptcache', 'narzedzia'],

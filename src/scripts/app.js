@@ -301,6 +301,59 @@ function initTok(){const inp=$('#tokIn');
     $('#tokRatio').textContent=tr(`Cały tekst tego przewodnika w ${NAMES[k]}: ${nf(g[0])} tok. po angielsku i ${nf(g[1])} po polsku, czyli ${r(...g)}.`,`The whole text of this guide in ${NAMES[k]}: ${nf(g[0])} tokens in English and ${nf(g[1])} in Polish, ${r(...g)}.`);}
   inp.addEventListener('input',paint);paint();}
 
+/* ---------- BPE vocabulary training ---------- */
+// one merge pass: every adjacent a,b in a token list becomes a+b
+const bpeMerge=(t,a,b)=>{const o=[];for(let i=0;i<t.length;i++){if(t[i]===a&&t[i+1]===b){o.push(a+b);i++;}else o.push(t[i]);}return o;};
+// pair counts over [[tokens,count]], most frequent first
+const bpePairs=ws=>{const m=new Map();for(const[t,c]of ws)for(let i=0;i<t.length-1;i++){const k=t[i]+' '+t[i+1];m.set(k,(m.get(k)||0)+c);}
+  return[...m].map(([k,c])=>[...k.split(' '),c]).sort((x,y)=>y[2]-x[2]);};
+// states[i] = table after i merges, until every word is a single token
+function bpeTrain(ws){const st=[{ws,pairs:bpePairs(ws)}];
+  for(;;){const{ws,pairs}=st[st.length-1],p=pairs[0];if(!p)break;const nx=ws.map(([t,c])=>[bpeMerge(t,p[0],p[1]),c]);st.push({ws:nx,pairs:bpePairs(nx),m:p});}
+  return st;}
+// a token chip; clicking it shows its UTF-8 bytes in a bubble kept inside the widget card (screen readers get them in the label)
+const bpeChip=(t,isNew)=>{const b=[...new TextEncoder().encode(t)],n=b.length,bytes=n+' '+tr(cnt(n,'bajt','bajty','bajtów'),n===1?'byte':'bytes')+': '+b.join(' ');
+  return h('button',{type:'button',class:'chip '+([...t].length>1?'c0':'bpe-l')+(isNew?' bpe-new':''),'aria-label':showTok(t)+', '+bytes,onclick:e=>{const c=e.currentTarget,had=c.querySelector('.bpe-tip');$$('.bpe-tip').forEach(x=>x.remove());if(had)return;
+    const tip=h('span',{class:'bpe-tip','aria-hidden':'true'},bytes);c.append(tip);
+    tip.style.left=Math.min(0,c.closest('.lab').getBoundingClientRect().right-12-tip.getBoundingClientRect().right)+'px';}},showTok(t));};
+const bpePairEl=([a,b,c],top)=>h('span',{class:'bpe-pair'+(top?' top':'')},bpeChip(a),bpeChip(b),h('b',{},c+'×'));
+
+// three stages as in real training: text -> table of word counts -> merges until the chosen vocabulary size
+function initBpe(){const sl=$('#bpeRange');
+  // illustrative corpus: counts chosen so that no step is a tie
+  const W=tr([['kot',10],['lot',5],['łoś',13],['noś',4],['koty',6]],[['cat',10],['bat',5],['bar',13],['car',4],['cats',6]]);
+  const alpha=[...new Set(W.flatMap(([w])=>[...w]))],A=alpha.length,states=bpeTrain(W.map(([w,c])=>[[...w],c])),MAX=states.length-1;
+  // self-check, surfaced by scripts/qa.sh as a console error: the expected merge order, with no tie for first place along the way
+  if(states.slice(1).map(x=>x.m[0]+x.m[1]).join(' ')!==tr('ot oś kot łoś koty lot noś','at ar cat bar cats bat car')||states.some(x=>x.pairs[1]&&x.pairs[0][2]===x.pairs[1][2]))console.error('initBpe: unexpected merge order or a tie in the example corpus');
+  const r=rng(7),TXT=W.flatMap(([w,c])=>Array(c).fill(w));for(let i=TXT.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[TXT[i],TXT[j]]=[TXT[j],TXT[i]];}
+  sl.min=A;sl.max=A+MAX;sl.setAttribute('value',A+4);$('#bpeText').textContent=TXT.join(' ');
+  const M=()=>+sl.value-A,toks=n=>n+' '+tr(cnt(n,'token','tokeny','tokenów'),n===1?'token':'tokens'),merges=n=>n+' '+tr(cnt(n,'scalenie','scalenia','scaleń'),n===1?'merge':'merges');
+  const pair=p=>`${p[0]} + ${p[1]} (${p[2]} ${tr('razy','times')})`;let pl;
+  function render(step){const m=M(),s=Math.max(0,step-1),{ws,pairs,m:mg}=states[s],nw=step>1?mg[0]+mg[1]:null,done=step===m+1,top=pairs[0];let msg;
+    $('#bpeSize').textContent=`${A+m} (${A} ${tr(cnt(A,'litera','litery','liter'),'letters')} + ${merges(m)})`;
+    if(!step)msg=tr(`Etap 1: tekst. Trening słownika zaczyna się od tekstu: tutaj ${TXT.length} słów, w praktyce duża próbka danych treningowych modelu. Rozmiar słownika wybiera się wcześniej (suwak powyżej) i to on zdecyduje, kiedy trening się skończy.`,
+      `Stage 1: text. Vocabulary training starts from text: ${TXT.length} words here, a large sample of the model’s training data in practice. The vocabulary size is chosen beforehand (the slider above), and it decides when training stops.`);
+    else if(step===1)msg=tr('Etap 2: tabela. Tekst został przeczytany raz i zamieniony w tabelę: każde słowo pocięte na litery i liczba jego wystąpień. Od teraz algorytm pracuje tylko na tabeli. ','Stage 2: table. The text has been read once and turned into a table: each word split into letters, with the number of times it occurs. From now on the algorithm works on the table only. ')
+      +(m?tr(`Najczęstsza para to ${pair(top)}, więc zostanie scalona pierwsza.`,`The most frequent pair is ${pair(top)}, so it gets merged first.`):tr('Wybrany rozmiar to same litery, więc nie będzie żadnego scalenia.','The chosen size is just the letters, so there will be no merges.'));
+    else{const whole=ws.filter(([t])=>t.length===1).map(([t])=>t[0]),parts=ws.filter(([t])=>t.length>1).map(([t])=>t.join(''));
+      msg=tr(`Etap 3: scalenie ${s} z ${m}. Para ${pair(mg)} była najczęstsza, więc powstał token „${nw}”. `,`Stage 3: merge ${s} of ${m}. The pair ${pair(mg)} was the most frequent, so it became the token “${nw}”. `)
+        +(!done?tr(`Liczniki są policzone od nowa, następna para: ${pair(top)}.`,`The counts are recomputed; the next pair is ${pair(top)}.`)
+          :tr(`Słownik ma wybrany rozmiar ${A+m}, więc trening się kończy. `,`The vocabulary has reached the chosen size of ${A+m}, so training stops. `)
+            +(!whole.length?tr('Żadne słowo nie jest jeszcze jednym tokenem: wszystkie składają się z kawałków.','No word is a single token yet: all of them are assembled from pieces.')
+              :!parts.length?tr('Każde słowo ma własny token: tak duży słownik zapamiętał cały tekst.','Every word has a token of its own: a vocabulary this large has memorised the whole text.')
+              :tr(`W jednym tokenie: ${whole.join(', ')}. W kawałkach: ${parts.join(', ')}.`,`Single tokens: ${whole.join(', ')}. In pieces: ${parts.join(', ')}.`)));}
+    $('#bpeMsg').textContent=msg;
+    $('#bpeText').hidden=!!step;$('#bpeTabL').hidden=$('#bpeTab').hidden=!step;$('#bpePairsL').hidden=$('#bpePairs').hidden=!step||!pairs.length;
+    $('#bpeTabL').textContent=tr('Tabela (słowo × liczba wystąpień). Cały tekst: ','Table (word × occurrences). The whole text: ')+toks(ws.reduce((a,[t,c])=>a+t.length*c,0));
+    $('#bpeTab').replaceChildren(...ws.map(([t,c])=>h('span',{class:'bpe-w'},h('span',{},t.map(x=>bpeChip(x,x===nw))),h('small',{},'×'+c))));
+    $('#bpePairsL').textContent=done?tr('Pozostałe pary (trening skończony)','Remaining pairs (training has stopped)'):tr('Pary sąsiadów. Najczęstsza zostanie scalona','Adjacent pairs. The most frequent one gets merged');
+    $('#bpePairs').replaceChildren(...pairs.map((p,i)=>bpePairEl(p,i===0&&!done)));
+    $('#bpeVocL').textContent=tr(`Słownik: ${A+s} z ${toks(A+m)}`,`Vocabulary: ${A+s} of ${toks(A+m)}`);
+    $('#bpeVoc').replaceChildren(...alpha.map(x=>bpeChip(x)),...states.slice(1,s+1).map((x,i)=>bpeChip(x.m[0]+x.m[1],i===s-1&&step>1)));}
+  pl=player($('#bpePlayer'),{steps:()=>M()+1,render,interval:3200});PLAYERS.push(pl);
+  sl.addEventListener('input',()=>{pl.stop();pl.set(Math.min(pl.step,M()+1));});
+  document.addEventListener('click',e=>{if(!e.target.closest('#bpe .chip'))$$('.bpe-tip').forEach(x=>x.remove());});}
+
 /* ---------- matmul ---------- */
 function initMM(){let r=rng(11);const x=[0.8,-0.3,0.5,1.2];let W;const gen=()=>{W=Array.from({length:4},()=>Array.from({length:3},()=>Math.round((r()*2-1)*10)/10+0));};gen();let sel=0;
   const f=v=>v.toLocaleString(tr('pl-PL','en-GB'),{maximumFractionDigits:2}).replace('-','−');
@@ -1656,7 +1709,7 @@ function initChoose(){
 /* end wybor */
 
 // ponytail: one bundle for every page; split per topic if it grows heavy
-const inits={home:initHome,tokeny:initTok,macierze:[initMM,initEmb],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
+const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:initCD,jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
