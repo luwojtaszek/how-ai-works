@@ -12,7 +12,8 @@ export function typo(s, lang) {
 // The same for a whole HTML page: text only, never inside tags, scripts, styles or code.
 export function typoHtml(html, lang) {
   let skip = 0;
-  return html.split(/(<[^>]*>)/).map((part) => {
+  // a tag ends at the first > outside quotes; comments are kept whole
+  return html.split(/(<!--[\s\S]*?-->|<(?:[^>"']|"[^"]*"|'[^']*')*>)/).map((part) => {
     if (part[0] === '<') { const m = part.match(/^<(\/?)(script|style|pre|code|textarea)\b/i); if (m) skip += m[1] ? -1 : 1; return part; }
     return skip > 0 ? part : typo(part, lang);
   }).join('');

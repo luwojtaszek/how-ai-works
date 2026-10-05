@@ -11,4 +11,5 @@ assert.equal(typo('a cat in 2024 took 140 GB (see “RAG”)', 'en'), `a cat in 
 assert.equal(typo('w 2024 roku', 'pl'), `w${NB}2024 roku`);
 assert.equal(typo('140 GBit', 'en'), '140 GBit');
 assert.equal(typoHtml('<p class="a b">w domu</p><script>a = "w x"</script><code>i j</code>', 'pl'), `<p class="a b">w${NB}domu</p><script>a = "w x"</script><code>i j</code>`);
+assert.equal(typoHtml('<a title="x > a b">w domu</a><!-- a > w b -->', 'pl'), `<a title="x > a b">w${NB}domu</a><!-- a > w b -->`);
 console.log('typo ok');
