@@ -2,24 +2,27 @@
   <h2>Wektory i macierze</h2>
   <p class="lede">Każdy token staje się wektorem liczb, który przechodzi przez kilkadziesiąt warstw. Warstwa to głównie mnożenie tego wektora przez duże, stałe macierze wag, dlatego koszt modelu liczy się w parametrach, bajtach i operacjach.</p>
   <div class="lab">
+    <p class="lab-title">Kliknij pojęcie i zobacz jego najbliższych sąsiadów w przestrzeni wektorowej</p>
+    <div id="emb"></div>
+    <p class="hint" id="embOut">Prawdziwe wektory mają od kilkuset do kilkunastu tysięcy wymiarów. Kierunki też coś znaczą: w klasycznym word2vec wektor „król − mężczyzna + kobieta” wypada najbliżej „królowej”, jeśli wykluczy się same słowa wejściowe (inaczej zwykle wygrywa „król”).</p>
+    <p class="hint">Mapa poglądowa: pozycje są ułożone ręcznie, a nie policzone przez model. Słowo „zamek” dostaje na starcie ten sam wektor, czy chodzi o zamek w drzwiach, czy o zamek króla. Znaczenie z kontekstu dokładają dopiero kolejne warstwy (zobacz widżet z drogą tokena). Wektory do wyszukiwania robi osobny model, jeden na cały fragment tekstu (zobacz „Embeddingi i wyszukiwanie wektorowe”).</p>
+  </div>
+  <div class="lab">
     <p class="lab-title">Kliknij liczbę w nowym wektorze i zobacz, z jakich mnożeń powstała</p>
     <div class="scroll"><div class="mm" id="mm"></div></div>
     <div class="formula" id="mmF"></div>
     <div class="row"><button class="btn ghost" id="mmRand" type="button">Wylosuj inne wagi</button></div>
     <div class="callout">Skala: w Llama 3 70B wektor tokena ma 8192 liczby, a największa macierz warstwy ma 8192 × 28 672, czyli 235 mln mnożeń. Warstw jest 80, po 7 macierzy, więc każdy token to ok. 70 mld mnożeń z dodawaniem.</div>
   </div>
-  <h3 class="sub">Droga tokena przez model</h3>
-  <ul class="notes">
-    <li>Embedding to zwykły lookup, a nie mnożenie: numer tokena wybiera wiersz tabeli. W Llama 3 70B tabela ma 128 256 × 8192 liczb, ponad 1 mld parametrów.</li>
-    <li>Warstwa ma dwa kroki. Attention miesza informacje między tokenami (zobacz „Attention”). MLP przetwarza każdy token osobno: rozszerza wektor z 8192 do 28 672 liczb, przepuszcza przez nieliniowość (w Llamie SwiGLU) i zwęża z powrotem. Bez nieliniowości kolejne mnożenia dałoby się złożyć w jedną macierz. W Llama 3 70B MLP to ponad 80% parametrów warstwy.</li>
-    <li>Każdy krok dodaje swój wynik do wektora, zamiast go zastępować: <code>x = x + Attn(Norm(x))</code>, potem <code>x = x + MLP(Norm(x))</code>. Ten wektor to residual stream, wspólna szyna, z której warstwy czytają i do której dopisują. Dodawanie daje gradientowi prostą drogę przez dziesiątki warstw, a normalizacja (w Llamie RMSNorm) trzyma skalę liczb w ryzach.</li>
-    <li>Na końcu wektor ostatniego tokena mnoży się przez macierz 8192 × rozmiar słownika. Wychodzi jeden logit na każdy token ze słownika, a softmax zamienia logity w prawdopodobieństwa (zobacz „Następny token”).</li>
-  </ul>
   <div class="lab">
-    <p class="lab-title">Kliknij pojęcie i zobacz jego najbliższych sąsiadów w przestrzeni wektorowej</p>
-    <div id="emb"></div>
-    <p class="hint" id="embOut">Prawdziwe wektory mają od kilkuset do kilkunastu tysięcy wymiarów. Kierunki też coś znaczą: w klasycznym word2vec wektor „król − mężczyzna + kobieta” wypada najbliżej „królowej”, jeśli wykluczy się same słowa wejściowe (inaczej zwykle wygrywa „król”).</p>
-    <p class="hint">Mapa poglądowa: pozycje są ułożone ręcznie, a nie policzone przez model. Słowo „zamek” trafia do tych samych wierszy tabeli embeddingów, czy chodzi o zamek w drzwiach, czy o zamek króla. Znaczenie z kontekstu dokładają dopiero kolejne warstwy. Wektory do wyszukiwania robi osobny model, jeden na cały fragment tekstu (zobacz „Embeddingi i wyszukiwanie wektorowe”).</p>
+    <p class="lab-title">Przejdź krokami drogę jednego tokena przez model i zobacz, jak zmienia się jego wektor</p>
+    <p class="hint" style="margin-top:0">Tekst: „Stolica Polski to”, model w układzie Llama 3 70B. Wektor ma tu 8 liczb zamiast 8192. Numery tokenów, wartości i procenty są poglądowe.</p>
+    <div class="stages" id="tpStages"></div>
+    <div class="tp-main">
+      <div id="tpBody"></div>
+      <div id="tpCap"></div>
+    </div>
+    <div id="tpPlayer"></div>
   </div>
   <h3 class="sub">Gdzie model przechowuje wiedzę</h3>
   <ul class="notes">
@@ -29,6 +32,7 @@
   <h3 class="sub">Ile pamięci i obliczeń potrzebuje model</h3>
   <ul class="notes">
     <li>Pamięć na wagi to parametry × bajty na parametr: model 70B w BF16 zajmuje ok. 140 GB, w 4 bitach niecałe 40 GB (zobacz „Kwantyzacja”).</li>
+    <li>Większość parametrów to MLP, w Llama 3 70B ponad 80% każdej warstwy. Tabela embeddingów (ponad 1 mld parametrów) zajmuje pamięć, ale nie kosztuje mnożeń, bo to lookup.</li>
     <li>Obliczenia: ok. 2 operacje (mnożenie i dodawanie) na parametr na token przy inferencji i ok. 6 przy treningu, bo dochodzi przebieg wstecz. Model 70B to ok. 140 GFLOP na token plus attention, którego koszt rośnie z długością kontekstu i w Llama 3 70B dogania koszt wag przy prompcie o długości ok. 100 tys. tokenów (zobacz „Attention”). W MoE liczą się tylko aktywne parametry (zobacz „Mixture of Experts”).</li>
     <li>Mnożenie macierzy to tysiące niezależnych iloczynów skalarnych, więc idealnie pasuje do GPU. Przy generowaniu jednego tokena karta i tak czeka głównie na odczyt wag z pamięci (zobacz „Czemu GPU się nudzi”).</li>
   </ul>

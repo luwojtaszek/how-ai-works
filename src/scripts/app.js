@@ -47,7 +47,8 @@ const ICO={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l
   next:'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>'};
 // Step player: one control bar pinned to the bottom of its widget card, styled like the home page demo.
 // Every step gets one segment (click to jump); while playing, the current segment fills over the step's time.
-// The card keeps the height of its tallest step, so nothing jumps between steps.
+// The card keeps the height of its tallest step, so nothing jumps between steps;
+// opt.grow, if given, takes that extra height instead of the gap above the bar.
 function player(mount,opt){let i=0,timer=null,tall=0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
   const lab=mount.closest('.lab'),pad=h('div',{class:'pl-pad','aria-hidden':'true'});if(lab)lab.append(pad,mount);
   const bPlay=h('button',{class:'pl-btn pl-play',type:'button'}),
@@ -64,8 +65,8 @@ function player(mount,opt){let i=0,timer=null,tall=0;const total=()=>typeof opt.
     bPrev.disabled=i<=0;bNext.disabled=i>=n;bPlay.innerHTML=timer?ICO.pause:ICO.play;
     const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
   // the card's natural height without the pad; the pad tops every step up to the tallest one
-  const natural=()=>{pad.style.height='0px';return lab?lab.getBoundingClientRect().height:0;};
-  function fit(){if(lab)pad.style.height=Math.max(0,tall-natural())+'px';}
+  const natural=()=>{pad.style.height='0px';if(opt.grow)opt.grow.style.minHeight='';return lab?lab.getBoundingClientRect().height:0;};
+  function fit(){if(!lab)return;const x=Math.max(0,tall-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
   function measure(){if(!lab)return;tall=0;for(let k=0;k<=total();k++){opt.render(k);tall=Math.max(tall,natural());}opt.render(i);fit();}
   function stop(){if(timer){clearInterval(timer);timer=null;}}
   function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();tall=Math.max(tall,natural());fit();ui();}
@@ -383,6 +384,54 @@ function initMM(){let r=rng(11);const x=[0.8,-0.3,0.5,1.2];let W;const gen=()=>{
     box.append(gx,h('span',{class:'mop'},'×'),gw,h('span',{class:'mop'},'='),gy);
     $('#mmF').textContent=tr('wynik[','output[')+(sel+1)+'] = '+x.map((xi,i)=>'('+f(xi)+' × '+f(W[i][sel])+')').join(' + ')+' = '+f(y[sel]);}
   $('#mmRand').addEventListener('click',()=>{gen();paint();});paint();}
+
+
+/* ---------- token path ---------- */
+// One token's vector through the model, step by step. 8 numbers stand in for 8192; every value is illustrative.
+function initTokPath(){const PL=LANG==='pl',q=t=>tr('„'+t+'”','“'+t+'”');
+  const f=v=>v.toLocaleString(tr('pl-PL','en-GB'),{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−');
+  const col=a=>`color-mix(in srgb, var(${a>=0?'--tok':'--att'}) ${Math.round(Math.min(1,Math.abs(a))*55)}%, var(--surface))`;
+  const T=PL?[['Stolica',41207,1.2,[.3,.1,.6,-.4,.2,.1,.5,-.3]],['Polski',81452,1.8,[-.1,.6,.5,-.1,1,-.1,.2,0]],['to',311,.6,[.4,.2,.2,-.1,.3,.2,.3,.1]]]
+    :[['The',791,.2,[0,.1,0,.1,0,.2,0,.1]],['capital',6864,1.4,[.3,.1,.6,-.4,.2,.1,.5,-.3]],['of',315,.3,[.1,0,.1,0,.1,0,.1,0]],['Poland',28703,1.8,[-.1,.6,.5,-.1,1,-.1,.2,0]],['is',374,.6,[.4,.2,.2,-.1,.3,.2,.3,.1]]];
+  const last=T[T.length-1],L=q(last[0]),NB=PL?['te','ten']:['in','it'];
+  const ex=T.map(t=>Math.exp(t[2])),W=ex.map(e=>e/ex.reduce((a,c)=>a+c,0)),pct=w=>Math.round(w*100)+'%';
+  const x0=[.2,-.5,.1,.6,-.3,.4,-.1,.3],mlp=[.3,.1,-.4,.2,.3,-.6,.5,.2],fin=[.9,.4,-.6,.8,1,-.7,1,.5];
+  const att=x0.map((_,i)=>+T.reduce((s,t,k)=>s+W[k]*t[3][i],0).toFixed(1)),x1=x0.map((v,i)=>+(v+att[i]).toFixed(1)),x2=x1.map((v,i)=>+(v+mlp[i]).toFixed(1));
+  const top=T.reduce((a,t,k)=>W[k]>W[a]?k:a,0),TOP=q(T[top][0]);
+  const vec=(v,label,prev,small,fade)=>h('div',{class:'tp-row'},label?h('span',{class:'tp-lab'},label):null,
+    h('div',{class:'tp-vec'+(small?' sm':''),style:fade?'opacity:'+(.35+fade*.65).toFixed(2):null},v.map((a,i)=>h('i',{class:prev&&Math.abs(prev[i]-a)>.05?'ch':'',style:'background:'+col(a)},small?'':f(a)))));
+  const arrow=t=>h('div',{class:'tp-arrow'},'↓ '+t);
+  const STG=tr(['Tekst i embedding','Attention: wagi','Attention: wynik','MLP','×80 warstw','Wyjście'],['Text and embedding','Attention: weights','Attention: output','MLP','×80 layers','Output']);
+  const CAP=[[tr('Model dostaje tekst jako numery tokenów. Śledzimy ostatni token, '+L+': z jego wektora wyjdzie przewidywanie następnego tokena. Na wejściu każdy token dostaje swój embedding (wektor liczb): numer tokena wybiera jego wiersz z tabeli embeddingów, w której każdy token słownika ma własny wiersz. To zwykły lookup, a nie mnożenie. Wektor '+L+' nie ma jeszcze kontekstu.','The model receives text as token IDs. We follow the last token, '+L+': the prediction of the next token comes out of its vector. On input each token gets its embedding (a vector of numbers): the token ID selects its row of the embedding table, which has one row per vocabulary token. It’s a plain lookup, not a multiplication. The vector for '+L+' has no context yet.')],
+    [tr('Wektor '+L+' mnoży się przez macierz zapytań i daje zapytanie Q (czego szukam). Wektor każdego tokena, także '+L+', mnoży się przez macierz kluczy i daje klucz K (co mam). Dopasowanie Q do K to iloczyn skalarny, a softmax zamienia dopasowania w wagi, które sumują się do 100%. Najlepiej pasuje '+TOP+' (zobacz „Attention”).','The vector for '+L+' is multiplied by the query matrix to give a query Q (what am I looking for). Every token’s vector, '+L+' included, is multiplied by the key matrix to give a key K (what do I have). The match between Q and K is a dot product, and a softmax turns the matches into weights that add up to 100%. '+TOP+' matches best (see “Attention”).'),
+     tr('Sam wektor '+L+' nie wie, o czym jest zdanie. Attention to jedyne miejsce w modelu, w którym token dostaje informacje od innych tokenów.','On its own the vector for '+L+' doesn’t know what the sentence is about. Attention is the only place in the model where a token gets information from other tokens.')],
+    [tr('Każdy token ma też wartość V: to, co przekaże dalej. Wynik attention to suma wartości pomnożonych przez wagi, więc najwięcej wnosi '+TOP+'. Wynik nie zastępuje wektora '+L+', tylko dodaje się do niego (zmienione liczby mają ramkę). Ten wektor, do którego każdy krok dopisuje swój wynik, to residual stream.','Every token also has a value V: what it passes on. The attention output is the sum of the values multiplied by the weights, so '+TOP+' contributes most. The output doesn’t replace the vector for '+L+', it is added to it (changed numbers are outlined). This vector, which every step adds its output to, is the residual stream.'),
+     tr('Po tym kroku wektor '+L+' niesie informację o Polsce i o stolicy. Dodawanie zamiast zastępowania daje gradientowi prostą drogę przez dziesiątki warstw.','After this step the vector for '+L+' carries information about Poland and about a capital. Adding instead of replacing gives the gradient a straight path through dozens of layers.')],
+    [tr('MLP (multilayer perceptron) to sieć neuronowa w każdej warstwie, która przerabia każdy token osobno: rozszerza wektor, nieliniowość tłumi liczby ujemne prawie do zera (tu bledną), potem zwęża go z powrotem. Wynik znowu dodaje się do wektora. Bez nieliniowości kolejne mnożenia dałoby się złożyć w jedną macierz. Llama używa SwiGLU: SiLU jednej projekcji razy druga projekcja; tu pokazany jest sam SiLU.','The MLP (multilayer perceptron) is a neural network in every layer that processes each token on its own: it expands the vector, a non-linearity pushes negative numbers close to zero (they fade here), then it projects the vector back down. The output is again added to the vector. Without the non-linearity, consecutive multiplications could be collapsed into a single matrix. Llama uses SwiGLU: the SiLU of one projection times a second projection; only the SiLU is shown here.'),
+     tr('Attention zebrało kontekst, MLP go przetwarza i dodaje skojarzenia utrwalone w wagach podczas treningu, na przykład że stolica Polski to Warszawa (zobacz niżej „Gdzie model przechowuje wiedzę”).','Attention gathered the context; the MLP processes it and adds associations stored in the weights during training, for example that the capital of Poland is Warsaw (see “Where the knowledge lives” below).')],
+    [tr('Warstwy 2–80 robią to samo, każda z własnymi wagami: attention, potem MLP, każde dopisuje swoje. Przed każdym krokiem normalizacja (w Llamie RMSNorm) trzyma skalę liczb w ryzach, więc cała warstwa to: x = x + Attn(Norm(x)), potem x = x + MLP(Norm(x)).','Layers 2–80 do the same, each with its own weights: attention, then the MLP, each adding its share. Before every step a normalisation (RMSNorm in Llama) keeps the scale of the numbers in check, so a whole layer is: x = x + Attn(Norm(x)), then x = x + MLP(Norm(x)).'),
+     tr('Wczesne warstwy łapią proste wzorce, późniejsze łączą je w coraz bardziej złożone: o czym jest tekst, jakim stylem jest napisany, co powinno być dalej.','Early layers pick up simple patterns, later ones combine them into more complex ones: what the text is about, its style, what should come next.')],
+    [tr('Na końcu wektor mnoży się przez macierz słownika: wychodzi jeden wynik, logit, na każdy ze 128 256 tokenów, a softmax zamienia logity w prawdopodobieństwa (zobacz „Następny token”). Wybrany token trafia na koniec tekstu i tę samą drogę przechodzi już tylko on (zobacz „Pętla generowania i KV cache”).','At the end the vector is multiplied by the vocabulary matrix: that yields one score, a logit, for each of the 128,256 tokens, and a softmax turns the logits into probabilities (see “The next token”). The chosen token is appended to the text, and only that new token takes the same path (see “The generation loop and KV cache”).')]];
+  const toks=()=>h('div',{class:'tp-toks'},T.map(([t,id],i)=>h('span',{class:'tp-tok'+(i===T.length-1?' on':'')},q(t),h('small',{},'#'+nf(id)))));
+  const bars=rows=>h('div',{class:'tp-bars'},rows.map(([t,p])=>h('div',{class:'tp-bar'},h('span',{},q(t)),h('div',{class:'track'},h('b',{style:`width:${p*100}%`})),h('span',{class:'mono'},pct(p)))));
+  let pl;function render(s){$('#tpStages').replaceChildren(...STG.map((t,i)=>h('button',{type:'button',class:'stage'+(i===s?' on':i<s?' done':''),'aria-current':i===s?'step':null,onclick:()=>{pl.halt();pl.set(i);}},t)));const b=$('#tpBody');b.replaceChildren();
+    if(s===0){b.append(toks(),arrow(''));const r=rng(5),rv=()=>Array.from({length:8},()=>+(r()*2-1).toFixed(1)),row=(id,t,v,on)=>h('div',{class:'tp-trow'+(on?' on':'')},h('span',{class:'mono'},'#'+nf(id)+' '+q(t)),vec(v,null,null,true));
+      b.append(h('div',{class:'tp-table'},h('div',{class:'tp-trow dim'},'…'),row(last[1]-1,NB[0],rv()),row(last[1],last[0],x0,true),row(last[1]+1,NB[1],rv()),
+        h('div',{class:'tp-trow dim'},tr('… 128 256 wierszy po 8192 liczby','… 128,256 rows of 8192 numbers'))),arrow(''),vec(x0,tr('wektor ','vector for ')+L));}
+    if(s===1)b.append(h('div',{class:'tp-qk'},h('span',{class:'tp-lab'},'token'),h('span',{class:'tp-lab'},tr('dopasowanie Q·K','Q·K match')),h('span',{class:'tp-lab'},tr('waga po softmax','weight after softmax')),
+      ...T.flatMap(([t,,m],k)=>[h('span',{},q(t)),h('span',{class:'mono'},f(m)),h('div',{class:'tp-w'},h('div',{class:'track'},h('b',{style:`width:${W[k]*100}%`})),h('span',{class:'mono'},pct(W[k])))])));
+    if(s===2)b.append(...T.map(([t,,,v],k)=>vec(v,pct(W[k])+tr(' × wartość V ',' × value V of ')+q(t),null,false,W[k])),arrow(tr('suma','sum')),
+      vec(att,tr('= wynik attention','= attention output')),vec(x0,tr('wektor '+L+' przed','vector for '+L+' before')),vec(x1,tr('wektor '+L+' + wynik attention','vector for '+L+' + attention output'),x0));
+    if(s===3){const r=rng(8),wide=Array.from({length:24},()=>+(r()*2-1).toFixed(1));
+      b.append(vec(x1,tr('wektor przed','vector before')),arrow(tr('rozszerz (8192 → 28 672 w Llama 3 70B)','expand (8192 → 28,672 in Llama 3 70B)')),vec(wide,null,null,true),
+        arrow(tr('nieliniowość (SiLU)','non-linearity (SiLU)')),vec(wide.map(a=>+(a/(1+Math.exp(-a))).toFixed(1)),null,null,true),arrow(tr('zwęź z powrotem','project back down')),
+        vec(mlp,tr('wynik MLP','MLP output')),vec(x2,tr('wektor + wynik MLP','vector + MLP output'),x1));}
+    if(s===4)b.append(h('div',{class:'tp-layers'},Array.from({length:80},()=>h('i',{}))),h('div',{class:'tp-lab'},tr('80 warstw, każda: attention + MLP','80 layers, each: attention + MLP')),
+      vec(x2,tr('po warstwie 1','after layer 1')),vec(fin,tr('po warstwie 80','after layer 80'),x2));
+    if(s===5)b.append(vec(fin,tr('wektor '+L+' po 80 warstwach','vector for '+L+' after 80 layers')),arrow(tr('× macierz słownika (8192 × 128 256), softmax','× vocabulary matrix (8192 × 128,256), softmax')),
+      bars(PL?[['Warszawa',.82],['Kraków',.04],['oczywiście',.02],['miasto',.02]]:[['Warsaw',.82],['Kraków',.04],['a',.02],['the',.02]]));
+    const[what,why]=CAP[s];$('#tpCap').replaceChildren(h('p',{class:'hint'},what),why?h('p',{class:'callout'},h('b',{},tr('Po co? ','Why? ')),why):'');}
+  pl=player($('#tpPlayer'),{steps:STG.length-1,render,interval:4000,grow:$('.tp-main')});PLAYERS.push(pl);}
 
 /* ---------- embedding map ---------- */
 function initEmb(){const P=LANG==='pl'?[['król',20,40],['królowa',80,24],['mężczyzna',20,116],['kobieta',80,100],['Warszawa',205,55],['Kraków',232,90],['Berlin',282,30],['Java',228,205],['Kotlin',262,180],['TypeScript',252,245],['pies',40,200],['kot',82,222],['chomik',30,255]]
@@ -1728,7 +1777,7 @@ function initChoose(){
 /* end wybor */
 
 // ponytail: one bundle for every page; split per topic if it grows heavy
-const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
+const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:initCD,jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
