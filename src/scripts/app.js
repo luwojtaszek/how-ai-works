@@ -41,30 +41,41 @@ function typoLive(root){const fix=n=>{if(n.parentElement?.closest('textarea,inpu
   new MutationObserver(ms=>ms.forEach(m=>m.type==='characterData'?fix(m.target):m.addedNodes.forEach(walk))).observe(root,{childList:true,subtree:true,characterData:true});}
 
 /* ---------- player: start/stop, wstecz/dalej ---------- */
-// Step player: one control bar pinned to the bottom of its widget card.
-// Play/pause, step back/forward, and a scrubber you can drag to any step.
 const ICO={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
   pause:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>',
   prev:'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg>',
   next:'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>'};
-function player(mount,opt){let i=0,timer=null;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps;
-  const lab=mount.closest('.lab');if(lab)lab.append(mount);
+// Step player: one control bar pinned to the bottom of its widget card, styled like the home page demo.
+// Every step gets one segment (click to jump); while playing, the current segment fills over the step's time.
+// The card keeps the height of its tallest step, so nothing jumps between steps.
+function player(mount,opt){let i=0,timer=null,tall=0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
+  const lab=mount.closest('.lab'),pad=h('div',{class:'pl-pad','aria-hidden':'true'});if(lab)lab.append(pad,mount);
   const bPlay=h('button',{class:'pl-btn pl-play',type:'button'}),
     bPrev=h('button',{class:'pl-btn',type:'button','aria-label':tr('Krok wstecz','Step back'),title:tr('Krok wstecz','Step back'),html:ICO.prev}),
     bNext=h('button',{class:'pl-btn pl-next',type:'button','aria-label':tr('Krok dalej','Step forward'),title:tr('Krok dalej','Step forward'),html:ICO.next}),
-    range=h('input',{type:'range',class:'pl-range',min:0,max:1,step:1,value:0,'aria-label':tr('Etap','Step')});
+    segs=h('div',{class:'demo-segs pl-segs'});
   const pos=h('span',{class:'pl-pos','aria-live':'polite'});
-  function ui(){const n=total();range.max=n;range.value=i;range.style.setProperty('--p',(n?i/n*100:0)+'%');pos.textContent=i+' / '+n;
+  function paintSegs(){const n=total();if(segs.children.length!==n+1)segs.replaceChildren(...Array.from({length:n+1},(_,k)=>h('button',{type:'button',class:'demo-seg','aria-label':tr('Krok ','Step ')+k,title:tr('Krok ','Step ')+k,onclick:()=>{stop();set(k);}},h('i'))));
+    // snap every segment without a transition, then let only the current one fill while playing
+    [...segs.children].forEach((g,k)=>{g.classList.remove('run','cur');g.querySelector('i').getAnimations().forEach(a=>a.cancel());g.style.setProperty('--f',k<i||(k===i&&!timer)?'100%':'0%');});
+    const g=segs.children[i];void g.offsetWidth;g.classList.add('cur');
+    if(timer&&i<n){g.style.setProperty('--dur',dur+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
+  function ui(){const n=total();pos.textContent=i+' / '+n;
     bPrev.disabled=i<=0;bNext.disabled=i>=n;bPlay.innerHTML=timer?ICO.pause:ICO.play;
-    const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;}
+    const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
+  // the card's natural height without the pad; the pad tops every step up to the tallest one
+  const natural=()=>{pad.style.height='0px';return lab?lab.getBoundingClientRect().height:0;};
+  function fit(){if(lab)pad.style.height=Math.max(0,tall-natural())+'px';}
+  function measure(){if(!lab)return;tall=0;for(let k=0;k<=total();k++){opt.render(k);tall=Math.max(tall,natural());}opt.render(i);fit();}
   function stop(){if(timer){clearInterval(timer);timer=null;}}
-  function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();ui();}
-  function play(){if(i>=total())set(0);stop();timer=setInterval(()=>set(i+1),opt.interval||1000);ui();}
+  function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();tall=Math.max(tall,natural());fit();ui();}
+  function play(){if(i>=total())set(0);stop();timer=setInterval(()=>set(i+1),dur);ui();}
   bPlay.addEventListener('click',()=>{if(timer){stop();ui();}else play();});
   bPrev.addEventListener('click',()=>{stop();set(i-1);});bNext.addEventListener('click',()=>{stop();set(i+1);});
-  range.addEventListener('input',()=>{stop();set(+range.value);});
-  mount.classList.add('player');mount.replaceChildren(bPlay,bPrev,range,bNext,pos);set(0);
-  return{set,stop,halt(){stop();ui();},refresh(){opt.render(i);ui();},get step(){return i;}};}
+  mount.classList.add('player');mount.replaceChildren(bPlay,bPrev,segs,bNext,pos);
+  measure();set(0);
+  let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(measure,150);});document.fonts?.ready.then(measure);
+  return{set,stop,halt(){stop();ui();},refresh(){measure();ui();},get step(){return i;}};}
 
 /* ---------- station data ---------- */
 
@@ -533,7 +544,7 @@ function initRace(){const LT=['{','"team"',':','"billing"',',','"refund"',':','t
     $('#rcLlmN').textContent=s>=LT.length?tr('Przebiegów: ','Passes: ')+LT.length+tr('. Do tego parsowanie JSON-a. Prawdopodobieństw nie ma: Claude API nie zwraca logprobs, a tam, gdzie są, po post-trainingu bywają słabo skalibrowane.','. Plus parsing the JSON. No probabilities: the Claude API does not return logprobs, and where they exist, they are often poorly calibrated after post-training.'):tr('Przebiegów: ','Passes: ')+s+(s?tr('. Ostatni token: ','. Last token: ')+LT[s-1]:'');
     $$('#rcJev .answer').forEach(a=>a.classList.toggle('show',s>=1));$('#rcJevP').replaceChildren(...(s>=1?[h('i',{class:'j'})]:[]));
     $('#rcJevN').textContent=s>=1?tr('Wywołań: 1. Trzy typowane odpowiedzi z prawdopodobieństwami.','Calls: 1. Three typed answers with probabilities.')+(s>1?tr(' Od pierwszego kroku gotowe.',' Ready since the first step.'):''):tr('Wywołań: 0','Calls: 0');}
-  PLAYERS.push(player($('#rcPlayer'),{steps:LT.length,render,interval:700}));
+  PLAYERS.push(player($('#rcPlayer'),{steps:LT.length,render,interval:1200}));
   const C=[.97,.95,.93,.91,.88,.84,.79,.72,.66,.58,.51,.43];const box=$('#thBox'),sl=$('#thR');const lo=.4,hi=1;const pos=v=>(v-lo)/(hi-lo)*100;
   function paint(){const th=+sl.value;$('#thV').textContent=nf(th*100)+'%';box.replaceChildren(h('div',{class:'axis'}),...C.map(v=>h('div',{class:'dot'+(v<th?' esc':''),style:`left:${pos(v)}%`,title:nf(v*100)+'%'})),h('div',{class:'cutline',style:`left:${pos(th)}%`},h('span',{style:th>.8?'left:auto;right:6px':null},tr('próg','threshold'))));
     const of=tr(' z ',' of '),auto=C.filter(v=>v>=th).length;$('#thAuto').textContent=auto+of+C.length;$('#thEsc').textContent=(C.length-auto)+of+C.length;
