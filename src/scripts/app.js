@@ -1,6 +1,7 @@
 import { ST, HUES, GROUPS, X, TITLES, titleOf, ORDER } from '../data.js';
 import { content } from '../i18n.js';
 import MD from './model-data.json';
+import { typo } from '../lib/typo.js';
 import TOKDATA from './tokens-data.json'; // real tokeniser splits for the Tokens widget, from scripts/gen-tokens.py
 
 // Page language: English at the root, Polish under /pl/. tr('polski','English') picks one.
@@ -31,6 +32,13 @@ function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const pressed=(btns,active)=>btns.forEach(b=>b.setAttribute('aria-pressed',String(b===active)));
 
+
+/* ---------- typography ---------- */
+// Widgets render text at runtime, after the build-time pass (src/lib/typo.js), so fix their text nodes as they appear.
+// Only what is displayed changes: strings used as data (tokenizer presets, inputs) stay as they are.
+function typoLive(root){const fix=n=>{if(n.parentElement?.closest('textarea,input,code,pre,script,style'))return;const v=typo(n.nodeValue,LANG);if(v!==n.nodeValue)n.nodeValue=v;};
+  const walk=r=>{if(r.nodeType===3)return fix(r);const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())fix(n);};
+  new MutationObserver(ms=>ms.forEach(m=>m.type==='characterData'?fix(m.target):m.addedNodes.forEach(walk))).observe(root,{childList:true,subtree:true,characterData:true});}
 
 /* ---------- player: start/stop, wstecz/dalej ---------- */
 // Step player: one control bar pinned to the bottom of its widget card.
@@ -1716,6 +1724,7 @@ const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb],at
   embeddingi:initEmbSearch,kontekst:initCtxEng,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
+$$('.lab').forEach(typoLive);
 for(const[id,f]of Object.entries(inits))if(document.getElementById(id))[f].flat().forEach(run);
 // the floating prev/next bar hides while you read downwards or while a widget's control bar
 // is on screen, and comes back when you scroll up or reach the end of the page

@@ -303,6 +303,8 @@ label.ctl select{width:100%}
 .stat b{display:block;font:600 1.4rem/1.2 var(--body);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .stat span{display:block;font-size:.82rem;line-height:1.4;color:var(--muted);margin-top:2px}
 .hint{font-size:.88rem;color:var(--muted);margin-top:12px}
+p,li,dd{text-wrap:pretty}
+h1,h2,h3,.lab-title{text-wrap:balance}
 .callout{background:var(--sunken);border-radius:8px;padding:10px 14px;margin-top:14px;font-size:.95rem}
 .scroll{overflow-x:auto;max-width:100%}
 .notes{display:grid;gap:10px;margin:28px 0 24px;padding:0;list-style:none}
