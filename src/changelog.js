@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-10-09',
+    added: [],
+    updated: ['format', 'injection', 'produkcja', 'roofline', 'kwantyzacja', 'moe', 'context', 'sampling'],
+    en: 'Widget corrections after a full review. Enforcing output format: a new example with a free-text field shows where the mask cuts tokens and where it lets almost everything through. Prompt injection: the defences now say which ones work, which only reduce risk and which only limit scale, and the agent’s permissions sit next to the result. LLMs in production: the retry cost matches the counter. Why the GPU is idle: a large batch with long contexts runs out of memory before compute. Quantisation: the quality label follows the error, and BF16 is shown as the reference. Mixture of Experts, The context window and agents, and The next token: counters and messages match what the widget shows.',
+    pl: 'Poprawki widżetów po pełnym przeglądzie. Wymuszanie formatu: nowy przykład z polem tekstowym pokazuje, gdzie maska wycina tokeny, a gdzie przepuszcza prawie wszystko. Prompt injection: obrony mówią, które działają, które tylko zmniejszają ryzyko, a które ograniczają skalę, a uprawnienia agenta stoją obok wyniku. LLM na produkcji: koszt ponowień zgadza się z licznikiem. Czemu GPU się nudzi: duży batch z długim kontekstem kończy się na pamięci, zanim na liczeniu. Kwantyzacja: ocena jakości wynika z błędu, a BF16 jest pokazane jako wzorzec. Mixture of Experts, Okno kontekstowe i agent oraz Następny token: liczniki i komunikaty zgadzają się z tym, co pokazuje widżet.',
+  },
+  {
     date: '2026-10-03',
     added: [],
     updated: ['tokeny'],

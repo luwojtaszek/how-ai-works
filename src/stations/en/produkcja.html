@@ -10,7 +10,7 @@
     <ol class="pp-tl" id="ppTl" aria-label="Request timeline"></ol>
     <p class="verdict" id="ppOut" aria-live="polite"></p>
     <div class="stats"><div class="stat"><b id="ppFirst"></b><span>first content for the user</span></div><div class="stat"><b id="ppEnd"></b><span>request handled</span></div><div class="stat"><b id="ppCalls"></b><span>model calls</span></div><div class="stat"><b id="ppCost"></b><span>cost, where 1× is one normal call</span></div></div>
-    <p class="hint">An illustrative simulation with hand-picked numbers. With no failure: first token after 0.8 s, the full answer after 6.8 s, cost 1×. The fallback model at another provider has a cold cache, so it costs 1.4×. Policy: a 20 s timeout per attempt (with streaming, 10 s of silence between chunks), at most 2 retries within an overall limit of 45 s, fallback once retries are exhausted. An interrupted attempt costs in proportion to what it managed to generate.</p>
+    <p class="hint">An illustrative simulation with hand-picked numbers. With no failure: first token after 0.8 s, the full answer after 6.8 s, cost 1×. The fallback model at another provider has a cold cache, so it costs 1.4×. Policy: a 20 s timeout per attempt (with streaming, 10 s of silence between chunks), at most 2 retries within an overall limit of 45 s, fallback once retries are exhausted (a timeout isn’t retried when a fallback exists). An interrupted attempt costs in proportion to what it managed to generate.</p>
   </div>
   <h3 class="sub">Failures: what to retry and how</h3>
   <ul class="notes">

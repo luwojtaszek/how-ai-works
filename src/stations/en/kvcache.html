@@ -11,6 +11,7 @@
     <div class="scroll" style="margin-top:14px"><table class="kv" id="kvT"></table></div>
     <div class="legend"><span><i style="background:var(--cost)"></i>computed in this step</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>read from the cache</span><span><i style="background:var(--tok-t);box-shadow:inset 0 0 0 2px var(--tok)"></i>new token</span></div>
     <div class="stats"><div class="stat"><b id="kvNow">0</b><span>tokens computed in this step</span></div><div class="stat"><b id="kvSum">0</b><span>in total since the start</span></div><div class="stat"><b id="kvRead">0</b><span>read from the cache in this step</span></div><div class="stat"><b id="kvPhase">–</b><span id="kvPhaseD">phase</span></div></div>
+    <p class="hint">For readability one token here is one word; a real tokeniser splits the text differently.</p>
   </div>
   <h3 class="sub">What the cache holds and why it works</h3>
   <ul class="notes">
@@ -53,7 +54,7 @@
     </div>
     <div class="stats"><div class="stat"><b id="kdMem"></b><span>used of the GPU’s 80 GB</span></div><div class="stat"><b id="kdStep"></b><span>time per step</span></div><div class="stat"><b id="kdTok"></b><span>tokens/s per conversation</span></div><div class="stat"><b id="kdAll"></b><span>tokens/s in total</span></div><div class="stat"><b id="kdShare"></b><span>of reads come from the cache</span></div></div>
     <div class="callout" id="kdMsg"></div>
-    <p class="hint">An illustrative model as in “Why the GPU is idle”: 8B parameters in FP16 (16 GB of weights, 128 KB of cache per token), a single H100 with 80 GB of memory and 3.35 TB/s. Step time = (weights + cache of all conversations) / bandwidth. This is an upper bound on speed, with no overheads.</p>
+    <p class="hint">An illustrative model as in “Why the GPU is idle”: 8B parameters in FP16 (16 GB of weights, 131 KB of cache per token), a single H100 with 80 GB of memory and 3.35 TB/s. Step time = (weights + cache of all conversations) / bandwidth. This is an upper bound on speed, with no overheads.</p>
   </div>
   <h3 class="sub">The cache on the server</h3>
   <ul class="notes">

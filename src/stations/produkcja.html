@@ -10,7 +10,7 @@
     <ol class="pp-tl" id="ppTl" aria-label="Przebieg requestu"></ol>
     <p class="verdict" id="ppOut" aria-live="polite"></p>
     <div class="stats"><div class="stat"><b id="ppFirst"></b><span>pierwsza treść dla użytkownika</span></div><div class="stat"><b id="ppEnd"></b><span>koniec obsługi</span></div><div class="stat"><b id="ppCalls"></b><span>wywołań modelu</span></div><div class="stat"><b id="ppCost"></b><span>koszt, 1× to jedno zwykłe wywołanie</span></div></div>
-    <p class="hint">Symulacja poglądowa, liczby dobrane ręcznie. Bez awarii: pierwszy token po 0,8 s, całość po 6,8 s, koszt 1×. Model zapasowy u innego dostawcy ma zimny cache, więc kosztuje 1,4×. Polityka: timeout 20 s na próbę (przy streamingu 10 s ciszy między fragmentami), najwyżej 2 ponowienia w łącznym limicie 45 s, fallback po wyczerpaniu ponowień. Przerwana próba kosztuje proporcjonalnie do tego, co zdążyła wygenerować.</p>
+    <p class="hint">Symulacja poglądowa, liczby dobrane ręcznie. Bez awarii: pierwszy token po 0,8 s, całość po 6,8 s, koszt 1×. Model zapasowy u innego dostawcy ma zimny cache, więc kosztuje 1,4×. Polityka: timeout 20 s na próbę (przy streamingu 10 s ciszy między fragmentami), najwyżej 2 ponowienia w łącznym limicie 45 s, fallback po wyczerpaniu ponowień (timeoutu nie ponawiamy, jeśli jest fallback). Przerwana próba kosztuje proporcjonalnie do tego, co zdążyła wygenerować.</p>
   </div>
   <h3 class="sub">Awarie: co ponawiać i jak</h3>
   <ul class="notes">
