@@ -19,7 +19,7 @@
   <ul class="notes">
     <li>Every expert has to sit in memory. DeepSeek-V3 has 671 billion parameters, 37 billion of them active per token. In FP8 that is about 671 GB of weights alone, more than the 640 GB on eight H100s.</li>
     <li>With one conversation, decode reads only the active experts, so it is as fast as a dense model with the same number of active parameters. With a larger batch, tokens spread to almost every expert: a step reads almost the whole model, and each expert gets only part of the batch. For compute to catch up with reading, the batch has to be larger than for a dense model by roughly the ratio of total experts to selected ones (see “Why the GPU is idle”).</li>
-    <li>That is why a large MoE is spread across many GPUs by expert (expert parallelism), with an all-to-all exchange of tokens between GPUs in every layer. DeepSeek-V3 decodes on 320-GPU units, one expert per GPU, and duplicates the most frequently picked experts, because the most loaded expert sets the time of the whole step.</li>
+    <li>That is why a large MoE is spread across many GPUs by expert (expert parallelism), with an all-to-all exchange of tokens between GPUs in every layer. According to the DeepSeek-V3 technical report (December 2024), decoding runs on 320-GPU units, one expert per GPU, and the most frequently picked experts are duplicated, because the most loaded expert sets the time of the whole step.</li>
   </ul>
   <h3 class="sub">MoE or a dense model</h3>
   <ul class="notes">

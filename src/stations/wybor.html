@@ -21,7 +21,7 @@
   <ul class="notes">
     <li>Zaczynasz od zestawu przypadków z prawdziwego ruchu i progu, który model ma przejść (temat „Ewaluacje”). Puszczasz go na kilku kandydatach, każdy przypadek kilka razy, i bierzesz najtańszego, który przechodzi.</li>
     <li>Modele dzielą się na półki. Czołowe (frontier) biorą trudne rozumowanie, długie zadania agentowe i kod. Średnie wystarczają do większości pracy produkcyjnej. Małe i szybkie robią klasyfikację, ekstrakcję, routing i proste kroki w dużej skali.</li>
-    <li>Poziom rozumowania to druga gałka tego samego wyboru. W poradnikach o wyborze modelu Anthropic pisze, że strojenie wysiłku często daje więcej niż zmiana modelu, a OpenAI radzi zostać przy najlżejszym ustawieniu, które spełnia próg jakości (stan na wrzesień 2026). Porównujesz więc pary model–poziom, nie same modele.</li>
+    <li>Poziom rozumowania to druga gałka tego samego wyboru. Anthropic w poradniku o koszcie i jakości radzi najpierw przetestować kilka poziomów wysiłku na obecnym modelu, a dopiero potem zmieniać model, bo często to wystarcza (stan na październik 2026). Porównujesz więc pary model–poziom, nie same modele.</li>
     <li>Jeden model na cały system to rzadko optimum. W kaskadzie najpierw odpowiada tani model, a do droższego albo na wyższy poziom rozumowania trafia tylko to, co odrzuci walidator, testy albo niska pewność (temat „LLM na produkcji”). W agencie dobierasz model do kroku: mały streszcza wyniki narzędzi, czołowy planuje i podejmuje trudne decyzje.</li>
   </ul>
   <h3 class="sub">Koszt i czas</h3>
@@ -43,7 +43,7 @@
     <li>SWE-bench Verified to 500 poprawek błędów z 12 repozytoriów w Pythonie. Mierzy małe, dobrze opisane łatki w popularnych projektach, a nie pracę w twoim repozytorium, z twoimi konwencjami i zmianami w wielu plikach.</li>
     <li>LMArena mierzy, którą odpowiedź woli głosujący, a głosujący wolą dłuższe i bogato sformatowane. Po uwzględnieniu stylu (style control, 2024) najsilniejszym czynnikiem okazała się długość, a ranking się przetasował: GPT-4o-mini spadł z 6. na 11. miejsce, a Claude 3 Opus awansował z 16. na 10. To miara preferencji w czacie, nie poprawności w twoim zadaniu.</li>
     <li>Wynik od producenta i wynik niezależny to różne pomiary. Producent wybiera harness, poziom rozumowania, liczbę prób i podzbiór zadań. Niezależne zespoły, jak Artificial Analysis czy Epoch AI, puszczają wszystkie modele w jednym harnessie, a Epoch zauważa, że wynik na SWE-bench mocno zależy od scaffoldu. Porównujesz tylko liczby z jednego źródła i jednego harnessu (temat „Harness agenta kodującego”).</li>
-    <li>Ten sam model u różnych dostawców to nie ten sam produkt: różnią się kwantyzacja, szablon czatu, parser wywołań narzędzi i ustawienia serwowania. W pomiarze Moonshot z listopada 2025 Kimi K2 Thinking wywoływał narzędzia zgodnie ze schematem w 100% przez oficjalne API, a u kilku zewnętrznych hostów w 83–87%. Testujesz konkretny endpoint, nie nazwę modelu.</li>
+    <li>Ten sam model u różnych dostawców to nie ten sam produkt: różnią się kwantyzacja, szablon czatu, parser wywołań narzędzi i ustawienia serwowania. W pomiarze Moonshot z listopada 2025 Kimi K2 Thinking wywoływał narzędzia zgodnie ze schematem w 100% przez oficjalne API i u części zewnętrznych dostawców, a u innych tylko w 83–87%. Testujesz konkretny endpoint, nie nazwę modelu.</li>
   </ul>
   <h3 class="sub">Wycofywanie i zmiana modelu</h3>
   <ul class="notes">

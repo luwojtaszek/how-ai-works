@@ -36,7 +36,7 @@
   </ul>
   <h3 class="sub">Granice długiego kontekstu</h3>
   <ul class="notes">
-    <li>Softmax zawsze rozdziela 100% uwagi, więc głowa nie może „na nic nie patrzeć”. Modele uczą się zrzucać nadmiar na pierwsze tokeny (attention sinks, Xiao i in., 2023), w widżecie wyżej – na token startu. Dlatego obcięcie początku kontekstu, np. w prostym oknie przesuwnym, psuje model, nawet gdy początek nie niósł ważnej treści.</li>
+    <li>Softmax zawsze rozdziela 100% uwagi, więc głowa nie może „na nic nie patrzeć”. Modele uczą się zrzucać nadmiar na pierwsze tokeny (attention sinks, Xiao i in., 2023), w widżecie wyżej – na token startu. Dlatego wyrzucenie początku z gotowego KV cache’u, np. w prostym oknie przesuwnym na modelu trenowanym z pełnym attention, psuje model, nawet gdy początek nie niósł ważnej treści. Skrócenie historii i przeliczenie promptu od nowa tego problemu nie ma.</li>
     <li>Zmieszczenie tekstu w oknie nie znaczy, że model go dobrze wykorzysta. Informację ze środka długiego kontekstu modele wykorzystują gorzej niż z początku i końca (Liu i in., „Lost in the Middle”, 2023). Co wkładać do kontekstu i gdzie, omawia „Context engineering i pamięć”.</li>
   </ul>
 </section>

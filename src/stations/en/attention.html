@@ -36,7 +36,7 @@
   </ul>
   <h3 class="sub">Limits of long context</h3>
   <ul class="notes">
-    <li>The softmax always hands out 100% of the attention, so a head can’t “look at nothing”. Models learn to dump the excess on the first tokens (attention sinks, Xiao et al., 2023); in the widget above, that is the start token. That is why cutting off the start of the context, e.g. in a naive sliding window, breaks the model, even when the start carried no important content.</li>
+    <li>The softmax always hands out 100% of the attention, so a head can’t “look at nothing”. Models learn to dump the excess on the first tokens (attention sinks, Xiao et al., 2023); in the widget above, that is the start token. That is why evicting the start from an existing KV cache, e.g. in a naive sliding window on a model trained with full attention, breaks the model, even when the start carried no important content. Shortening the history and recomputing the prompt doesn’t have this problem.</li>
     <li>Fitting text in the window doesn’t mean the model will use it well. Models use information from the middle of a long context less reliably than information from the beginning and the end (Liu et al., “Lost in the Middle”, 2023). What to put in the context and where is covered in “Context engineering and memory”.</li>
   </ul>
 </section>

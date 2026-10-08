@@ -29,7 +29,7 @@
   </ul>
   <h3 class="sub">What it means for serving</h3>
   <ul class="notes">
-    <li>Single-stream speed ≈ memory bandwidth / bytes read per token (active weights plus KV cache). That is why quantising weights to 8 or 4 bits speeds up decode almost proportionally (see “Quantisation”), and why speculative decoding gets several tokens out of one read of the weights (see “Speculative decoding”).</li>
+    <li>Single-stream speed ≈ memory bandwidth / bytes read per token (active weights plus KV cache). That is why quantising weights to 8 or 4 bits speeds up decode almost proportionally when reading the weights dominates (see “Quantisation”), and why speculative decoding gets several tokens out of one read of the weights (see “Speculative decoding”).</li>
     <li>Cost per token is mostly a matter of batch size. Continuous batching and PagedAttention exist to fit the largest possible batch into limited memory (see “Continuous batching”).</li>
     <li>Output tokens are priced several times higher than input tokens (typically 4–8× at the large providers). Input goes through prefill in parallel, while every output token is a separate decode step that occupies a slot in the batch.</li>
     <li>Prefill and decode have different bottlenecks and get in each other’s way on a shared GPU. Large deployments split them into separate pools (disaggregated serving): the DeepSeek-V3 technical report describes prefill on 32-GPU units and decode on 320-GPU units, and vLLM, SGLang and NVIDIA Dynamo support the split. On a single server, chunked prefill softens the conflict.</li>
