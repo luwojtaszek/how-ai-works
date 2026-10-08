@@ -29,7 +29,7 @@
   <h3 class="sub">On-policy distillation</h3>
   <ul class="notes">
     <li>Both methods above train on text the student didn’t write: the teacher’s answers or an existing dataset. When generating, the student makes mistakes the teacher never makes, lands in situations it never saw in training, and the errors compound.</li>
-    <li>In on-policy distillation the student generates the answer and the teacher, in one forward pass, computes the probability of each of its tokens. The loss is a per-token reverse KL: the lower the teacher’s probability for a token, the bigger the penalty. It works like RL, but with every token graded instead of one reward for the whole answer. Reverse KL pushes the student towards one of the teacher’s ways of answering instead of spreading across several.</li>
+    <li>In on-policy distillation the student generates the answer and the teacher, in one forward pass, computes the probability of each of its tokens. The loss is a per-token reverse KL: the penalty grows when the student gives a token a higher probability than the teacher does (the difference of their logarithms counts). It works like RL, but with every token graded instead of one reward for the whole answer. Reverse KL pushes the student towards one of the teacher’s ways of answering instead of spreading across several.</li>
     <li>Qwen3 (2025) trained its 0.6B to 14B and 30B-A3B models this way, with Qwen3-32B or 235B-A22B as the teacher: first SFT on the teacher’s answers, then an on-policy stage. On Qwen3-8B that stage reached 74.4% on AIME 2024 in 1,800 GPU hours, while RL from the same starting point reached 67.6% in 17,920 hours. Thinking Machines spelled out the method in “On-Policy Distillation” (October 2025).</li>
   </ul>
   <h3 class="sub">Distillation in pretraining small models</h3>
@@ -40,7 +40,7 @@
   </ul>
   <h3 class="sub">Reasoning distillation</h3>
   <ul class="notes">
-    <li>DeepSeek-R1 (January 2025): about 800k examples, including about 600k reasoning traces kept only when their result was correct. SFT alone on them, with no RL, produced models from Qwen2.5 1.5B to Llama 3.3 70B. Qwen2.5-32B scored 72.6% on AIME 2024 after distillation, while the same base after more than 10k steps of large-scale RL scored 47.0%.</li>
+    <li>DeepSeek-R1 (January 2025): about 800k examples, including about 600k reasoning traces kept only when their result was correct. SFT alone on them, with no RL, produced models from Qwen2.5-Math 1.5B to Llama 3.3 70B. Qwen2.5-32B scored 72.6% on AIME 2024 after distillation, while the same base after more than 10k steps of large-scale RL scored 47.0%.</li>
     <li>A small, carefully chosen set also works. s1 (2025): 1,000 questions with reasoning traces from Gemini Flash Thinking, and 26 minutes of training Qwen2.5-32B on 16 H100s. LIMO (2025): 800 selected solutions and 63.3% on AIME 2024. The knowledge is already in the base; the traces teach the form of long reasoning (see “Reasoning models”).</li>
   </ul>
   <h3 class="sub">Limits</h3>

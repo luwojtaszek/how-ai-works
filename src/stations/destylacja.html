@@ -29,7 +29,7 @@
   <h3 class="sub">Destylacja on-policy</h3>
   <ul class="notes">
     <li>Obie powyższe metody uczą na tekstach, których uczeń sam nie napisał: odpowiedziach nauczyciela albo gotowym zbiorze. Przy generowaniu uczeń popełnia błędy, których nauczyciel nie robi, trafia na sytuacje, których w treningu nie widział, i błędy się kumulują.</li>
-    <li>W destylacji on-policy uczeń sam generuje odpowiedź, a nauczyciel w jednym przebiegu liczy prawdopodobieństwo każdego jej tokena. Strata to odwrotna KL na każdym tokenie: im mniej prawdopodobny token dla nauczyciela, tym większa kara. To jak RL, tylko z oceną każdego tokena zamiast jednej nagrody za całość. Odwrotna KL skłania ucznia do trzymania się jednego ze sposobów nauczyciela zamiast rozmywania się między kilkoma.</li>
+    <li>W destylacji on-policy uczeń sam generuje odpowiedź, a nauczyciel w jednym przebiegu liczy prawdopodobieństwo każdego jej tokena. Strata to odwrotna KL na każdym tokenie: kara rośnie, gdy uczeń daje tokenowi wyższe prawdopodobieństwo niż nauczyciel (liczy się różnica ich logarytmów). To jak RL, tylko z oceną każdego tokena zamiast jednej nagrody za całość. Odwrotna KL skłania ucznia do trzymania się jednego ze sposobów nauczyciela zamiast rozmywania się między kilkoma.</li>
     <li>W Qwen3 (2025) tak trenowano modele od 0,6B do 14B i 30B-A3B z nauczycielem Qwen3-32B albo 235B-A22B: najpierw SFT na odpowiedziach nauczyciela, potem etap on-policy. Na Qwen3-8B ten etap dał 74,4% w AIME 2024 kosztem 1800 godzin GPU, a RL z tego samego punktu 67,6% kosztem 17 920 godzin. Thinking Machines rozpisali metodę we wpisie „On-Policy Distillation” (październik 2025).</li>
   </ul>
   <h3 class="sub">W pretrainingu małych modeli</h3>
@@ -40,7 +40,7 @@
   </ul>
   <h3 class="sub">Destylacja rozumowania</h3>
   <ul class="notes">
-    <li>DeepSeek-R1 (styczeń 2025): ok. 800 tys. przykładów, w tym ok. 600 tys. śladów rozumowania, z których zostawiono tylko te z poprawnym wynikiem. Samo SFT na nich, bez RL, dało modele od Qwen2.5 1,5B do Llamy 3.3 70B. Qwen2.5-32B po destylacji miał 72,6% w AIME 2024, a ta sama baza po ponad 10 tys. krokach dużego RL 47,0%.</li>
+    <li>DeepSeek-R1 (styczeń 2025): ok. 800 tys. przykładów, w tym ok. 600 tys. śladów rozumowania, z których zostawiono tylko te z poprawnym wynikiem. Samo SFT na nich, bez RL, dało modele od Qwen2.5-Math 1,5B do Llamy 3.3 70B. Qwen2.5-32B po destylacji miał 72,6% w AIME 2024, a ta sama baza po ponad 10 tys. krokach dużego RL 47,0%.</li>
     <li>Wystarcza też mały, starannie dobrany zbiór. s1 (2025): 1000 pytań ze śladami rozumowania z Gemini Flash Thinking i 26 minut treningu Qwen2.5-32B na 16 kartach H100. LIMO (2025): 800 wybranych rozwiązań i 63,3% w AIME 2024. Wiedza jest już w bazie, a ślady uczą formy długiego rozumowania (zobacz „Modele rozumujące”).</li>
   </ul>
   <h3 class="sub">Ograniczenia destylacji</h3>

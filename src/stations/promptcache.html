@@ -11,7 +11,7 @@
     <div class="legend"><span><i style="background:var(--prob-t);box-shadow:inset 0 0 0 2px var(--prob)"></i>zapis do cache’u</span><span><i style="background:var(--cache-t);box-shadow:inset 0 0 0 2px var(--cache)"></i>trafienie</span><span><i style="background:var(--cost-t);box-shadow:inset 0 0 0 2px var(--cost)"></i>liczone od nowa i zapisywane</span></div>
     <div class="stats"><div class="stat"><b id="pcHit"></b><span>tokenów requestu 2 z cache’u</span></div><div class="stat"><b id="pcCost1"></b><span>koszt wejścia requestu 1: sam zapis</span></div><div class="stat"><b id="pcCost"></b><span>koszt wejścia requestu 2: odczyt plus zapis nowych tokenów</span></div><div class="stat"><b id="pcSave"></b><span id="pcSaveL">taniej niż bez cache’u</span></div></div>
     <div class="callout" id="pcMsg"></div>
-    <p class="hint">Przykładowe stawki: 3 USD za milion tokenów wejściowych, odczyt z cache’u 10% tej ceny, zapis 125%. Tak liczą Anthropic przy 5-minutowym wpisie i OpenAI od GPT-5.6 (wrzesień 2026). U starszych modeli i innych dostawców zapis bywa bez dopłaty.</p>
+    <p class="hint">Przykładowe stawki: 3 USD za milion tokenów wejściowych, odczyt z cache’u 10% tej ceny, zapis 125%. Tak liczy większość modeli Anthropic (wpis 5-minutowy) i OpenAI od GPT-5.6 (październik 2026). U starszych modeli i innych dostawców zapis bywa bez dopłaty.</p>
   </div>
   <h3 class="sub">Jak działa prompt caching</h3>
   <ul class="notes">
@@ -21,8 +21,8 @@
   </ul>
   <h3 class="sub">Warunki u dostawców</h3>
   <ul class="notes">
-    <li>Anthropic (wrzesień 2026): odczyt 0,1 ceny wejścia (w najnowszych modelach jeszcze mniej), zapis 1,25 przy wpisie 5-minutowym i 2 przy godzinnym. Punkty cięcia (breakpointy) wskazujesz sam (do 4 znaczników <code>cache_control</code>) albo jednym polem w trybie automatycznym. Minimalny prefiks to od 512 do 4096 tokenów zależnie od modelu. Krótszy po cichu się nie zapisze.</li>
-    <li>OpenAI cache’uje prefiksy automatycznie. Od GPT-5.6 minimum to 1024 tokeny, zapis kosztuje 1,25, odczyt 0,1, a wpis żyje co najmniej 30 minut. Starsze modele nie mają dopłaty za zapis i domyślnie trzymają wpis ok. 30 minut, najwyżej 24 godziny; przy Zero Data Retention albo w modelach bez retencji 24-godzinnej domyślnie 5–10 minut bezczynności, najwyżej godzinę. Gemini od 2.5 ma cache automatyczny, bez gwarancji trafienia, i jawny, płatny za godzinę przechowywania.</li>
+    <li>Anthropic (październik 2026): odczyt 0,1 ceny wejścia (w Opus 5.5 i Sonnet 5.5 0,05, w Fable 5.1 i Mythos 5.1 0,025), zapis 1,25 przy wpisie 5-minutowym i 2 przy godzinnym. Punkty cięcia (breakpointy) wskazujesz sam (do 4 znaczników <code>cache_control</code>) albo jednym polem w trybie automatycznym. Minimalny prefiks to od 512 do 4096 tokenów zależnie od modelu. Krótszy po cichu się nie zapisze.</li>
+    <li>OpenAI cache’uje prefiksy automatycznie. Od GPT-5.6 minimum to 1024 tokeny, zapis kosztuje 1,25, odczyt 0,1 (w GPT-6.1 Sol 0,05), a wpis żyje co najmniej 30 minut od ostatniego zapisu lub odczytu. Starsze modele nie mają dopłaty za zapis i domyślnie trzymają wpis ok. 30 minut, najwyżej 24 godziny; przy Zero Data Retention albo w modelach bez retencji 24-godzinnej domyślnie 5–10 minut bezczynności, najwyżej godzinę. Gemini od 2.5 ma cache automatyczny, bez gwarancji trafienia, i jawny, płatny za godzinę przechowywania.</li>
     <li>Każde trafienie odnawia czas życia wpisu. U Anthropic liczy się on od startu requestu, więc generowanie trwające 4 minuty zjada większość 5-minutowego wpisu. Użytkownik, który przy takim wpisie odpisze po kwadransie, zaczyna od zapisu.</li>
   </ul>
   <h3 class="sub">Jak układać prompt pod cache</h3>

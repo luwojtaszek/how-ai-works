@@ -19,7 +19,7 @@
   <ul class="notes">
     <li>W pamięci muszą leżeć wszyscy eksperci. DeepSeek-V3 ma 671 mld parametrów, z czego 37 mld aktywnych na token. W FP8 to ok. 671 GB samych wag, więcej niż 640 GB na ośmiu kartach H100.</li>
     <li>Przy jednej rozmowie decode czyta tylko aktywnych ekspertów, więc jest szybki jak w modelu o wielkości części aktywnej. Przy większym batchu tokeny rozchodzą się prawie do wszystkich ekspertów: krok czyta prawie cały model, a każdy ekspert dostaje tylko część batcha. Żeby liczenie dogoniło czytanie, batch musi być mniej więcej tyle razy większy niż w modelu gęstym, ile wynosi stosunek wszystkich ekspertów do wybranych (zobacz „Czemu GPU się nudzi”).</li>
-    <li>Dlatego ekspertów dużego MoE rozkłada się na wiele kart (expert parallelism), a w każdej warstwie karty wymieniają się tokenami w trybie all-to-all. DeepSeek-V3 dekoduje na jednostkach po 320 GPU, po jednym ekspercie na kartę, i duplikuje najczęściej wybieranych ekspertów, bo najbardziej obciążony ekspert wyznacza czas całego kroku.</li>
+    <li>Dlatego ekspertów dużego MoE rozkłada się na wiele kart (expert parallelism), a w każdej warstwie karty wymieniają się tokenami w trybie all-to-all. Według raportu technicznego DeepSeek-V3 (grudzień 2024) decode działa na jednostkach po 320 GPU, po jednym ekspercie na kartę, a najczęściej wybieranych ekspertów się duplikuje, bo najbardziej obciążony ekspert wyznacza czas całego kroku.</li>
   </ul>
   <h3 class="sub">Kiedy MoE, a kiedy model gęsty</h3>
   <ul class="notes">

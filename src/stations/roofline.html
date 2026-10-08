@@ -29,7 +29,7 @@
   </ul>
   <h3 class="sub">Co z tego wynika dla serwowania</h3>
   <ul class="notes">
-    <li>Prędkość jednego strumienia ≈ przepustowość pamięci / bajty czytane na token (aktywne wagi plus KV cache). Stąd kwantyzacja wag do 8 lub 4 bitów przyspiesza decode prawie proporcjonalnie (zobacz „Kwantyzacja”), a dekodowanie spekulacyjne daje kilka tokenów z jednego czytania wag (zobacz „Dekodowanie spekulacyjne”).</li>
+    <li>Prędkość jednego strumienia ≈ przepustowość pamięci / bajty czytane na token (aktywne wagi plus KV cache). Stąd kwantyzacja wag do 8 lub 4 bitów przyspiesza decode prawie proporcjonalnie, gdy dominuje czytanie wag (zobacz „Kwantyzacja”), a dekodowanie spekulacyjne daje kilka tokenów z jednego czytania wag (zobacz „Dekodowanie spekulacyjne”).</li>
     <li>Koszt na token to przede wszystkim rozmiar batcha. Continuous batching i PagedAttention istnieją po to, żeby w ograniczonej pamięci zmieścić jak największy batch (zobacz „Continuous batching”).</li>
     <li>Tokeny wyjściowe są w cennikach kilka razy droższe od wejściowych (u dużych dostawców zwykle 4–8 razy). Wejście przechodzi przez prefill równolegle, a każdy token wyjścia to osobny krok decode, który zajmuje miejsce w batchu.</li>
     <li>Prefill i decode mają inne wąskie gardła i przeszkadzają sobie na wspólnej karcie. Duże wdrożenia rozdzielają je na osobne pule (disaggregated serving): raport techniczny DeepSeek-V3 opisuje prefill na jednostkach po 32 GPU, a decode po 320 GPU. Taki podział obsługują też vLLM, SGLang i NVIDIA Dynamo. Na jednym serwerze konflikt łagodzi chunked prefill.</li>

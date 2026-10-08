@@ -1,6 +1,6 @@
 <section class="station" id="halucynacje" data-hue="cost">
   <h2>Halucynacje</h2>
-  <p class="lede">Model nie ma trybu „nie wiem”: zawsze dopisze prawdopodobny ciąg dalszy, równie pewnym tonem, gdy zna odpowiedź i gdy zgaduje. Halucynacji nie da się wyłączyć, da się je ograniczać i mierzyć.</p>
+  <p class="lede">Model nie ma niezawodnego sygnału „tu kończy się moja wiedza”: dopisze prawdopodobny ciąg dalszy równie pewnym tonem, gdy zna odpowiedź i gdy zgaduje. Halucynacji nie da się wyłączyć, da się je ograniczać i mierzyć.</p>
   <div class="lab">
     <p class="lab-title">Włączaj źródło w kontekście i zgodę na „nie wiem”, osobno i razem. Patrz, które zmyślenia znikają, które zostają i ile odpowiedzi przy tym tracisz</p>
     <div class="row" id="haluOpts"></div>
@@ -11,7 +11,7 @@
   </div>
   <h3 class="sub">Skąd się biorą halucynacje</h3>
   <ul class="notes">
-    <li>Model przewiduje następny token i zawsze jakiś zwróci. Nie ma osobnego sygnału „tu kończy się moja wiedza”, a zgadnięte zdanie jest tak samo gładkie jak prawdziwe. Wylosowanego tokena nie da się cofnąć: jeśli odpowiedź zaczęła się od „W 1978 roku”, reszta zdania będzie ten rok uzasadniać (temat „Następny token”).</li>
+    <li>Model przewiduje następny token i zawsze jakiś zwróci. „Nie wiem” napisać potrafi, ale nie zawsze trafnie rozpoznaje, kiedy powinien, a zgadnięte zdanie jest tak samo gładkie jak prawdziwe. Wylosowanego tokena nie da się cofnąć: jeśli odpowiedź zaczęła się od „W 1978 roku”, reszta zdania będzie ten rok uzasadniać (temat „Następny token”).</li>
     <li>Fakty, które w danych treningowych pojawiły się raz albo wcale, są w wagach zapisane słabo albo wcale. Stolicę Australii model widział tysiące razy, rok otwarcia małego muzeum najwyżej raz. Kalai i in. (OpenAI, 2025) pokazują, że dla faktów bez wzorca, takich jak daty urodzenia, odsetek halucynacji po pretrainingu wynosi w przybliżeniu co najmniej tyle, ile odsetek faktów, które w danych wystąpiły dokładnie raz.</li>
     <li>Post-training tego nie usuwa, bo prawie wszystkie popularne benchmarki oceniają 0/1: za „nie wiem” dają zero, tak samo jak za błąd. Przy takiej ocenie wstrzymanie się nigdy nie jest optymalne, więc model trenowany i wybierany pod wynik uczy się zgadywać, jak uczeń na teście bez punktów ujemnych.</li>
   </ul>

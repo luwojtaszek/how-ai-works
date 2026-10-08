@@ -61,7 +61,7 @@
   <h3 class="sub">Numbers for cost and latency estimates</h3>
   <ul class="notes">
     <li>Output tokens usually cost 4–8 times more than input tokens (2025–2026 price lists), and they set the generation time. Long input is cheap per token, but you pay for it on every request.</li>
-    <li>At Anthropic a prompt cache read costs 10% of the input price on most models and less on the newest (5% on Claude Opus 5.5, 2.5% on Fable 5.1, as of September 2026), and a write costs 1.25× (5-minute entry) or 2× (one-hour entry). At OpenAI the read discount is 50–90% depending on the model. Batch mode at both providers is about 50% cheaper for results within 24 hours.</li>
+    <li>At Anthropic a prompt cache read costs 10% of the input price on most models and less on the newest (5% on Claude Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1, as of October 2026), and a write costs 1.25× (5-minute entry) or 2× (one-hour entry). At OpenAI the read discount is 50–95% depending on the model. Batch mode at both providers is about 50% cheaper for results within 24 hours.</li>
     <li>Agent latency is the sum of its turns, and each turn is time to first token, generation and the tool. Ten turns of 3 seconds each is half a minute, however fast a single request is.</li>
   </ul>
 </section>

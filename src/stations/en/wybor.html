@@ -21,7 +21,7 @@
   <ul class="notes">
     <li>Start from a set of cases taken from real traffic and the bar a model has to clear (see “Evals”). Run it on a few candidates, each case several times, and take the cheapest one that passes.</li>
     <li>Models come in tiers. Frontier models take on hard reasoning, long agentic tasks and code. Mid-tier models cover most production work. Small, fast models handle classification, extraction, routing and simple steps at scale.</li>
-    <li>Reasoning effort is the second knob of the same choice. In their model-selection guides Anthropic writes that tuning effort is often a better lever than switching models, and OpenAI advises keeping the lightest setting that meets your quality bar (as of September 2026). So you compare model and effort pairs, not bare models.</li>
+    <li>Reasoning effort is the second knob of the same choice. In its guide to cost and intelligence, Anthropic advises sweeping a few effort levels on your current model before switching models, because that is often enough (as of October 2026). So you compare model and effort pairs, not bare models.</li>
     <li>One model for the whole system is rarely optimal. In a cascade a cheap model goes first, and only answers that a validator or tests reject, or that come with low confidence, go to a stronger model or a higher effort (see “LLMs in production”). Inside an agent you pick a model per step: a small one summarises tool results, a frontier one plans and makes the hard calls.</li>
   </ul>
   <h3 class="sub">Cost and latency</h3>
@@ -43,7 +43,7 @@
     <li>SWE-bench Verified is 500 bug fixes from 12 Python repositories. It measures small, well-described patches in popular projects, not work in your repository, with your conventions and changes across many files.</li>
     <li>LMArena measures which answer a voter prefers, and voters prefer longer, richly formatted ones. Once style was controlled for (style control, 2024), length turned out to be the strongest factor and the ranking reshuffled: GPT-4o-mini fell from 6th to 11th place, while Claude 3 Opus rose from 16th to 10th. It measures chat preference, not correctness on your task.</li>
     <li>A vendor-reported score and an independent one are different measurements. The vendor picks the harness, reasoning effort, number of attempts and task subset. Independent evaluators such as Artificial Analysis and Epoch AI run every model in one harness, and Epoch notes that SWE-bench results depend heavily on the scaffold. Compare only numbers from one source and one harness (see “The coding-agent harness”).</li>
-    <li>The same model at different providers is not the same product: different quantisation, chat template, tool-call parser and serving settings. In Moonshot’s November 2025 measurement, Kimi K2 Thinking produced schema-valid tool calls 100% of the time through the official API and 83–87% of the time at several third-party hosts. Test the specific endpoint, not the model name.</li>
+    <li>The same model at different providers is not the same product: different quantisation, chat template, tool-call parser and serving settings. In Moonshot’s November 2025 measurement, Kimi K2 Thinking produced schema-valid tool calls 100% of the time through the official API and at some third-party providers, and only 83–87% of the time at others. Test the specific endpoint, not the model name.</li>
   </ul>
   <h3 class="sub">Model retirement and switching</h3>
   <ul class="notes">

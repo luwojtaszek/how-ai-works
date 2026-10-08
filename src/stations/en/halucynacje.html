@@ -1,6 +1,6 @@
 <section class="station" id="halucynacje" data-hue="cost">
   <h2>Hallucinations</h2>
-  <p class="lede">A model has no “I don’t know” mode: it always writes a plausible continuation, in the same confident tone whether it knows the answer or is guessing. Hallucinations cannot be switched off; they can be reduced and measured.</p>
+  <p class="lede">A model has no reliable signal for “my knowledge ends here”: it writes a plausible continuation in the same confident tone whether it knows the answer or is guessing. Hallucinations cannot be switched off; they can be reduced and measured.</p>
   <div class="lab">
     <p class="lab-title">Turn on a source in the context and permission to say “I don’t know”, separately and together. Watch which fabrications disappear, which remain and how many answers you lose along the way</p>
     <div class="row" id="haluOpts"></div>
@@ -11,7 +11,7 @@
   </div>
   <h3 class="sub">Why LLMs hallucinate</h3>
   <ul class="notes">
-    <li>The model predicts the next token and always returns one. There is no separate signal for “my knowledge ends here”, and a guessed sentence is as fluent as a true one. A sampled token cannot be taken back: if the answer began with “In 1978”, the rest of the sentence will justify that year (see “The next token”).</li>
+    <li>The model predicts the next token and always returns one. It can write “I don’t know”, but doesn’t always judge correctly when it should, and a guessed sentence is as fluent as a true one. A sampled token cannot be taken back: if the answer began with “In 1978”, the rest of the sentence will justify that year (see “The next token”).</li>
     <li>Facts that appeared once or never in the training data are stored in the weights weakly or not at all. The model saw the capital of Australia thousands of times, and the opening year of a small museum once at most. Kalai et al. (OpenAI, 2025) show that for facts with no learnable pattern, such as birthdays, the hallucination rate after pretraining is roughly at least the fraction of facts that appeared exactly once in the data.</li>
     <li>Post-training does not remove this, because almost all popular benchmarks grade 0/1: “I don’t know” scores zero, the same as a wrong answer. Under such grading abstaining is never optimal, so a model trained and selected for the score learns to guess, like a student on a test with no negative marking.</li>
   </ul>
