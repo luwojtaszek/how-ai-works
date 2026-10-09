@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-10-10',
+    added: [],
+    updated: ['format'],
+    en: 'Enforcing output format: a new widget walks the schema through the server step by step, from compilation into an automaton and a mask table, through prefill and a reasoning model’s thinking, to every token of the response. It shows who applies the mask, at which stage, and what stays in the cache after the response. New notes: why to keep the schema stable, how code and SDKs can silently change the field order, and what a schema can’t guarantee for lists. The note on reasoning quality explains why a reasoning model still needs the justification first and cites the “Structure Tax” study (2026).',
+    pl: 'Wymuszanie formatu: nowy widżet przeprowadza schemat przez serwer krok po kroku, od kompilacji do automatu i tabeli masek, przez prefill i myślenie modelu rozumującego, do każdego tokena odpowiedzi. Pokazuje, kto nakłada maskę, na jakim etapie i co zostaje w cache’u po odpowiedzi. Nowe notki: czemu trzymać schemat stały, jak kod i SDK potrafią po cichu zmienić kolejność pól i czego schemat nie gwarantuje przy listach. Notka o jakości rozumowania wyjaśnia, czemu model rozumujący też potrzebuje uzasadnienia przed decyzją, i przytacza badanie „Structure Tax” (2026).',
+  },
+  {
     date: '2026-10-09',
     added: [],
     updated: ['format', 'injection', 'produkcja', 'roofline', 'kwantyzacja', 'moe', 'context', 'sampling'],
