@@ -2,11 +2,11 @@
   <h2>Mixture of Experts</h2>
   <p class="lede">In a Mixture of Experts (MoE) model, the MLP layer is replaced by many “experts”, and a router picks a few of them for each token. The model has a huge number of parameters but computes with only some of them per token: compute like a small model, memory like a large one.</p>
   <div class="lab">
-    <p class="lab-title">Click the tokens and watch which experts the router picks. At the bottom: how many experts the whole sentence needs</p>
+    <p class="lab-title">Click the tokens and watch which experts the router picks. At the bottom: how many experts the tokens you clicked need together</p>
     <div class="att-row" id="moeToks"></div>
     <div class="experts" id="moeEx"></div>
-    <div class="stats"><div class="stat"><b>2 of 8</b><span>experts compute for one token</span></div><div class="stat"><b id="moeAll"></b><span>experts needed by the whole sentence, i.e. the batch</span></div><div class="stat"><b>13B of 47B</b><span>parameters active in Mixtral 8×7B</span></div></div>
-    <p class="hint">Simplified: one layer, 8 experts and 2 per token, as in Mixtral 8×7B (2023), and the routing is illustrative, not taken from a real model. The bar under each expert shows how often the tokens in this sentence picked it. The router looks at the token’s state in context, not just its text, so the same token in a different position can go elsewhere.</p>
+    <div class="stats"><div class="stat"><b>2 of 8</b><span>experts compute for one token</span></div><div class="stat"><b id="moeAll"></b><span>experts needed by the clicked tokens together</span></div><div class="stat"><b>13B of 47B</b><span>parameters active in Mixtral 8×7B</span></div></div>
+    <p class="hint">Simplified: one layer, 8 experts and 2 per token, as in Mixtral 8×7B (2023), and the routing is illustrative, not taken from a real model. The bar under each expert shows how often the tokens in this sentence picked it. When the model processes many tokens at once (prefill, or a batch of many conversations in decode), most experts, often all of them, are soon busy. The router looks at the token’s state in context, not just its text, so the same token in a different position can go elsewhere.</p>
   </div>
   <h3 class="sub">How routing works</h3>
   <ul class="notes">

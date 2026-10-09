@@ -3,7 +3,7 @@
   <p class="lede">The model remembers nothing between requests; it knows only what it received in the current one. The context window is the token limit of a single request, shared by input and output. An agent resends the whole growing history every turn, so it pays for that history many times over, and answer quality drops as it grows.</p>
   <div class="lab">
     <p class="lab-title">Move the agent-turn slider. See what fills the window and how fast the cumulative input cost grows</p>
-    <label class="ctl"><span>Agent turn: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="30" step="1" value="6"></label>
+    <label class="ctl"><span>Agent turn: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="25" step="1" value="6"></label>
     <div class="win-bar" id="cxBar" style="margin-top:12px"></div>
     <div class="legend" id="cxLegend"></div>
     <div class="stats"><div class="stat"><b id="cxNow"></b><span>input tokens in this turn</span></div><div class="stat"><b id="cxCum"></b><span>input tokens sent since the start</span></div><div class="stat"><b id="cxUsd"></b><span>input cost without caching</span></div><div class="stat"><b id="cxUsdC"></b><span>with prompt caching</span></div></div>

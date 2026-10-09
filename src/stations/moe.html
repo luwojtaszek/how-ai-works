@@ -2,11 +2,11 @@
   <h2>Mixture of Experts</h2>
   <p class="lede">W Mixture of Experts (MoE) warstwę MLP zastępuje wielu „ekspertów”, a router dla każdego tokena wybiera kilku z nich. Model ma bardzo dużo parametrów, ale na token liczy tylko część: obliczenia jak w małym modelu, pamięć jak w dużym.</p>
   <div class="lab">
-    <p class="lab-title">Klikaj tokeny i patrz, których ekspertów wybiera router. Na dole: ilu ekspertów potrzebuje całe zdanie</p>
+    <p class="lab-title">Klikaj tokeny i patrz, których ekspertów wybiera router. Na dole: ilu ekspertów potrzebują razem kliknięte tokeny</p>
     <div class="att-row" id="moeToks"></div>
     <div class="experts" id="moeEx"></div>
-    <div class="stats"><div class="stat"><b>2 z 8</b><span>ekspertów liczy przy jednym tokenie</span></div><div class="stat"><b id="moeAll"></b><span>ekspertów potrzebuje całe zdanie, czyli batch</span></div><div class="stat"><b>13 z 47 mld</b><span>parametrów aktywnych w Mixtralu 8×7B</span></div></div>
-    <p class="hint">Uproszczenie: jedna warstwa, 8 ekspertów i 2 na token, jak w Mixtralu 8×7B (2023), a wybór jest poglądowy, nie z prawdziwego modelu. Pasek pod ekspertem pokazuje, jak często wybierały go tokeny z tego zdania. Router patrzy na stan tokena w kontekście, nie tylko na jego tekst, więc ten sam token w innym miejscu może trafić gdzie indziej.</p>
+    <div class="stats"><div class="stat"><b>2 z 8</b><span>ekspertów liczy przy jednym tokenie</span></div><div class="stat"><b id="moeAll"></b><span>ekspertów potrzebują razem kliknięte tokeny</span></div><div class="stat"><b>13 z 47 mld</b><span>parametrów aktywnych w Mixtralu 8×7B</span></div></div>
+    <p class="hint">Uproszczenie: jedna warstwa, 8 ekspertów i 2 na token, jak w Mixtralu 8×7B (2023), a wybór jest poglądowy, nie z prawdziwego modelu. Pasek pod ekspertem pokazuje, jak często wybierały go tokeny z tego zdania. Gdy model liczy wiele tokenów naraz (prefill albo batch wielu rozmów w decode), szybko pracuje większość ekspertów, często wszyscy. Router patrzy na stan tokena w kontekście, nie tylko na jego tekst, więc ten sam token w innym miejscu może trafić gdzie indziej.</p>
   </div>
   <h3 class="sub">Jak działa routing</h3>
   <ul class="notes">

@@ -2,13 +2,13 @@
   <h2>Enforcing output format</h2>
   <p class="lede">Structured output in strict mode doesn’t ask the model for a format; it enforces it: at every step the sampler zeroes the probability of tokens that would break the schema. You get a guarantee of syntax, not of correct content.</p>
   <div class="lab">
-    <p class="lab-title">Step through generation. See which tokens the mask cuts, and stop at token 4</p>
-    <p class="hint" style="margin-top:0">Schema: <code>{"label": "spam" | "ham"}</code></p>
+    <p class="lab-title">Step through generation. See where the mask cuts tokens and where it lets almost everything through, and stop at step 8</p>
+    <p class="hint" style="margin-top:0">Schema: <code>{"explanation": string, "label": "spam" | "scam" | "ok"}</code></p>
     <div class="out" id="cdOut" style="min-height:2.6em"></div>
     <div class="bars" id="cdBars" style="margin-top:14px"></div>
     <div id="cdPlayer" style="margin-top:14px"></div>
     <div class="callout" id="cdMsg" aria-live="polite"></div>
-    <p class="hint">Illustrative probabilities. Struck-through tokens break the schema and get zero; the remaining probabilities are rescaled to 100%.</p>
+    <p class="hint">Illustrative probabilities, simplified token boundaries. Struck-through tokens break the schema and get zero; the remaining probabilities are rescaled to 100%.</p>
   </div>
   <h3 class="sub">How constrained decoding works</h3>
   <ul class="notes">
@@ -28,7 +28,7 @@
     <li>Content. The model can still write a wrong invoice number or a made-up date in a valid format. Business rules (ranges, totals, whether IDs exist) are checked by code, and the error goes back to the model with a specific message, with a cap on retries.</li>
     <li>A response cut off by the length limit (<code>stop_reason: "max_tokens"</code>, <code>finish_reason: "length"</code>) or a refusal: OpenAI returns it in a separate <code>refusal</code> field, Anthropic as <code>stop_reason: "refusal"</code>. In either case the content may not match the schema. Check the stop reason before parsing.</li>
     <li>Letter case in enums at Anthropic. String <code>enum</code> and <code>const</code> values can come back with different capitalisation (“Conversation Topic 3” for “Conversation topic 3”), with a normal stop reason and no error, in JSON outputs and strict tool use alike. Compare them case-insensitively and avoid values that differ only in case.</li>
-    <li>What the model wanted to say. When the most likely answer lies outside the schema, the mask pushes the model into the nearest allowed one, like phishing turned into spam in the widget. Add an escape hatch: an “other” or “unknown” value and a comment field.</li>
+    <li>What the model wanted to say. When the most likely answer lies outside the schema, the mask pushes the model into the nearest allowed one, like phishing in the widget: it lands on “scam”, and without that value it would land on “spam”. Add an escape hatch: an “other” or “unknown” value and a comment field.</li>
     <li>Reasoning quality. The model writes left to right, so putting the decision before the justification makes it decide before it has worked anything out. Put a short justification field (for example <code>explanation</code>) before the decision field and list both in <code>required</code>: Anthropic writes required properties before optional ones (OpenAI keeps the schema’s order and requires every field anyway). A <code>reasoning</code> field or a request for step-by-step thinking can trigger a <code>reasoning_extraction</code> refusal on newer Claude models (as of October 2026). In the “Let Me Speak Freely?” study (2024), format restrictions lowered scores on reasoning tasks, partly for this very reason: on one task, GPT-3.5 in JSON mode put the answer before the reason every time. The result is contested. A re-run with matched prompts (.txt, “Say What You Mean”) found no drop, while other work measures a cost from the mask itself, mainly with small models and tight schemas (Reddy et al., 2026). When your evals show a drop, let the model answer freely and extract the structure with a second, cheap call.</li>
   </ul>
 </section>

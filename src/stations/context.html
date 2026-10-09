@@ -3,7 +3,7 @@
   <p class="lede">Model niczego nie pamięta między requestami, wie tylko to, co dostał w bieżącym. Context window to wspólny limit tokenów wejścia i wyjścia jednego requestu. Agent w każdej turze wysyła całą rosnącą historię, więc płaci za nią wielokrotnie, a jakość odpowiedzi spada wraz z jej długością.</p>
   <div class="lab">
     <p class="lab-title">Przesuń suwak tur agenta. Zobacz, co zapełnia okno i jak szybko rośnie łączny koszt wejścia</p>
-    <label class="ctl"><span>Tura agenta: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="30" step="1" value="6"></label>
+    <label class="ctl"><span>Tura agenta: <b id="cxTv"></b></span><input type="range" id="cxTurn" min="0" max="25" step="1" value="6"></label>
     <div class="win-bar" id="cxBar" style="margin-top:12px"></div>
     <div class="legend" id="cxLegend"></div>
     <div class="stats"><div class="stat"><b id="cxNow"></b><span>tokenów wejścia w tej turze</span></div><div class="stat"><b id="cxCum"></b><span>tokenów wejściowych wysłanych od startu</span></div><div class="stat"><b id="cxUsd"></b><span>koszt wejścia bez cache’u</span></div><div class="stat"><b id="cxUsdC"></b><span>z prompt cachingiem</span></div></div>

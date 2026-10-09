@@ -302,7 +302,8 @@ label.ctl select{width:100%}
 .stat span{display:block;font-size:.82rem;line-height:1.4;color:var(--muted);margin-top:2px}
 .hint{font-size:.88rem;color:var(--muted);margin-top:12px}
 p,li,dd{text-wrap:pretty}
-h1,h2,h3,.lab-title{text-wrap:balance}
+h1,h2,h3{text-wrap:balance}
+.lab-title{text-wrap:pretty}
 .callout{background:var(--sunken);border-radius:8px;padding:10px 14px;margin-top:14px;font-size:.95rem}
 .scroll{overflow-x:auto;max-width:100%}
 .notes{display:grid;gap:10px;margin:28px 0 24px;padding:0;list-style:none}
@@ -393,6 +394,7 @@ button.mcell{cursor:pointer}
 .tp-trow.dim{color:var(--muted)}
 .tp-trow .tp-row{margin:0}
 .tp-qk{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px 14px;align-items:center;font-size:.9rem;max-width:460px}
+.tp-qk>.tp-lab{align-self:start}
 .tp-bars{display:grid;gap:5px;margin:6px 0;max-width:460px}
 .tp-bar{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;gap:10px;align-items:center;font-size:.88rem}
 .tp-w{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:8px;align-items:center}
@@ -581,6 +583,15 @@ svg{display:block;max-width:100%;height:auto}
 /* injection */
 .mail{border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:.92rem;margin-top:12px}
 .mail mark{background:var(--cost-t);color:inherit;border-radius:3px;padding:0 3px}
+.inj-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.inj-tabs button{border:0;background:none;padding:8px 6px;margin-bottom:-1px;border-bottom:2px solid transparent;font:inherit;font-size:.92rem;line-height:1.3;color:var(--muted);cursor:pointer}
+.inj-tabs button[aria-pressed="true"]{color:var(--ink);font-weight:600;border-color:var(--accent)}
+.inj-perm{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:12px;display:grid;gap:2px}
+.inj-perm>b{font-size:.84rem;color:var(--muted);font-weight:600;margin-bottom:4px}
+.inj-perm button{display:flex;gap:10px;align-items:center;border:0;background:none;padding:5px 0;font:inherit;font-size:.92rem;color:var(--ink);text-align:left;cursor:pointer}
+.inj-perm button i{width:18px;height:18px;flex:none;border-radius:4px;border:1.5px solid var(--line-strong);display:grid;place-items:center;font-style:normal;font-size:.75rem}
+.inj-perm button[aria-checked="true"] i{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.inj-perm button[aria-checked="false"] span{text-decoration:line-through;color:var(--muted)}
 .inj-def{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;font-size:.9rem;line-height:1.4}
 .inj-def li{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:10px;align-items:baseline}
 .inj-def .tag{text-align:center;font-size:.76rem;padding:1px 6px}
