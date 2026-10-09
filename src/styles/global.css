@@ -403,10 +403,6 @@ button.mcell{cursor:pointer}
 .tp-layers{display:grid;grid-template-columns:repeat(40,1fr);gap:2px;max-width:420px;margin-bottom:4px}
 .tp-layers i{height:10px;border-radius:2px;background:var(--hue)}
 #tpCap .callout{margin-top:8px}
-@media (min-width:1100px){.tp-main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px}#tpCap{display:flex;flex-direction:column}#tpCap .hint:first-child{margin:8px 0 12px}#tpCap .callout{margin-top:auto}}
-#tpStages .stage{font:inherit;font-size:.84rem;cursor:pointer}
-#tpStages .stage:not(.on){background:none}
-#tpStages .stage:not(.on):hover{border-color:var(--ink);color:var(--ink)}
 /* end macierze */
 
 /* attention */
@@ -558,6 +554,11 @@ svg{display:block;max-width:100%;height:auto}
 .stage{border-radius:999px;padding:3px 11px;font-size:.84rem;border:1px solid var(--line);color:var(--muted)}
 .stage.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .stage.done{color:var(--ink);border-color:var(--line-strong)}
+/* step widgets ("Vectors and matrices", "Enforcing output format"): clickable stage pills; the caption sits beside the body on wide screens */
+.stages button.stage{font:inherit;font-size:.84rem;cursor:pointer}
+.stages button.stage:not(.on){background:none}
+.stages button.stage:not(.on):hover{border-color:var(--ink);color:var(--ink)}
+@media (min-width:1100px){.tp-main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px}.tp-main>:last-child{display:flex;flex-direction:column}.tp-main>:last-child .hint:first-child{margin:8px 0 12px}.tp-main>:last-child .callout{margin-top:auto}}
 .chunk{display:grid;grid-template-columns:minmax(0,1fr) 120px 48px;gap:10px;align-items:center;padding:7px 10px;border-radius:6px;font-size:.88rem;border:1px solid var(--line);margin-top:5px}
 .chunk.top{background:var(--tint);border-color:var(--hue)}
 .chunk.drop{color:var(--muted)}
@@ -773,8 +774,35 @@ svg{display:block;max-width:100%;height:auto}
 #promptcache .seg{min-width:max-content}
 /* end promptcache */
 /* format */
-#cdBars .bar.cut{opacity:1;color:var(--muted)}
-#cdBars .bar.cut .fillb{opacity:.3}
+:is(#cdBars,#gpBody) .bar.cut{opacity:1;color:var(--muted)}
+:is(#cdBars,#gpBody) .bar.cut .fillb{opacity:.3}
+#gpBody>.tp-lab{margin-top:8px}
+.gp-req{display:grid;grid-template-columns:minmax(0,1.25fr) repeat(2,minmax(0,1fr));gap:5px 6px;align-items:center;font-size:.84rem;line-height:1.3}
+.gp-req b{font-size:.78rem;font-weight:600;align-self:end}
+.gp-req .seg{min-width:0;font-size:.8rem;align-self:stretch;display:flex;align-items:center;hyphens:none}
+.gp-code{min-height:0;margin-top:0;padding:10px 12px;font-size:.78rem}
+.gp-aut{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;align-items:center;gap:5px 10px;font-size:.86rem}
+.gp-st{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--hue);font:500 .74rem var(--mono)}
+.gp-st.end{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--hue)}
+.gp-grid{display:grid;grid-template-columns:auto repeat(8,22px);gap:2px;justify-content:start;align-items:center;font-size:.78rem}
+.gp-grid .mono{white-space:pre;padding-right:6px}
+.gp-grid .gp-n{text-align:center}
+.gp-grid i{height:20px;border-radius:3px;background:var(--sunken);display:grid;place-items:center;font:normal .72rem var(--body)}
+.gp-grid i.y{background:var(--tint);box-shadow:inset 0 0 0 1px var(--hue)}
+#gpBody .req .seg{flex-grow:1;min-width:0}
+#gpBody .gp-prompt .seg.write{flex-grow:1.6}
+.gp-flow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:start;font-size:.88rem}
+.gp-who{border-radius:999px;padding:1px 9px;font-size:.76rem;text-align:center;background:var(--att-t)}
+.gp-who.m{background:var(--tok-t)}
+.gp-flow .bars{margin-top:6px}
+.gp-keep{display:grid;gap:5px;margin-top:8px;font-size:.86rem}
+.gp-keep b{font-size:.78rem;font-weight:600;margin-top:4px}
+.gp-keep small{font:.78rem var(--body);opacity:.8}
+.gp-stream{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.gp-t{font:500 .8rem var(--mono);white-space:pre;padding:2px 6px;border-radius:4px}
+.gp-t.think,.gp-li.think{background:var(--sunken);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.gp-t.end{background:var(--ink);color:var(--paper);font-family:var(--body)}
+.gp-t.json,.gp-li.json{background:var(--tint);box-shadow:inset 0 0 0 1px var(--hue)}
 /* end format */
 /* tokeny */
 #tokStats{grid-template-columns:repeat(3,minmax(0,1fr))}

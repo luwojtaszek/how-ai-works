@@ -20,7 +20,7 @@
   </div>
   <h3 class="sub">Where thinking comes from</h3>
   <ul class="notes">
-    <li>There is no separate thinking module. The chain of thought is ordinary tokens from the same loop as the answer (see “The next token”), just marked as thinking. Every step written down stays in the context, so later tokens build on it, as you would on scratch paper.</li>
+    <li>There is no separate thinking module. The chain of thought is ordinary tokens from the same loop as the answer (see “The next token”), only separated from it by a special token, such as <code>&lt;/think&gt;</code>. Every step written down stays in the context, so later tokens build on it, as you would on scratch paper.</li>
     <li>The model learns to use this scratch paper through RL (see “Training”) on automatically checked tasks: maths with a known answer, code with tests. The reward goes mainly to the result, so whatever leads to it gets reinforced, including self-checking and backtracking. In DeepSeek-R1-Zero these behaviours became frequent through RL alone, without human-written examples, though base models already show them occasionally (Liu et al., 2025). RLVR mostly makes the model reach, more reliably, answers the base model could already find: given enough samples (large pass@k), the base model catches up (Yue et al., 2025).</li>
     <li>Thinking is one form of test-time compute: spending more computation at answer time instead of building a bigger model. Others are sampling several attempts and voting, or picking the best one with a verifier. Gains shrink as thinking gets longer, and on some tasks longer thinking makes results worse (inverse scaling in test-time compute, 2025).</li>
   </ul>

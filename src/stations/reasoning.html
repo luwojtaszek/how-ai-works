@@ -20,7 +20,7 @@
   </div>
   <h3 class="sub">Skąd się bierze myślenie</h3>
   <ul class="notes">
-    <li>Nie ma osobnego modułu myślenia. Tok myślenia to zwykłe tokeny z tej samej pętli co odpowiedź (temat „Następny token”), tylko oznaczone jako myślenie. Każdy zapisany krok zostaje w kontekście, więc kolejne tokeny liczą na nim jak na brudnopisie.</li>
+    <li>Nie ma osobnego modułu myślenia. Tok myślenia to zwykłe tokeny z tej samej pętli co odpowiedź (temat „Następny token”), tylko oddzielone od niej specjalnym tokenem, np. <code>&lt;/think&gt;</code>. Każdy zapisany krok zostaje w kontekście, więc kolejne tokeny liczą na nim jak na brudnopisie.</li>
     <li>Pisania brudnopisu model uczy się w RL (temat „Trening”) na zadaniach sprawdzanych automatycznie: matematyce ze znanym wynikiem, kodzie z testami. Nagradzany jest głównie wynik, więc utrwala się wszystko, co do niego prowadzi, także sprawdzanie się i cofanie. W DeepSeek-R1-Zero takie zachowania upowszechniły się w samym RL, bez przykładów pisanych przez ludzi, choć modele bazowe czasem przejawiają je już wcześniej (Liu i in., 2025). RLVR głównie sprawia, że model pewniej trafia w odpowiedzi, które model bazowy też potrafił znaleźć: przy wielu próbach (duże pass@k) model bazowy go dogania (Yue i in., 2025).</li>
     <li>To jedna z form test-time compute, czyli dokładania obliczeń w chwili odpowiedzi zamiast budowania większego modelu. Inne to wiele prób z głosowaniem albo wybór najlepszej przez weryfikator. Zysk maleje z długością myślenia, a na części zadań dłuższe myślenie pogarsza wynik (inverse scaling in test-time compute, 2025).</li>
   </ul>
