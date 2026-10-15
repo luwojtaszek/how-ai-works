@@ -49,7 +49,7 @@ const ICO={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l
 // Every step gets one segment (click to jump); while playing, the current segment fills over the step's time.
 // The card keeps the height of its tallest step, so nothing jumps between steps;
 // opt.grow, if given, takes that extra height instead of the gap above the bar.
-function player(mount,opt){let i=0,timer=null,tall=0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
+function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.group?opt.group(k):0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
   const lab=mount.closest('.lab'),pad=h('div',{class:'pl-pad','aria-hidden':'true'});if(lab)lab.append(pad,mount);
   const bPlay=h('button',{class:'pl-btn pl-play',type:'button'}),
     bPrev=h('button',{class:'pl-btn',type:'button','aria-label':tr('Krok wstecz','Step back'),title:tr('Krok wstecz','Step back'),html:ICO.prev}),
@@ -66,10 +66,10 @@ function player(mount,opt){let i=0,timer=null,tall=0;const total=()=>typeof opt.
     const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
   // the card's natural height without the pad; the pad tops every step up to the tallest one
   const natural=()=>{pad.style.height='0px';if(opt.grow)opt.grow.style.minHeight='';return lab?lab.getBoundingClientRect().height:0;};
-  function fit(){if(!lab)return;const x=Math.max(0,tall-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
-  function measure(){if(!lab)return;tall=0;for(let k=0;k<=total();k++){opt.render(k);tall=Math.max(tall,natural());}opt.render(i);fit();}
+  function fit(){if(!lab)return;const x=Math.max(0,(opt.group?talls[grp(i)]||0:tall)-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
+  function measure(){if(!lab)return;tall=0;for(const g in talls)delete talls[g];for(let k=0;k<=total();k++){opt.render(k);const n=natural();tall=Math.max(tall,n);talls[grp(k)]=Math.max(talls[grp(k)]||0,n);}opt.render(i);fit();}
   function stop(){if(timer){clearInterval(timer);timer=null;}}
-  function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();tall=Math.max(tall,natural());fit();ui();}
+  function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();const nn=natural();tall=Math.max(tall,nn);talls[grp(i)]=Math.max(talls[grp(i)]||0,nn);fit();ui();}
   function play(){if(i>=total())set(0);stop();timer=setInterval(()=>set(i+1),dur);ui();}
   bPlay.addEventListener('click',()=>{if(timer){stop();ui();}else play();});
   bPrev.addEventListener('click',()=>{stop();set(i-1);});bNext.addEventListener('click',()=>{stop();set(i+1);});
@@ -1269,8 +1269,8 @@ function initCtxEng(){const WIN=200000,RSV=32000,FIX=11000,T=6000,Q=1000,TH=1500
         `The window is ${v.pct} full, the rest reserved for the answer, and turns 1–${LAST-fit} have fallen out of the history. With them went the task itself from turn 1, the production rule and the DB schema. The model doesn’t know what it doesn’t know, so it answers confidently. The facts that remain sit among ${big(v.now-FIX)} tokens of history, mostly old tool results, and a long, noisy context lowers quality by itself.`)},
     {n:tr('Kompakcja','Compaction'),mem:tr('Streszczenie','Summary'),ctx:k=>k<reset?[FIX,0,(k-1)*T+Q]:[FIX,SUM,(k-reset)*T+Q],extra:FIX+(reset-1)*T+Q,
       keep:(t,i)=>t>=reset?tr('dosłownie','verbatim'):[0,1,3,4].includes(i)&&tr('w streszczeniu','in the summary'),lost:tr('zgubiony w streszczeniu','lost in the summary'),
-      msg:()=>tr(`W wywołaniu ${reset} kontekst przekroczył próg i model streścił tury 1–${reset-1} (${big(FIX+(reset-1)*T+Q)} tokenów) do ${big(SUM)} tokenów. Streszczenie zachowało zasady i decyzje, ale pominęło szczegół z wyniku narzędzia w turze 9: kwoty są w groszach. W chwili streszczania wyglądał na nieważny. Samo streszczenie to dodatkowe wywołanie, które czyta całą historię, a nowy początek kontekstu trzeba od nowa zapisać w cache’u.`,
-        `At call ${reset} the context crossed the threshold, and the model summarised turns 1–${reset-1} (${big(FIX+(reset-1)*T+Q)} tokens) into ${big(SUM)} tokens. The summary kept the rules and decisions but left out a detail from the tool result in turn 9: amounts are in pence. When the summary was written, that detail looked unimportant. Summarising is itself an extra call that reads the whole history, and the new start of the context has to be written to the cache again.`)},
+      msg:()=>tr(`W wywołaniu ${reset} kontekst przekroczył próg i model streścił tury 1–${reset-1} (${big(FIX+(reset-1)*T+Q)} tokenów) do ${big(SUM)} tokenów. Streszczenie zachowało zasady i decyzje, ale pominęło szczegół z wyniku narzędzia w turze 9: kwoty są w groszach. W chwili streszczania wyglądał na nieważny. Samo streszczenie to dodatkowe wywołanie, które czyta całą historię (przy ciepłym cache’u po cenie odczytu), a w cache’u trzeba od nowa zapisać tylko streszczenie.`,
+        `At call ${reset} the context crossed the threshold, and the model summarised turns 1–${reset-1} (${big(FIX+(reset-1)*T+Q)} tokens) into ${big(SUM)} tokens. The summary kept the rules and decisions but left out a detail from the tool result in turn 9: amounts are in pence. When the summary was written, that detail looked unimportant. Summarising is itself an extra call that reads the whole history (from a warm cache, at the read price), and only the summary has to be written to the cache again.`)},
     {n:tr('Plik z notatkami','Notes file'),mem:tr('Notatki z NOTES.md','Notes from NOTES.md'),ctx:k=>k<reset?[FIX,0,(k-1)*T+Q]:[FIX,NOTES,(k-reset)*T+Q],
       keep:(t,i)=>t>=reset?tr('dosłownie','verbatim'):[0,1,2,3].includes(i)&&tr('w notatkach','in the notes'),lost:tr('niezapisany','not saved'),
       msg:()=>tr(`Agent zapisywał ważne fakty w NOTES.md w chwili, gdy się pojawiały. W wywołaniu ${reset} kontekst został wyczyszczony, a agent przeczytał notatki od nowa. W pliku jest tylko to, co agent uznał za ważne: znanego błędu z tury 24 nie zapisał. Każdy zapis to dodatkowe wywołanie narzędzia, a nieaktualna notatka myli tak samo jak brak notatki.`,
@@ -1783,7 +1783,7 @@ function initHarness(){
     comp.forEach(({t,from},n)=>add(t,{c:tr('kompakcja','compaction'),who:'harness',call:tr(`kontekst ${big(pre+from)} ≥ próg ${big(TH)} → streszczenie`,`context ${big(pre+from)} ≥ threshold ${big(TH)} → summary`),
       res:tr(`historia ${big(from)} → ${big(SUM)}: streszczenie, `,`history ${big(from)} → ${big(SUM)}: summary, `)+(nt?'':tr('lista zadań, ','todo list, '))+tr('ostatnio czytane pliki','recently read files'),
       msg:nt?tr('Streszczenie zachowuje to, co wyglądało na ważne: zaokrąglanie poprawione, testy zielone. Wzmianka o exports.py ze streszczenia subagenta z tury 11 wypada.','The summary keeps what looked important: rounding fixed, tests green. The mention of exports.py from the subagent’s summary at turn 11 is dropped.')
-        :tr('Harness streszcza historię i dalej pracuje na streszczeniu. Samo streszczenie to wywołanie, które czyta całą historię, a cache trzeba przebudować od miejsca zmiany, więc najlepiej kompaktować w naturalnej przerwie między zadaniami.','The harness summarises the history and carries on from the summary. Writing the summary is a call that reads the whole history, and the cache has to be rebuilt from the point of change, so the best time to compact is a natural break between tasks.')
+        :tr('Harness streszcza historię i dalej pracuje na streszczeniu. Streszczenie to osobne wywołanie na tym samym prefiksie, więc przy ciepłym cache’u czyta historię po cenie odczytu, a od nowa zapisuje się tylko streszczenie. Najlepiej kompaktować po skończonym zadaniu (temat „Kompakcja kontekstu”).','The harness summarises the history and carries on from the summary. The summary is a separate call on the same prefix, so from a warm cache it reads the history at the read price, and only the summary is written anew. The best time to compact is once a task is done (see “Context compaction”).')
         +(off!=='search'?'':n?tr(' To już druga kompakcja w tej sesji.',' This is already the second compaction in this session.'):tr(` Przy 50 tys. definicji w prefiksie kontekst dochodzi do progu już w turze ${t}.`,` With 50k of definitions in the prefix, the threshold arrives as early as turn ${t}.`))}));
     add(38,off==='gate'?{c:'git clean',err:1,who:'model',call:'bash: git clean -fdx',res:'Removing .env.local · Removing notes/ · Removing tests/test_refund_cents.py',
         msg:tr('Bez bramki komenda idzie od razu. Znikają nieśledzone pliki: twój lokalny .env, notatki i nowy test, którego nikt jeszcze nie dodał do gita. /rewind ich nie przywróci, bo checkpointy śledzą tylko zmiany zrobione narzędziami do edycji, a nie skutki komend powłoki.','Without the gate the command runs at once. Untracked files are gone: your local .env, your notes and the new test nobody had added to git yet. /rewind won’t bring them back, because checkpoints track only edits made with the edit tools, not the effects of shell commands.')}
@@ -1818,6 +1818,106 @@ function initHarness(){
   $('#hnOff').append(h('span',{class:'ag-lbl'},tr('Wyłącz:','Switch off:')),...bs);
   update();pl=player($('#hnPlayer'),{steps:()=>T.length,render,interval:3000});PLAYERS.push(pl);}
 /* end harness */
+/* kompakcja */
+// Model sesji (poglądowy): blok = 8 tys. tokenów, prefiks (narzędzia, system prompt) 3 bloki, tura = 1 blok, próg 240 tys.,
+// streszczenie 1 blok, polecenie streszczenia 1 tys., wyczyszczona tura 2 tys.; stawki Claude Sonnet 4.6 za milion: wejście 3, odczyt 0,30, zapis (1 h) 6, wyjście 15
+function initCompact(){const root=$('#kcLab');if(!root)return;
+  const BLK=8000,ASK=1000,CLR=2000,M=1e6,WIN=256000,TH=240000;
+  const usd=n=>n&&n<.01?'<'+usd(.01):n.toLocaleString(LANG==='pl'?'pl-PL':'en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
+  const blk=(k,l,t=BLK)=>({k,l,t}),PRE=()=>[blk('pre',1),blk('pre',2),blk('pre',3)],T=i=>blk('turn',i),C=i=>blk('clr',i,CLR),SUMB=()=>blk('sum',0),ASKB=()=>blk('ask',0,ASK),ALT=()=>blk('alt',0,ASK);
+  const st=(bs,s)=>bs.map(b=>Object.assign({},b,{st:s})),turns=(a,b,f=T)=>a>b?[]:Array.from({length:b-a+1},(_,j)=>f(a+j)),tok=bs=>bs.reduce((s,b)=>s+b.t,0);
+  const RATE={hit:.3,write:6,miss:3,gen:15},of=(bs,s)=>tok(bs.filter(b=>b.st===s));
+  const bill=(bs,out)=>{const p=['hit','write','miss'].map(s=>[s,of(bs,s)]).filter(x=>x[1]);if(out)p.push(['gen',tok(out)]);return p.map(([s,n])=>[s,n,n*RATE[s]/M]);};
+  const cost=(bs,out)=>bill(bs,out).reduce((s,x)=>s+x[2],0);
+  const req=(blocks,out)=>({blocks,out,bill:bill(blocks,out),cost:cost(blocks,out)});
+  const STL={hit:tr('z cache’u','from the cache'),write:tr('zapis','write'),miss:tr('pełna cena','full price'),gen:tr('wyjście','output')};
+  // kroki obu zakładek
+  const hist=()=>PRE().concat(SUMB(),turns(28,50));
+  const sum1=(()=>{let s=0;for(let t=1;t<=27;t++)s+=t===1?cost(st(PRE().concat(T(1)),'write')):cost(st(PRE().concat(turns(1,t-1)),'hit').concat(st([T(t)],'write')));return s;})();
+  const A=[
+    {title:tr('Tura 1: cały prompt trafia do cache’u','Turn 1: the whole prompt goes into the cache'),text:tr('Pierwszy request zapisuje wszystkie bloki: prefiks z narzędziami i system promptem oraz pierwszą turę. Zapis kosztuje 2 razy więcej niż zwykłe wejście i zwraca się, gdy dwie kolejne tury przeczytają te bloki z cache’u.','The first request writes every block: the prefix with tools and system prompt, plus the first turn. A write costs twice the normal input price and pays back once the next two turns read these blocks from the cache.'),
+      one:req(st(PRE().concat(T(1)),'write'))},
+    {title:tr('Tura 2: historia tylko rośnie','Turn 2: the history only grows'),text:tr('Wszystko poza nową turą jest czytane z cache’u za 10% ceny wejścia. Tak wygląda prawie każda tura, dopóki nikt nie zmieni wcześniejszych bloków.','Everything except the new turn is read from the cache at 10% of the input price. Almost every turn looks like this, as long as nothing changes the earlier blocks.'),
+      one:req(st(PRE().concat(T(1)),'hit').concat(st([T(2)],'write')))},
+    {title:tr('Tura 27: kontekst dochodzi do progu','Turn 27: the context reaches the threshold'),text:tr(`Przed następną turą harness musi skrócić kontekst. Claude Code robi to domyślnie przy limicie okna, a Codex przy 90% okna, w obu przypadkach z zapasem na polecenie i streszczenie. Do tej pory sesja kosztowała ${usd(sum1)}.`,`Before the next turn the harness has to shorten the context. Claude Code does this by default at the window limit and Codex at 90% of the window, both leaving room for the instruction and the summary. So far the session has cost ${usd(sum1)}.`),
+      one:req(st(PRE().concat(turns(1,26)),'hit').concat(st([T(27)],'write')))},
+    {title:tr('Trzy sposoby skrócenia kontekstu','Three ways to shorten the context'),text:tr('Do tej chwili wszystko wyglądało tak samo. Tu sposoby się rozchodzą: dwa z nich streszczają historię osobnym requestem, trzeci w ogóle nie wywołuje modelu.','Until now everything looked the same. This is where the options split: two of them summarise the history in a separate request, the third doesn’t call the model at all.'),
+      lanes:[{n:tr('Streszczenie na tym samym prefiksie','Summary on the same prefix'),who:tr('tak robią Claude Code i Codex','what Claude Code and Codex do'),r:req(st(PRE().concat(turns(1,27)),'hit').concat(st([ASKB()],'miss')),[SUMB()]),
+          note:tr('Osobny request z tymi samymi blokami w tej samej kolejności i poleceniem na końcu. Wszystko poza poleceniem jest czytane z cache’u, płacisz głównie za wyjście.','A separate request with the same blocks in the same order and the instruction at the end. Everything but the instruction is read from the cache; you pay mostly for the output.')},
+        {n:tr('Streszczenie z własnym promptem','Summary with its own prompt'),who:tr('błąd, którego laby unikają','a mistake the labs avoid'),r:req(st([ALT()].concat(turns(1,27),[ASKB()]),'miss'),[SUMB()]),
+          note:tr('Inny prompt i brak narzędzi, więc request różni się od rozmowy już od pierwszego bloku. Nic nie trafia w cache i za całą historię płacisz pełną cenę.','A different prompt and no tools, so the request differs from the conversation from the first block. Nothing hits the cache, and you pay full price for the whole history.')},
+        {n:tr('Czyszczenie starych wyników narzędzi','Clearing old tool results'),who:tr('API Claude (context editing), Claude Code przed streszczeniem','Claude API (context editing), Claude Code before summarising'),r:{blocks:st(PRE(),'keep').concat(st(turns(1,24),'cut'),st(turns(25,27),'keep')),bill:[],cost:0},
+          note:tr('Bez wywołania modelu: stare wyniki narzędzi w turach 1–24 zamieniają się w krótki znacznik, a wywołania i wiadomości zostają. Trzy ostatnie wyniki zostają w całości.','No model call: the old tool results in turns 1–24 become a short placeholder, while the calls and messages stay. The last three results stay whole.')}]},
+    {title:tr('Kontekst po skróceniu i koszty','The context after shortening, and the costs'),text:tr('Tak wygląda pierwszy request po skróceniu. Prefiks w każdym sposobie wciąż jest w cache’u, ale różni się to, co trzeba zapisać od nowa, i to, ile miejsca zostaje do następnego progu.','This is the first request after shortening. The prefix is still in the cache in every option, but what has to be written again differs, and so does the room left before the next threshold.'),
+      lanes:[{n:tr('Streszczenie na tym samym prefiksie','Summary on the same prefix'),r:req(st(PRE(),'hit').concat(st([SUMB(),T(28)],'write'))),first:'fork'},
+        {n:tr('Streszczenie z własnym promptem','Summary with its own prompt'),r:req(st(PRE(),'hit').concat(st([SUMB(),T(28)],'write'))),first:'sep'},
+        {n:tr('Czyszczenie starych wyników narzędzi','Clearing old tool results'),r:req(st(PRE(),'hit').concat(st(turns(1,24,C).concat(turns(25,28)),'write'))),first:'clr'}],sumup:'a'}];
+  const B=[
+    {title:tr('Tura 50, potem 2 godziny przerwy','Turn 50, then a 2-hour break'),text:tr('Ta sama sesja 23 tury po kompakcji: kontekst ma 27 bloków, czyli 216 tys. tokenów. W subskrypcji Claude Code trzyma główną rozmowę w cache’u godzinę od ostatniego użycia.','The same session 23 turns after its compaction: the context has 27 blocks, 216k tokens. On a subscription Claude Code keeps the main conversation in the cache for an hour after its last use.'),
+      one:req(st(PRE().concat(SUMB(),turns(28,49)),'hit').concat(st([T(50)],'write')))},
+    {title:tr('Co dzieje się w czasie przerwy','What happens during the break'),text:tr('Godzinny cache wygasa w 60. minucie. Różnica polega na tym, czy coś stanie się wcześniej.','The one-hour cache expires at minute 60. The difference is whether anything happens before that.'),
+      lanes:[{n:tr('Kompakcja w przerwie','Compaction during the break'),who:tr('54. minuta · Claude Code (idle compaction)','minute 54 · Claude Code (idle compaction)'),r:req(st(hist(),'hit').concat(st([ASKB()],'miss')),[SUMB()]),
+          note:tr('Claude Code streszcza bezczynną rozmowę od 200 tys. tokenów tuż przed wygaśnięciem godzinnego cache’u (funkcja ogłoszona w wersji 2.1.299 z 14 października 2026). To ten sam request co przy progu, więc historia jest jeszcze w cache’u.','Claude Code summarises an idle conversation of 200k tokens or more just before the one-hour cache expires (announced in version 2.1.299 on 14 October 2026). It is the same request as at the threshold, so the history is still in the cache.')},
+        {n:tr('Bez kompakcji','No compaction'),who:tr('60. minuta','minute 60'),r:{blocks:st(hist(),'gone'),bill:[],cost:0},note:tr('Godzina bez requestu i wszystkie bloki wygasają. Rozmowa czeka w całości.','An hour without a request, and every block expires. The whole conversation waits.')},
+        {n:tr('/compact po powrocie','/compact on return'),who:tr('60. minuta','minute 60'),r:{blocks:st(hist(),'gone'),bill:[],cost:0},note:tr('Tak samo: bloki wygasają, a kompakcja przyjdzie dopiero po powrocie.','The same: the blocks expire, and compaction comes only after the return.')}]},
+    {title:tr('Powrót po 2 godzinach i koszty','The return after 2 hours, and the costs'),text:tr('Pierwszy request po powrocie. Cache wygasł w każdym sposobie, nawet po kompakcji w przerwie, bo jej odczyt przedłużył bloki tylko do 114. minuty. Różni się to, ile bloków trzeba zapisać od nowa.','The first request after the return. The cache has expired in every option, even after compaction during the break, because its read extended the blocks only to minute 114. What differs is how many blocks have to be written again.'),
+      lanes:[{n:tr('Kompakcja w przerwie','Compaction during the break'),r:req(st(PRE().concat(SUMB(),T(51)),'write')),first:'idle'},
+        {n:tr('Bez kompakcji','No compaction'),r:req(st(hist().concat(T(51)),'write')),first:'none'},
+        {n:tr('/compact po powrocie','/compact on return'),r:req(st(hist().concat([ASKB()]),'miss'),[SUMB()]),then:req(st(PRE().concat(SUMB(),T(51)),'write')),first:'late'}],sumup:'b'}];
+  // liczby do podsumowania
+  const KA={fork:A[3].lanes[0].r.cost,sep:A[3].lanes[1].r.cost,clr:0},IDLE=B[1].lanes[0].r.cost;
+  const ui={};
+  root.append(h('p',{class:'lab-title'},tr('Odtwórz długą sesję agenta i zobacz, co przy kompakcji dzieje się z każdym blokiem kontekstu i ile to kosztuje','Replay a long agent session and see what happens to each context block during compaction, and what it costs')),
+    ui.tabs=h('div',{class:'kc-tabs',role:'tablist'}),ui.step=h('div',{class:'kc-step','aria-live':'polite'}),ui.view=h('div',{class:'kc-view'}),
+    h('p',{class:'hint'},tr('Liczby poglądowe: blok to 8 tys. tokenów, prefiks (narzędzia i system prompt) to 3 bloki, tura to 1 blok, a po wyczyszczeniu wyniku 2 tys., próg 240 tys. tokenów. Stawki Claude Sonnet 4.6 za milion tokenów: wejście 3 USD, odczyt z cache’u 0,30, zapis do godzinnego cache’u 6, wyjście 15. W subskrypcji te same tokeny zużywają limit planu zamiast dolarów.','Illustrative numbers: a block is 8k tokens, the prefix (tools and system prompt) is 3 blocks, a turn is 1 block and 2k after its result is cleared, threshold 240k tokens. Claude Sonnet 4.6 rates per million tokens: input 3 USD, cache read 0.30, one-hour cache write 6, output 15. On a subscription the same tokens use up the plan limit instead of dollars.')),
+    ui.player=h('div'));
+  let fam='a',S=A,pl=null;
+  function groups(bs){const G=[];let x=0,last=bs.filter(b=>b.k==='turn').at(-1);
+    for(const b of bs){const kind=b.k+'|'+b.st+(b===last&&b.st==='write'&&b.k==='turn'?'|new':''),g=G.at(-1);if(g&&g.kind===kind)g.items.push(b);else G.push({kind,items:[b],x});x+=b.t;}
+    G.forEach(g=>{g.w=tok(g.items);const b=g.items[0],a=b.l,z=g.items.at(-1).l,many=g.items.length>1,rng=many?`${a}–${z}`:`${a}`;
+      g.name=b.k==='pre'?tr('prefiks','prefix'):b.k==='sum'?tr('streszczenie','summary'):b.k==='ask'?tr('polecenie','instruction'):b.k==='alt'?tr('inny prompt','other prompt')
+        :b.k==='clr'?tr(`tury ${rng} po czyszczeniu`,`turns ${rng} after clearing`):b.st==='cut'?tr(`tury ${rng}: wyniki do wyczyszczenia`,`turns ${rng}: results to clear`)
+        :g.kind.endsWith('|new')?tr(`nowa tura ${a}`,`new turn ${a}`):many?tr(`tury ${rng}`,`turns ${rng}`):tr(`tura ${a}`,`turn ${a}`);});
+    return G;}
+  function labels(items,W){const tw=n=>n.length*6.3+10,rows=[[]],out=[],G=[];
+    for(const it of items){const narrow=it.w<tw(it.name),c=G.at(-1);if(narrow&&c&&c.narrow){c.w+=it.w;c.name+=', '+it.name;}else G.push(Object.assign({narrow},it));}
+    for(const c of G){const t=tw(c.name),fits=c.w>=t;let left=fits?c.x+c.w/2-t/2:Math.max(0,Math.min(W-t,c.x)),r=fits?0:1;
+      for(;;r++){rows[r]=rows[r]||[];if(!rows[r].some(([p,q])=>left<q+6&&left+t>p-6))break;}rows[r].push([left,left+t]);out.push({c,left,r});}
+    return{out,n:rows.length};}
+  function bar(r,W,cap){const px=W/WIN,bs=r.blocks,G=groups(bs),L=labels(G.map(g=>({name:g.name,x:g.x*px,w:g.w*px})),W);
+    return h('div',{class:'kc-req'},cap?h('div',{class:'kc-cap'},h('span',{},cap),h('span',{},tr('- - próg 240 tys.','- - threshold 240k'))):'',
+      h('div',{class:'kc-track'},...bs.map(b=>h('i',{class:'kc-b '+b.st,style:`width:${b.t*px}px`})),h('span',{class:'kc-th',style:`left:${TH*px}px`})),
+      h('div',{class:'kc-brk'},...G.map(g=>h('span',{style:`left:${g.x*px+1}px;width:${Math.max(2,g.w*px-2)}px`}))),
+      h('div',{class:'kc-lbl',style:`height:${L.n*16+2}px`},...L.out.map(o=>h('span',{style:`left:${o.left}px;top:${o.r*16}px`},o.c.name))),
+      r.out?h('div',{class:'kc-out'},h('span',{},tr('Wyjście:','Output:')),h('i',{class:'kc-b gen',style:`width:${BLK*px}px`}),h('span',{},tr(`streszczenie, ${big(BLK)} tokenów`,`summary, ${big(BLK)} tokens`))):'');}
+  const chips=r=>r.bill.length?h('div',{class:'kc-billrow'},...r.bill.map(([s,n,c])=>h('span',{class:'kc-chip '+s},`${STL[s]} ${big(n)}`,h('b',{},usd(c)))),h('span',{class:'kc-sum'},'= '+usd(r.cost))):h('div',{class:'kc-billrow'},h('span',{class:'kc-chip'},tr('bez wywołania modelu','no model call'),h('b',{},'0,00 USD')));
+  const used=r=>tok(r.blocks.filter(b=>['hit','write','miss'].includes(b.st)));
+  function stats(l){const stat=(v,t)=>h('div',{class:'stat'},h('b',{},v),h('span',{},t));
+    if(fam==='a'){const k=KA[l.first],ctx=used(l.r),left=Math.floor((TH-ctx)/BLK);
+      return h('div',{class:'stats kc-stats'},stat(usd(k),tr('skrócenie','shortening')),stat(usd(l.r.cost),tr('tura 28','turn 28')),stat(usd(k+l.r.cost),tr('razem','total')),stat(tr(`${left} tur`,`${left} turns`),tr('do następnego progu','until the next threshold')));}
+    const brk=l.first==='idle'?IDLE:0,ret=l.r.cost+(l.then?l.then.cost:0),ctx=used(l.then||l.r);
+    return h('div',{class:'stats kc-stats'},stat(usd(brk),tr('w czasie przerwy','during the break')),stat(usd(ret),tr('po powrocie','on return')),stat(usd(brk+ret),tr('razem','total')),stat(big(ctx),tr('tokenów w kontekście potem','tokens in the context after')));}
+  function stepText(i){const s=i?S[i-1]:null;return[h('p',{class:'kc-kick'},s?tr(`Krok ${i} z ${S.length}`,`Step ${i} of ${S.length}`):'Start'),
+      h('p',{class:'kc-title'},s?s.title:fam==='a'?tr('Kompakcja przy progu','Compaction at the threshold'):tr('Przerwa 2 h','A 2-hour break')),
+      h('p',{},s?s.text:fam==='a'?tr('Agent pracuje nad jednym zadaniem, a każda tura dopisuje do kontekstu jeden blok. Naciśnij ▶ i zobacz, co dzieje się z blokami, gdy kontekst dojdzie do progu, i jak różnią się trzy sposoby jego skrócenia.','The agent works on one task, and each turn appends one block to the context. Press ▶ to see what happens to the blocks when the context reaches the threshold, and how three ways of shortening it differ.')
+        :tr('Kontekst ma 216 tys. tokenów, a użytkownik odchodzi na 2 godziny. Naciśnij ▶ i zobacz, co dzieje się z cache’em w trzech wariantach do jego powrotu.','The context is 216k tokens, and the user steps away for 2 hours. Press ▶ to see what happens to the cache in three variants until they return.'))];}
+  // opis kroku ma wysokość najdłuższego opisu w zakładce, więc wizualizacja pod nim nie skacze
+  function fixStep(){ui.step.style.minHeight='';let m=0;for(let k=0;k<=S.length;k++){ui.step.replaceChildren(...stepText(k));m=Math.max(m,ui.step.offsetHeight);}ui.step.style.minHeight=m+'px';}
+  function render(i){const s=i?S[i-1]:null,W=ui.view.clientWidth||320;ui.step.replaceChildren(...stepText(i));
+    if(!s){ui.view.replaceChildren(bar({blocks:[]},W,tr('Request: jeszcze nie wysłany','Request: not sent yet')));return;}
+    if(s.one){ui.view.replaceChildren(bar(s.one,W,tr(`Request: ${big(used(s.one))} tokenów`,`Request: ${big(used(s.one))} tokens`)),chips(s.one));return;}
+    const lanes=s.lanes.map(l=>h('div',{class:'kc-lane'},h('p',{class:'kc-lh'},h('b',{},l.n),l.who?h('span',{},l.who):''),
+      bar(l.r,W,l.r.bill.length?tr(`Request: ${big(used(l.r))} tokenów`,`Request: ${big(used(l.r))} tokens`):tr(`Bez requestu do modelu · historia: ${big(tok(l.r.blocks))} tokenów`,`No request to the model · history: ${big(tok(l.r.blocks))} tokens`)),l.note?h('p',{class:'kc-note'},l.note):'',
+      s.sumup?(l.then?h('p',{class:'kc-note'},tr(`Potem pierwsza tura zapisuje już tylko 5 bloków: ${usd(l.then.cost)}.`,`Then the first turn writes only 5 blocks: ${usd(l.then.cost)}.`)):''):chips(l.r),
+      s.sumup?stats(l):''));
+    const tot=s.sumup?s.lanes.map(l=>fam==='a'?KA[l.first]+l.r.cost:(l.first==='idle'?IDLE:0)+l.r.cost+(l.then?l.then.cost:0)):null;
+    ui.view.replaceChildren(...lanes,s.sumup?h('div',{class:'callout'},fam==='a'
+      ?tr(`Najtaniej wychodzi streszczenie na tym samym prefiksie: ${usd(tot[0])} za skrócenie i następną turę, wobec ${usd(tot[1])} przy własnym prompcie i ${usd(tot[2])} przy czyszczeniu wyników. Czyszczenie nie płaci za streszczenie i zostawia wiadomości dosłownie, ale zapisuje od nowa wszystko od pierwszego wyczyszczonego wyniku i zostawia większy kontekst, dlatego czyści się rzadko i dużymi porcjami.`,`The summary on the same prefix is cheapest: ${usd(tot[0])} for the shortening and the next turn, against ${usd(tot[1])} with its own prompt and ${usd(tot[2])} when clearing results. Clearing pays nothing for a summary and keeps the messages verbatim, but it rewrites everything from the first cleared result and leaves a larger context, which is why clearing is done rarely and in large batches.`)
+      :tr(`Kompakcja w przerwie wychodzi najtaniej (${usd(tot[0])}) i opłaca się, jeśli wracasz w więcej niż ok. ${Math.round(IDLE/(tot[1]-B[2].lanes[0].r.cost)*100)}% przypadków. /compact po powrocie (${usd(tot[2])}) płaci pełną cenę za historię, ale i tak wychodzi taniej niż powrót bez kompakcji (${usd(tot[1])}), a każda kolejna tura czyta 5 bloków zamiast 28.`,`Compacting during the break is cheapest (${usd(tot[0])}) and pays off if you come back in more than about ${Math.round(IDLE/(tot[1]-B[2].lanes[0].r.cost)*100)}% of cases. /compact on return (${usd(tot[2])}) pays full price for the history but still beats returning without compaction (${usd(tot[1])}), and every later turn reads 5 blocks instead of 28.`)):'');}
+  function pick(f){fam=f;S=f==='a'?A:B;fixStep();ui.tabs.replaceChildren(...[['a',tr('Kompakcja przy progu','Compaction at the threshold')],['b',tr('Przerwa 2 h','A 2-hour break')]].map(([k,n])=>h('button',{type:'button',role:'tab','aria-selected':String(k===fam),onclick:()=>pick(k)},n)));
+    if(pl){pl.stop();pl.refresh();pl.set(0);}}
+  pick('a');pl=player(ui.player,{steps:()=>S.length,render,interval:5000,group:k=>k&&S[k-1].lanes?1:0});let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{fixStep();pl.refresh();},200);});PLAYERS.push(pl);}
+/* end kompakcja */
 /* wybor */
 function initChoose(){
   // illustrative: [letter, tier, USD per completed task, your eval %, public leaderboard points, p95 seconds per task]
@@ -1860,7 +1960,7 @@ const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,ini
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
-  embeddingi:initEmbSearch,kontekst:initCtxEng,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill};
+  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
 $$('.lab').forEach(typoLive);
