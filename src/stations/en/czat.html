@@ -55,6 +55,6 @@
   <ul class="notes">
     <li>With an open-weight model (see “Open-weight models”) the template is part of the model. A wrong or outdated one raises no error; it silently degrades answers and breaks tool calling. A common case is a doubled beginning-of-text token: the document from <code>apply_chat_template(tokenize=False)</code> gets tokenised a second time with special tokens added, and the Hugging Face docs warn that this hurts quality.</li>
     <li>Render fine-tuning data with exactly the template the server will use, and compute the loss only on assistant tokens (see “Fine-tuning and LoRA”).</li>
-    <li>Prefill: you end the message list with the start of the answer, such as <code>{</code>, and the model writes on from there. In transformers this is <code>continue_final_message=True</code>. From Opus 4.6 and Sonnet 4.6 onwards, the Claude API rejects prefill with a 400 error and points you to structured outputs (see “Enforcing output format”).</li>
+    <li>Prefill: you end the message list with the start of the answer, such as <code>{</code>, and the model writes on from there. In transformers this is <code>continue_final_message=True</code>. From Opus 4.6 and Sonnet 4.6 onwards, the Claude API rejects prefill with a 400 error and points you to structured outputs (more in its own topic).</li>
   </ul>
 </section>

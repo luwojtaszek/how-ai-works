@@ -1,5 +1,5 @@
 <section class="station" id="wybor" data-hue="tok">
-  <h2>Choosing a model</h2>
+  <h2>Matching a model to the task</h2>
   <p class="lede">You choose a model for the task, not for the leaderboard: take the cheapest configuration (model, reasoning effort and provider) that passes your eval set within your latency budget and limits. Public benchmarks only tell you which candidates are worth testing.</p>
   <div class="lab">
     <p class="lab-title">Set a quality floor and a latency cap. See which model is the cheapest of those that pass, then switch to the public leaderboard</p>
@@ -34,7 +34,7 @@
   <ul class="notes">
     <li>The context window on the model card is an upper bound, not a promise: quality drops long before it is full (see “The context window and agents”), so test at your real lengths. The output limit is separate and much smaller, and thinking counts towards it.</li>
     <li>Rate limits depend on your account tier, which grows with your spending history. At Anthropic a new organisation may start on a lower tier, and each tier has a monthly spend cap after which the API returns 429 until the start of the next month (as of September 2026). Check the limits for the exact model before launch, not after.</li>
-    <li>Strict structured output, parallel tool calls, images, logprobs, batch and prompt caching are not available on every model or at every provider (see “Enforcing output format”). One missing feature can rule out the model that wins on your eval.</li>
+    <li>Strict structured output, parallel tool calls, images, logprobs, batch and prompt caching are not available on every model or at every provider (more in its own topic). One missing feature can rule out the model that wins on your eval.</li>
     <li>Where inference runs and where data is stored are two separate settings. Processing in a chosen region covers only some models and features, may need the provider’s approval, and costs more: about 10% on newer models at OpenAI and Anthropic (as of September 2026). Anthropic’s own API can pin inference only to the US; for an EU region you go through Bedrock or Google Cloud. Zero data retention (ZDR) needs an agreement and does not cover stateful features (see “LLMs in production”).</li>
   </ul>
   <h3 class="sub">Reading benchmarks</h3>

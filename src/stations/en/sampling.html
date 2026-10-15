@@ -20,7 +20,7 @@
     <li>Softmax with temperature: <code>p = exp(logit / T) / Σ exp(logit / T)</code>. T below 1 sharpens the distribution, above 1 flattens it, T → 0 always picks the top token (greedy), and a very high T pushes the distribution towards uniform. Temperature doesn’t change the order of the tokens, only the gaps between them.</li>
     <li>Cutting the tail: top-k keeps the k best tokens, top-p (nucleus) the smallest set covering e.g. 90% of the probability, and min-p drops tokens weaker than a fraction of the best one. Top-p and min-p adapt to the model’s confidence: when it is sure, one candidate remains; when it is unsure, dozens. In Hugging Face and vLLM, temperature is applied before truncation, so it affects what survives.</li>
     <li>The sampled token is appended to the text and can’t be taken back. Every following token has to fit it, so one unlucky token from the tail can drag a whole made-up sentence behind it.</li>
-    <li>The sampler can also zero out tokens that don’t fit a JSON schema. That is how structured output works (see “Enforcing output format”).</li>
+    <li>The sampler can also zero out tokens that don’t fit a JSON schema. That is how structured output works (more in its own topic).</li>
   </ul>
   <h3 class="sub">Pitfalls</h3>
   <ul class="notes">
