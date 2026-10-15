@@ -896,6 +896,9 @@ svg{display:block;max-width:100%;height:auto}
 .kc-kick{font:600 .72rem var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
 .kc-title{font:600 1.05rem/1.35 var(--body);margin:0 0 6px}
 .kc-step p{margin:0 0 8px}
+.kc-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.78rem;color:var(--muted)}
+.kc-legend span{display:inline-flex;gap:6px;align-items:center}
+.kc-legend .kc-b{width:14px;height:10px;border-radius:2px;border:0}
 .kc-billrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px}
 .kc-chip{display:inline-flex;gap:6px;align-items:center;font-size:.78rem;border-radius:999px;padding:3px 10px;background:var(--sunken)}
 .kc-chip b{font-weight:600}
