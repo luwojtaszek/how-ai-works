@@ -1908,7 +1908,7 @@ function initCompact(){const root=$('#kcLab');if(!root)return;
     if(!s){ui.view.replaceChildren(bar({blocks:[]},W,tr('Request: jeszcze nie wysłany','Request: not sent yet')));return;}
     if(s.one){ui.view.replaceChildren(bar(s.one,W,tr(`Request: ${big(used(s.one))} tokenów`,`Request: ${big(used(s.one))} tokens`)),chips(s.one));return;}
     const LW=W-30,lanes=s.lanes.map((l,j)=>h('div',{class:'kc-lane'},h('div',{class:'kc-lh'},h('em',{},j+1),h('p',{},h('b',{},l.n),l.who?h('span',{},l.who):'')),
-      bar(l.r,LW,l.r.bill.length?tr(`Request: ${big(used(l.r))} tokenów`,`Request: ${big(used(l.r))} tokens`):tr(`Bez requestu do modelu · historia: ${big(tok(l.r.blocks))} tokenów`,`No request to the model · history: ${big(tok(l.r.blocks))} tokens`)),l.note?h('p',{class:'kc-note'},l.note):'',
+      bar(l.r,LW,l.r.bill.length?tr(`Request: ${big(used(l.r))} tokenów`,`Request: ${big(used(l.r))} tokens`):tr(`Bez requestu · historia ${big(tok(l.r.blocks))}`,`No request · history ${big(tok(l.r.blocks))}`)),l.note?h('p',{class:'kc-note'},l.note):'',
       s.sumup?(l.then?h('p',{class:'kc-note'},tr(`Potem pierwsza tura czyta prefiks z cache’u i zapisuje już tylko streszczenie i nową turę: ${usd(l.then.cost)}.`,`Then the first turn reads the prefix from the cache and writes only the summary and the new turn: ${usd(l.then.cost)}.`)):''):chips(l.r),
       s.sumup?stats(l):''));
     const tot=s.sumup?s.lanes.map(l=>fam==='a'?KA[l.first]+l.r.cost:(l.first==='idle'?IDLE:0)+l.r.cost+(l.then?l.then.cost:0)):null;
