@@ -1879,16 +1879,17 @@ function initCompact(){const root=$('#kcLab');if(!root)return;
         :b.k==='clr'?tr(`tury ${rng} po czyszczeniu`,`turns ${rng} after clearing`):b.st==='cut'?tr(`tury ${rng}: wyniki do wyczyszczenia`,`turns ${rng}: results to clear`)
         :g.kind.endsWith('|new')?tr(`nowa tura ${a}`,`new turn ${a}`):many?tr(`tury ${rng}`,`turns ${rng}`):tr(`tura ${a}`,`turn ${a}`);});
     return G;}
-  function labels(items,W){const tw=n=>n.length*6.3+10,rows=[[]],out=[],G=[];
+  function labels(items,W){const tw=n=>n.length*6.8+10,rows=[[]],out=[],G=[];
     for(const it of items){const narrow=it.w<tw(it.name),c=G.at(-1);if(narrow&&c&&c.narrow){c.w+=it.w;c.name+=', '+it.name;}else G.push(Object.assign({narrow},it));}
-    for(const c of G){const t=tw(c.name),fits=c.w>=t;let left=fits?c.x+c.w/2-t/2:Math.max(0,Math.min(W-t,c.x)),r=fits?0:1;
-      for(;;r++){rows[r]=rows[r]||[];if(!rows[r].some(([p,q])=>left<q+6&&left+t>p-6))break;}rows[r].push([left,left+t]);out.push({c,left,r});}
+    for(const c of G){const t=tw(c.name),fits=c.w>=t,wide=t>W,k=wide?Math.ceil(t/W):1;let left=wide?0:fits?c.x+c.w/2-t/2:Math.max(0,Math.min(W-t,c.x)),r=fits?0:1;const span=wide?W:t;
+      for(;;r++){let ok=true;for(let q=r;q<r+k;q++){rows[q]=rows[q]||[];if(rows[q].some(([p,e])=>left<e+6&&left+span>p-6))ok=false;}if(ok)break;}
+      for(let q=r;q<r+k;q++)rows[q].push([left,left+span]);out.push({c,left,r,wrap:wide?W:0});}
     return{out,n:rows.length};}
   function bar(r,W,cap){const px=W/WIN,bs=r.blocks,G=groups(bs),L=labels(G.map(g=>({name:g.name,x:g.x*px,w:g.w*px})),W);
     return h('div',{class:'kc-req'},cap?h('div',{class:'kc-cap'},h('span',{},cap),h('span',{},tr('- - próg 240 tys.','- - threshold 240k'))):'',
       h('div',{class:'kc-track'},...bs.map(b=>h('i',{class:'kc-b '+b.st,style:`width:${b.t*px}px`})),h('span',{class:'kc-th',style:`left:${TH*px}px`})),
       h('div',{class:'kc-brk'},...G.map(g=>h('span',{style:`left:${g.x*px+1}px;width:${Math.max(2,g.w*px-2)}px`}))),
-      h('div',{class:'kc-lbl',style:`height:${L.n*16+2}px`},...L.out.map(o=>h('span',{style:`left:${o.left}px;top:${o.r*16}px`},o.c.name))),
+      h('div',{class:'kc-lbl',style:`height:${L.n*16+2}px`},...L.out.map(o=>h('span',{style:`left:${o.left}px;top:${o.r*16}px`+(o.wrap?`;width:${o.wrap}px;white-space:normal`:'')},o.c.name))),
       r.out?h('div',{class:'kc-out'},h('span',{},tr('Wyjście:','Output:')),h('i',{class:'kc-b gen',style:`width:${BLK*px}px`}),h('span',{},tr(`streszczenie, ${big(BLK)} tokenów`,`summary, ${big(BLK)} tokens`))):'');}
   const chips=r=>r.bill.length?h('div',{class:'kc-billrow'},...r.bill.map(([s,n,c])=>h('span',{class:'kc-chip '+s},`${STL[s]} ${big(n)}`,h('b',{},usd(c)))),h('span',{class:'kc-sum'},'= '+usd(r.cost))):h('div',{class:'kc-billrow'},h('span',{class:'kc-chip'},tr('bez wywołania modelu','no model call'),h('b',{},'0,00 USD')));
   const used=r=>tok(r.blocks.filter(b=>['hit','write','miss'].includes(b.st)));
@@ -1906,8 +1907,8 @@ function initCompact(){const root=$('#kcLab');if(!root)return;
   function render(i){const s=i?S[i-1]:null,W=ui.view.clientWidth||320;ui.step.replaceChildren(...stepText(i));
     if(!s){ui.view.replaceChildren(bar({blocks:[]},W,tr('Request: jeszcze nie wysłany','Request: not sent yet')));return;}
     if(s.one){ui.view.replaceChildren(bar(s.one,W,tr(`Request: ${big(used(s.one))} tokenów`,`Request: ${big(used(s.one))} tokens`)),chips(s.one));return;}
-    const lanes=s.lanes.map(l=>h('div',{class:'kc-lane'},h('p',{class:'kc-lh'},h('b',{},l.n),l.who?h('span',{},l.who):''),
-      bar(l.r,W,l.r.bill.length?tr(`Request: ${big(used(l.r))} tokenów`,`Request: ${big(used(l.r))} tokens`):tr(`Bez requestu do modelu · historia: ${big(tok(l.r.blocks))} tokenów`,`No request to the model · history: ${big(tok(l.r.blocks))} tokens`)),l.note?h('p',{class:'kc-note'},l.note):'',
+    const LW=W-30,lanes=s.lanes.map((l,j)=>h('div',{class:'kc-lane'},h('div',{class:'kc-lh'},h('em',{},j+1),h('p',{},h('b',{},l.n),l.who?h('span',{},l.who):'')),
+      bar(l.r,LW,l.r.bill.length?tr(`Request: ${big(used(l.r))} tokenów`,`Request: ${big(used(l.r))} tokens`):tr(`Bez requestu do modelu · historia: ${big(tok(l.r.blocks))} tokenów`,`No request to the model · history: ${big(tok(l.r.blocks))} tokens`)),l.note?h('p',{class:'kc-note'},l.note):'',
       s.sumup?(l.then?h('p',{class:'kc-note'},tr(`Potem pierwsza tura zapisuje już tylko 5 bloków: ${usd(l.then.cost)}.`,`Then the first turn writes only 5 blocks: ${usd(l.then.cost)}.`)):''):chips(l.r),
       s.sumup?stats(l):''));
     const tot=s.sumup?s.lanes.map(l=>fam==='a'?KA[l.first]+l.r.cost:(l.first==='idle'?IDLE:0)+l.r.cost+(l.then?l.then.cost:0)):null;

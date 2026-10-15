@@ -904,9 +904,11 @@ svg{display:block;max-width:100%;height:auto}
 .kc-note{font-size:.8rem;color:var(--muted);margin:8px 0 0}
 .kc-step{min-height:9.5em;margin:14px 0 4px}
 .kc-view{margin-top:10px}
-.kc-lane{border-top:1px solid var(--line);padding-top:12px;margin-top:14px}
-.kc-lane:first-child{border-top:0;margin-top:0;padding-top:0}
-.kc-lh{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin:0 0 2px}
+.kc-lane{border:1px solid var(--line-strong);border-radius:10px;background:var(--paper);padding:12px 14px;margin-top:12px}
+.kc-lane:first-child{margin-top:0}
+.kc-lh{display:flex;gap:10px;align-items:flex-start;margin:0 0 2px}
+.kc-lh p{margin:0;display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline;line-height:22px}
+.kc-lh em{flex:none;margin-top:0;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);font:600 .76rem var(--mono);font-style:normal}
 .kc-lh b{font-size:.95rem}.kc-lh span{font-size:.78rem;color:var(--muted)}
 .kc-lane .kc-cap{margin-top:6px}
 .kc-lane .kc-note{margin:6px 0 4px}
