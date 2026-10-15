@@ -20,7 +20,7 @@
     <li>Softmax z temperaturą: <code>p = exp(logit / T) / Σ exp(logit / T)</code>. T poniżej 1 wyostrza rozkład, powyżej 1 go spłaszcza, T → 0 to zawsze najlepszy token (greedy), a bardzo wysokie T zbliża rozkład do jednostajnego. Temperatura nie zmienia kolejności tokenów, tylko odstępy między nimi.</li>
     <li>Obcinanie ogona: top-k zostawia k najlepszych tokenów, top-p (nucleus) najmniejszy zbiór pokrywający np. 90% prawdopodobieństwa, min-p odrzuca tokeny słabsze niż ułamek najlepszego. Top-p i min-p dopasowują się do pewności modelu: gdy model jest pewny, zostaje jeden kandydat, gdy niepewny – kilkadziesiąt. W Hugging Face i vLLM temperatura działa przed obcinaniem, więc wpływa na to, co zostanie.</li>
     <li>Wylosowany token trafia na koniec tekstu i nie da się go cofnąć. Kolejne tokeny muszą do niego pasować, więc jeden pechowy token z ogona potrafi pociągnąć za sobą całe zmyślone zdanie.</li>
-    <li>Sampler może też zerować tokeny niezgodne ze schematem JSON. Tak działa structured output (zobacz „Wymuszanie formatu”).</li>
+    <li>Sampler może też zerować tokeny niezgodne ze schematem JSON. Tak działa structured output (więcej w osobnym temacie).</li>
   </ul>
   <h3 class="sub">Pułapki</h3>
   <ul class="notes">

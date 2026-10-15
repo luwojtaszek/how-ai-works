@@ -1,5 +1,5 @@
 <section class="station" id="wybor" data-hue="tok">
-  <h2>Wybór modelu</h2>
+  <h2>Dobór modelu do zadania</h2>
   <p class="lede">Model dobierasz do zadania, nie do rankingu: bierzesz najtańszą konfigurację – model, poziom rozumowania i dostawcę – która przechodzi twój zestaw ewaluacyjny w wymaganym czasie i limitach. Publiczne benchmarki podpowiadają tylko, kogo warto sprawdzić.</p>
   <div class="lab">
     <p class="lab-title">Ustaw próg jakości i limit czasu. Zobacz, który model jest najtańszy wśród tych, które przechodzą, a potem przełącz na publiczny ranking</p>
@@ -34,7 +34,7 @@
   <ul class="notes">
     <li>Okno kontekstu z karty modelu to górna granica, nie obietnica: jakość spada na długo przed jego końcem (temat „Okno kontekstowe i agent”), więc testujesz na swoich realnych długościach. Limit wyjścia jest osobny i dużo mniejszy, a myślenie się do niego wlicza.</li>
     <li>Limity zapytań zależą od poziomu konta (tier), który rośnie z historią wydatków. U Anthropic nowa organizacja może zacząć od niższego tieru, a każdy tier ma miesięczny limit wydatków, po którym API zwraca 429 do początku kolejnego miesiąca (stan na wrzesień 2026). Limity dla konkretnego modelu sprawdzasz przed wdrożeniem, nie po nim.</li>
-    <li>Tryb ścisły structured output, równoległe wywołania narzędzi, obrazy, logprobs, batch i prompt caching nie działają w każdym modelu i u każdego dostawcy (temat „Wymuszanie formatu”). Brak jednej funkcji potrafi przekreślić model, który wygrywa na evalu.</li>
+    <li>Tryb ścisły structured output, równoległe wywołania narzędzi, obrazy, logprobs, batch i prompt caching nie działają w każdym modelu i u każdego dostawcy (więcej w osobnym temacie). Brak jednej funkcji potrafi przekreślić model, który wygrywa na evalu.</li>
     <li>Miejsce inferencji i miejsce przechowywania danych to dwa osobne ustawienia. Przetwarzanie w wybranym regionie obejmuje tylko część modeli i funkcji, bywa dostępne po akceptacji dostawcy i kosztuje więcej: w OpenAI i Anthropic ok. 10% dla nowszych modeli (stan na wrzesień 2026). Własne API Anthropic pozwala przypiąć inferencję tylko do USA, a region w UE dają Bedrock i Google Cloud. Zerowa retencja (ZDR) wymaga umowy i nie obejmuje funkcji ze stanem (temat „LLM na produkcji”).</li>
   </ul>
   <h3 class="sub">Jak czytać benchmarki</h3>

@@ -55,6 +55,6 @@
   <ul class="notes">
     <li>Przy modelu open-weight (zobacz „Modele open-weight”) szablon jest częścią modelu. Zły albo nieaktualny nie rzuca błędem, tylko po cichu pogarsza odpowiedzi i psuje tool calling. Częsty przypadek to podwójny token początku tekstu: dokument z <code>apply_chat_template(tokenize=False)</code> tokenizuje się drugi raz z dodawaniem tokenów specjalnych, a dokumentacja Hugging Face ostrzega, że to obniża jakość.</li>
     <li>Dane do fine-tuningu renderuj dokładnie tym szablonem, którego użyje serwer, i licz stratę tylko na tokenach asystenta (zobacz „Fine-tuning i LoRA”).</li>
-    <li>Prefill: kończysz listę wiadomości początkiem odpowiedzi, np. <code>{</code>, a model pisze od tego miejsca. W transformers robi to <code>continue_final_message=True</code>. API Claude od Opus 4.6 i Sonnet 4.6 odrzuca prefill błędem 400 i odsyła do structured outputs (zobacz „Wymuszanie formatu”).</li>
+    <li>Prefill: kończysz listę wiadomości początkiem odpowiedzi, np. <code>{</code>, a model pisze od tego miejsca. W transformers robi to <code>continue_final_message=True</code>. API Claude od Opus 4.6 i Sonnet 4.6 odrzuca prefill błędem 400 i odsyła do structured outputs (więcej w osobnym temacie).</li>
   </ul>
 </section>
