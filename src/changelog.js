@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-10-15',
+    added: ['kompakcja'],
+    updated: ['kontekst', 'harness', 'promptcache'],
+    en: 'New topic: Context compaction. A widget replays a long agent session block by block: when the harness compacts, why the summary is built on the same prompt prefix, how three ways of shortening the context compare in cost, and what idle compaction before the cache expires saves. Context engineering and memory, the coding-agent harness and Prompt caching now point to it, with corrected details on what Claude Code keeps after compaction and on cache costs.',
+    pl: 'Nowy temat: Kompakcja kontekstu. Widżet odtwarza długą sesję agenta blok po bloku: kiedy harness kompaktuje, czemu streszczenie powstaje na tym samym początku promptu, ile kosztują trzy sposoby skrócenia kontekstu i co daje kompakcja w przerwie, przed wygaśnięciem cache’u. Context engineering i pamięć, harness agenta kodującego i Prompt caching odsyłają do niego, z poprawionym opisem tego, co Claude Code zostawia po kompakcji, i kosztów cache’u.',
+  },
+  {
     date: '2026-10-10',
     added: [],
     updated: ['format'],
