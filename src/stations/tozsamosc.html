@@ -1,6 +1,15 @@
 <section class="station" id="tozsamosc" data-hue="cost">
   <h2>Tożsamość agenta</h2>
-  <p class="lede">Agent, który woła narzędzia, musi udowodnić, kim jest, a współdzielony klucz API tego nie mówi: potwierdza tylko, że ktoś ten klucz ma. SPIFFE daje każdemu procesowi krótko ważny dowód tożsamości, wydany na podstawie tego, gdzie i jak proces działa. Odpowiada na pytanie „kto dzwoni”, ale nie na „czy powinien”.</p>
+  <p class="lede">Każdy system, który woła agent, musi wiedzieć, kto dzwoni, a dziś zwykle widzi tylko współdzielony klucz API: długo ważny sekret, który można skopiować i który nie mówi, kto go użył. SPIFFE to otwarty standard, który zastępuje taki sekret krótko ważnym dowodem tożsamości, wydawanym procesowi automatycznie na podstawie tego, gdzie i jak działa.</p>
+  <h3 class="sub">Problem i pomysł SPIFFE</h3>
+  <ul class="notes">
+    <li><b>Problem.</b> Klucz API działa jak hasło: kto go ma, ten przechodzi. Gdy wszystkie repliki agenta i dwa inne zespoły mają ten sam klucz, log pokazuje tylko „klucz X”. Zmiana klucza dotyka wszystkich naraz, więc zwykle odkłada się ją na później, a klucz żyje miesiącami.</li>
+    <li><b>Czemu u agentów to gorsze.</b> Zachowaniem agenta steruje też treść, którą czyta, więc klucz w zmiennej środowiskowej jest o jedno polecenie shella od wycieku (temat „Prompt injection”). A agent zwykle woła wiele systemów, więc takich kluczy ma kilka.</li>
+    <li><b>Czemu menedżer sekretów nie wystarcza.</b> Żeby pobrać z niego sekret, proces potrzebuje innego sekretu. To problem „secret zero”, czyli skąd wziąć pierwsze poświadczenie.</li>
+    <li><b>Pomysł SPIFFE.</b> Proces niczego nie dostaje z góry i niczego nie pamięta. Po starcie prosi lokalną usługę o tożsamość, a ta sprawdza w systemie, co to za proces, i wydaje mu dowód ważny minuty albo godzinę. Usługa sama go potem odnawia.</li>
+    <li><b>Co to daje.</b> W konfiguracji nie ma sekretu do ukradzenia. Wyciek działa krótko i zwykle tylko w jednym miejscu. Każda rola agenta ma własną tożsamość, więc log pokazuje, kto działał, a odcięcie jednego agenta nie rusza pozostałych.</li>
+    <li><b>Czego to nie daje.</b> SPIFFE odpowiada na pytanie „kto dzwoni”, ale nie na „czy powinien”. Zmanipulowany agent nadal ma prawdziwą tożsamość, więc uprawnienia i zatwierdzanie przez człowieka zostają potrzebne.</li>
+  </ul>
   <div class="lab">
     <p class="lab-title">Wybierz, czym agent uwierzytelnia się w narzędziach i co poszło źle. Patrz, co ma atakujący, jak długo to działa i gdzie</p>
     <p class="hint">SVID to krótko ważny dowód tożsamości wydany w SPIFFE: token albo certyfikat. Token może wykorzystać każdy, kto go skopiuje. Certyfikat wymaga jeszcze klucza prywatnego.</p>
@@ -13,12 +22,6 @@
     <div id="idMsg" aria-live="polite"></div>
     <p class="hint">Czasy to domyślne TTL w SPIRE: 1 h dla certyfikatu i 5 min dla tokena. Da się je skrócić. „Powiązany token” to token OAuth, który działa tylko z certyfikatem klienta.</p>
   </div>
-  <h3 class="sub">Czemu klucz API nie jest tożsamością</h3>
-  <ul class="notes">
-    <li>Klucz jest sekretem na okaziciela i nie mówi, kto go użył. Gdy wszystkie repliki agenta i dwa inne zespoły mają ten sam klucz, log pokazuje tylko „klucz X”. Zmiana klucza dotyka wszystkich naraz, więc zwykle odkłada się ją na później, a klucz żyje miesiącami.</li>
-    <li>Agent jest gorszym właścicielem sekretu niż zwykła usługa, bo jego zachowaniem steruje też czytana treść. Klucz w zmiennej środowiskowej jest o jedno polecenie shella od wycieku (temat „Prompt injection”).</li>
-    <li>Sekret w menedżerze sekretów problemu nie kończy: żeby go pobrać, proces potrzebuje innego sekretu. To problem „secret zero”, czyli skąd wziąć pierwsze poświadczenie.</li>
-  </ul>
   <h3 class="sub">Jak działa SPIFFE</h3>
   <div class="lab">
     <p class="lab-title">Zobacz cały układ, a potem przejdź drogę od wpisu w serwerze SPIRE do decyzji serwera MCP. Podświetlone są węzły i ścieżki, które właśnie rozmawiają</p>

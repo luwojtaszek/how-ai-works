@@ -1,6 +1,15 @@
 <section class="station" id="tozsamosc" data-hue="cost">
   <h2>Agent identity</h2>
-  <p class="lede">An agent calling tools has to prove who it is, and a shared API key can’t do that: it only shows that someone holds the key. SPIFFE gives each process a short-lived proof of identity, issued from where and how the process runs. It answers “who is calling”, but not “should they be”.</p>
+  <p class="lede">Every system an agent calls needs to know who is calling, and today it usually sees only a shared API key: a long-lived secret that can be copied and doesn’t say who used it. SPIFFE is an open standard that replaces that secret with a short-lived proof of identity, issued to a process automatically from where and how it runs.</p>
+  <h3 class="sub">The problem and the SPIFFE idea</h3>
+  <ul class="notes">
+    <li><b>The problem.</b> An API key works like a password: whoever has it gets in. When every agent replica and two other teams share the same key, the log only shows “key X”. Rotating it affects everyone at once, so rotation gets postponed and the key lives for months.</li>
+    <li><b>Why it’s worse for agents.</b> The content an agent reads also steers it, so a key in an environment variable is one shell command away from leaking (see “Prompt injection”). An agent also usually calls many systems, so it holds several such keys.</li>
+    <li><b>Why a secrets manager isn’t enough.</b> To fetch a secret from it, a process needs another secret. That’s the “secret zero” problem: where the first credential comes from.</li>
+    <li><b>The SPIFFE idea.</b> A process gets nothing up front and remembers nothing. After starting, it asks a local service for its identity, and that service checks with the system what the process is and issues a proof valid for minutes or an hour. The service then renews it automatically.</li>
+    <li><b>What this gives you.</b> There’s no secret in the configuration to steal. A leak works briefly and usually in one place. Each agent role has its own identity, so the log shows who acted, and cutting off one agent leaves the others alone.</li>
+    <li><b>What it doesn’t give you.</b> SPIFFE answers “who is calling”, but not “should they be”. A manipulated agent still has a genuine identity, so permissions and human approval remain necessary.</li>
+  </ul>
   <div class="lab">
     <p class="lab-title">Pick how the agent authenticates to tools and what went wrong. See what the attacker holds, how long it works and where</p>
     <p class="hint">An SVID is a short-lived proof of identity issued through SPIFFE: a token or a certificate. Anyone who copies a token can use it. A certificate also needs a private key.</p>
@@ -13,12 +22,6 @@
     <div id="idMsg" aria-live="polite"></div>
     <p class="hint">Times are SPIRE’s default TTLs: 1 h for a certificate and 5 min for a token. Both can be shortened. A “bound token” is an OAuth token that only works with the client certificate.</p>
   </div>
-  <h3 class="sub">Why an API key isn’t an identity</h3>
-  <ul class="notes">
-    <li>A key is a bearer secret and doesn’t say who used it. When every agent replica and two other teams share the same key, the log only shows “key X”. Rotating it affects everyone at once, so rotation gets postponed and the key lives for months.</li>
-    <li>An agent is a worse keeper of secrets than an ordinary service, because the content it reads also steers it. A key in an environment variable is one shell command away from leaking (see “Prompt injection”).</li>
-    <li>A secrets manager doesn’t end the problem: to fetch a secret, the process needs another secret. That’s the “secret zero” problem: where the first credential comes from.</li>
-  </ul>
   <h3 class="sub">How SPIFFE works</h3>
   <div class="lab">
     <p class="lab-title">See the whole system, then walk the path from an entry in the SPIRE server to the MCP server’s decision. The highlighted nodes and paths are the ones talking</p>
