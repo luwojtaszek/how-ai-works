@@ -4,12 +4,12 @@
   <div class="lab">
     <p class="lab-title">Wybierz, czym agent uwierzytelnia się w narzędziach i co poszło źle. Patrz, co ma atakujący, jak długo to działa i gdzie</p>
     <p class="hint">SVID to krótko ważny dowód tożsamości wydany w SPIFFE: token albo certyfikat. Token może wykorzystać każdy, kto go skopiuje. Certyfikat wymaga jeszcze klucza prywatnego.</p>
-    <p class="hint">Poświadczenie agenta</p>
-    <div class="row" id="idCred" role="group" aria-label="Poświadczenie agenta"></div>
+    <p class="hint">Czym agent się uwierzytelnia</p>
+    <div class="opts" id="idCred" role="group" aria-label="Poświadczenie agenta"></div>
     <p class="hint" style="margin-top:14px">Co poszło źle</p>
-    <div class="row" id="idAtt" role="group" aria-label="Scenariusz"></div>
-    <div class="row" id="idBoxRow" style="margin-top:14px"><button type="button" class="btn ghost" id="idBox" aria-pressed="false">Narzędzia w osobnej piaskownicy</button></div>
-    <div class="stats"><div class="stat"><b id="idGot"></b><span>co ma atakujący</span></div><div class="stat"><b id="idTime"></b><span>jak długo to działa</span></div><div class="stat"><b id="idReach"></b><span>gdzie działa</span></div></div>
+    <div class="opts four" id="idAtt" role="group" aria-label="Scenariusz"></div>
+    <button type="button" class="id-sw" id="idBox" role="switch" aria-checked="false"><i aria-hidden="true"></i>Narzędzia w osobnej piaskownicy</button>
+    <dl class="id-res"><div><dt>Co ma atakujący</dt><dd id="idGot"></dd></div><div><dt>Jak długo to działa</dt><dd id="idTime"></dd></div><div><dt>Gdzie działa</dt><dd id="idReach"></dd></div></dl>
     <div id="idMsg" aria-live="polite"></div>
     <p class="hint">Czasy to domyślne TTL w SPIRE: 1 h dla certyfikatu i 5 min dla tokena. Da się je skrócić. „Powiązany token” to token OAuth, który działa tylko z certyfikatem klienta.</p>
   </div>
@@ -20,19 +20,15 @@
     <li>Sekret w menedżerze sekretów problemu nie kończy: żeby go pobrać, proces potrzebuje innego sekretu. To problem „secret zero”, czyli skąd wziąć pierwsze poświadczenie.</li>
   </ul>
   <h3 class="sub">Jak działa SPIFFE</h3>
-  <div class="out mcp-json" role="img" aria-label="Mapa: serwer SPIRE łączy się z agentem SPIRE, ten przez socket z procesem agenta, a proces woła serwer autoryzacji i serwer MCP">WYDAWANIE TOŻSAMOŚCI
-serwer SPIRE     urząd, wpisy
-  ↕ mTLS: CSR → certyfikat
-agent SPIRE      jeden na węzeł
-  ↕ socket: Workload API
-proces agenta    harness
-
-WYWOŁANIE NARZĘDZIA
-proces agenta
-  → mTLS: serwer autoryzacji
-    (certyfikat → token)
-  → mTLS + token: serwer MCP
-    (własny SVID, sprawdza, decyduje)</div>
+  <div class="lab">
+    <p class="lab-title">Zobacz cały układ, a potem przejdź drogę od wpisu w serwerze SPIRE do decyzji serwera MCP. Podświetlone są węzły i ścieżki, które właśnie rozmawiają</p>
+    <div id="idPlayer"></div>
+    <div class="id-d" id="idMap" role="img" aria-label="Schemat elementów SPIFFE"></div>
+    <p class="id-who" id="idWho" aria-live="polite"></p>
+    <div class="out mcp-json" id="idJson" tabindex="0" role="region" aria-label="Wiadomości między agentem, SPIRE, serwerem autoryzacji i serwerem MCP"></div>
+    <div class="callout" id="idStep" aria-live="polite"></div>
+    <p class="hint">Wiadomości skrócone, nazwy i wartości zmyślone. To złożenie istniejących standardów dla usług we własnej domenie zaufania, nie gotowy profil: specyfikacja MCP nie opisuje mTLS ani SPIFFE, a powiązanie tokena z certyfikatem musi wspierać twój serwer autoryzacji.</p>
+  </div>
   <ul class="notes">
     <li>SPIFFE to otwarty standard, a SPIRE to jego najpopularniejsza implementacja. SPIFFE ID, np. <code>spiffe://acme.example/agent/support</code>, to adres tożsamości w domenie zaufania <code>acme.example</code>, czyli w obszarze jednego urzędu. SVID to podpisany dowód tego ID: certyfikat X.509 albo JWT. Workload API to lokalny socket, z którego proces go pobiera. Bundle to publiczne klucze urzędu, którymi każdy sprawdza SVID-y. Dalej „agent SPIRE” to demon, a „agent” to agent AI.</li>
     <li><b>Serwer SPIRE</b> to urząd. Trzyma klucze podpisujące i wpisy rejestracji, czyli reguły „proces z tymi selektorami na tych węzłach dostaje ten ID”. Podpisuje SVID-y.</li>
@@ -46,15 +42,6 @@ proces agenta
     <li>Serwer MCP i serwer autoryzacji w tej samej domenie zaufania dostają bundle z własnego Workload API, a nowe klucze tym samym strumieniem. Serwer spoza domeny nie ma tego socketu: wtedy domeny wymieniają bundle’e (federacja) albo operator konfiguruje bundle ręcznie. Jeśli narzędzie nie zna SPIFFE, zostaje mu sam token OAuth.</li>
     <li><b>Bezpieczeństwo to łańcuch.</b> Jądro podaje PID, którego proces nie sfałszuje, a kubelet mówi, jaki to pod. Serwer sprawdził węzeł, a agent SPIRE wydaje tylko tożsamości przypisane temu węzłowi i pasujące do selektorów. Podpis urzędu pozwala sprawdzić certyfikat samym bundle’em, bez pytania serwera SPIRE. Handshake TLS dowodzi posiadania klucza prywatnego. Certyfikat jest jawny, więc sam niczego nie dowodzi: dowodem jest klucz i to jego trzeba chronić. Odbiorca musi też sprawdzić, czy to oczekiwany SPIFFE ID, bo poprawny podpis mówi tylko „z tej domeny”.</li>
   </ul>
-  <div class="lab">
-    <p class="lab-title">Przejdź całą drogę: od wpisu w serwerze SPIRE do decyzji serwera MCP. Podświetlone są strony, które właśnie rozmawiają</p>
-    <div id="idPlayer"></div>
-    <div class="stages" id="idMap" role="img"></div>
-    <p class="hint" id="idWho" aria-live="polite"></p>
-    <div class="out mcp-json" id="idJson" tabindex="0" role="region" aria-label="Wiadomości między agentem, SPIRE, serwerem autoryzacji i serwerem MCP"></div>
-    <div class="callout" id="idStep" aria-live="polite"></div>
-    <p class="hint">Wiadomości skrócone, nazwy i wartości zmyślone. To złożenie istniejących standardów dla usług we własnej domenie zaufania, nie gotowy profil: specyfikacja MCP nie opisuje mTLS ani SPIFFE, a powiązanie tokena z certyfikatem musi wspierać twój serwer autoryzacji.</p>
-  </div>
   <h3 class="sub">Dwie tożsamości w jednym wywołaniu</h3>
   <ul class="notes">
     <li>Sam SPIFFE ID mówi, który agent dzwoni, a nie dla kogo pracuje. Bez tej drugiej informacji agent z szerokim dostępem staje się „zdezorientowanym zastępcą”: użytkownik bez prawa do danych dostaje je przez agenta, który to prawo ma. Decyzja musi więc widzieć obie tożsamości, a skuteczne uprawnienia to część wspólna tego, co wolno agentowi i użytkownikowi.</li>

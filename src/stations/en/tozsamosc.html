@@ -4,12 +4,12 @@
   <div class="lab">
     <p class="lab-title">Pick how the agent authenticates to tools and what went wrong. See what the attacker holds, how long it works and where</p>
     <p class="hint">An SVID is a short-lived proof of identity issued through SPIFFE: a token or a certificate. Anyone who copies a token can use it. A certificate also needs a private key.</p>
-    <p class="hint">Agent credential</p>
-    <div class="row" id="idCred" role="group" aria-label="Agent credential"></div>
+    <p class="hint">How the agent authenticates</p>
+    <div class="opts" id="idCred" role="group" aria-label="Agent credential"></div>
     <p class="hint" style="margin-top:14px">What went wrong</p>
-    <div class="row" id="idAtt" role="group" aria-label="Scenario"></div>
-    <div class="row" id="idBoxRow" style="margin-top:14px"><button type="button" class="btn ghost" id="idBox" aria-pressed="false">Tools in a separate sandbox</button></div>
-    <div class="stats"><div class="stat"><b id="idGot"></b><span>what the attacker holds</span></div><div class="stat"><b id="idTime"></b><span>how long it works</span></div><div class="stat"><b id="idReach"></b><span>where it works</span></div></div>
+    <div class="opts four" id="idAtt" role="group" aria-label="Scenario"></div>
+    <button type="button" class="id-sw" id="idBox" role="switch" aria-checked="false"><i aria-hidden="true"></i>Tools in a separate sandbox</button>
+    <dl class="id-res"><div><dt>What the attacker holds</dt><dd id="idGot"></dd></div><div><dt>How long it works</dt><dd id="idTime"></dd></div><div><dt>Where it works</dt><dd id="idReach"></dd></div></dl>
     <div id="idMsg" aria-live="polite"></div>
     <p class="hint">Times are SPIRE’s default TTLs: 1 h for a certificate and 5 min for a token. Both can be shortened. A “bound token” is an OAuth token that only works with the client certificate.</p>
   </div>
@@ -20,19 +20,15 @@
     <li>A secrets manager doesn’t end the problem: to fetch a secret, the process needs another secret. That’s the “secret zero” problem: where the first credential comes from.</li>
   </ul>
   <h3 class="sub">How SPIFFE works</h3>
-  <div class="out mcp-json" role="img" aria-label="Map: the SPIRE server connects to the SPIRE agent, the agent connects over a socket to the agent process, and the process calls the authorization server and the MCP server">ISSUING IDENTITY
-SPIRE server     authority, entries
-  ↕ mTLS: CSR → certificate
-SPIRE agent      one per node
-  ↕ socket: Workload API
-agent process    harness
-
-CALLING A TOOL
-agent process
-  → mTLS: authorization server
-    (certificate → token)
-  → mTLS + token: MCP server
-    (own SVID, checks, decides)</div>
+  <div class="lab">
+    <p class="lab-title">See the whole system, then walk the path from an entry in the SPIRE server to the MCP server’s decision. The highlighted nodes and paths are the ones talking</p>
+    <div id="idPlayer"></div>
+    <div class="id-d" id="idMap" role="img" aria-label="Diagram of the SPIFFE parts"></div>
+    <p class="id-who" id="idWho" aria-live="polite"></p>
+    <div class="out mcp-json" id="idJson" tabindex="0" role="region" aria-label="Messages between the agent, SPIRE, the authorization server and the MCP server"></div>
+    <div class="callout" id="idStep" aria-live="polite"></div>
+    <p class="hint">Messages shortened, names and values invented. This composes existing standards for services in your own trust domain and isn’t a ready-made profile: the MCP specification doesn’t describe mTLS or SPIFFE, and your authorization server has to support binding tokens to certificates.</p>
+  </div>
   <ul class="notes">
     <li>SPIFFE is an open standard, and SPIRE is its most widely used implementation. A SPIFFE ID, such as <code>spiffe://acme.example/agent/support</code>, is an identity address in the trust domain <code>acme.example</code>, the area of one authority. An SVID is a signed proof of that ID: an X.509 certificate or a JWT. The Workload API is a local socket where a process fetches it. A bundle is the authority’s public keys, which anyone uses to check SVIDs. Below, “SPIRE agent” means the daemon and “agent” means the AI agent.</li>
     <li>The <b>SPIRE server</b> is the authority. It holds the signing keys and the registration entries: rules saying “a process with these selectors on these nodes gets this ID”. It signs SVIDs.</li>
@@ -46,15 +42,6 @@ agent process
     <li>An MCP server and an authorization server in the same trust domain get the bundle from their own Workload API, and new keys down the same stream. A server outside the domain has no such socket: the domains then exchange bundles (federation), or an operator configures the bundle by hand. If the tool doesn’t know SPIFFE, only the OAuth token is left.</li>
     <li><b>Security is a chain.</b> The kernel gives a PID the process can’t forge, and the kubelet says which pod that is. The server checked the node, and the SPIRE agent issues only identities assigned to that node and matching the selectors. The authority’s signature lets you check a certificate with the bundle alone, without asking the SPIRE server. The TLS handshake proves possession of the private key. A certificate is public, so it proves nothing alone: the key is the proof, and the key is what you protect. The receiver must also check for the expected SPIFFE ID, because a valid signature only says “from this domain”.</li>
   </ul>
-  <div class="lab">
-    <p class="lab-title">Walk the whole path, from an entry in the SPIRE server to the MCP server’s decision. The highlighted parties are the ones talking</p>
-    <div id="idPlayer"></div>
-    <div class="stages" id="idMap" role="img"></div>
-    <p class="hint" id="idWho" aria-live="polite"></p>
-    <div class="out mcp-json" id="idJson" tabindex="0" role="region" aria-label="Messages between the agent, SPIRE, the authorization server and the MCP server"></div>
-    <div class="callout" id="idStep" aria-live="polite"></div>
-    <p class="hint">Messages shortened, names and values invented. This composes existing standards for services in your own trust domain and isn’t a ready-made profile: the MCP specification doesn’t describe mTLS or SPIFFE, and your authorization server has to support binding tokens to certificates.</p>
-  </div>
   <h3 class="sub">Two identities in one call</h3>
   <ul class="notes">
     <li>A SPIFFE ID says which agent is calling, not who it works for. Without that second fact, a broadly privileged agent becomes a “confused deputy”: a user with no right to some data gets it through an agent that has the right. The decision has to see both identities, and the effective permissions are the intersection of what the agent and the user may do.</li>

@@ -191,8 +191,8 @@ function initInj(){const CAPS=[['data',tr('Ma dostęp do prywatnej skrzynki','Ha
 
 /* ---------- tożsamość agenta ---------- */
 function initIdentity(){
-  const CRED=[['key',tr('Klucz API w env','API key in env')],['jwt',tr('Krótki token SPIFFE (JWT-SVID)','Short SPIFFE token (JWT-SVID)')],['mtls',tr('Certyfikat SPIFFE + powiązany token (mTLS)','SPIFFE certificate + bound token (mTLS)')]];
-  const ATT=[['shell',tr('Model uruchomił shell','The model ran a shell')],['log',tr('Token trafił do logu','A token reached a log')],['abuse',tr('Agenta zmanipulowano','The agent was manipulated')],['cut',tr('Trzeba odciąć agenta','The agent must be cut off')]];
+  const CRED=[['key',tr('Klucz API','API key'),tr('w env','in env')],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
+  const ATT=[['shell',tr('Model uruchomił shell','Model ran a shell')],['log',tr('Token w logu','Token in a log')],['abuse',tr('Manipulacja agenta','Agent manipulated')],['cut',tr('Odcięcie agenta','Agent cut-off')]];
   const ROT=tr('do ręcznej rotacji','until manually rotated'),ALL=tr('każde API z kluczem','every API using the key'),NONE=tr('nigdzie','nowhere'),PERM=tr('uprawnienia agenta','the agent’s permissions'),RUN=tr('póki agent działa','while the agent runs'),GRANT=tr('to, na co ma zgodę','whatever it’s allowed'),TRUST=tr('serwisy ufające agentowi','services that trust the agent');
   // [co ma atakujący, jak długo, gdzie, wynik: 0 źle, 1 dobrze, .5 częściowo, wyjaśnienie]
   const V={shell:{
@@ -216,16 +216,27 @@ function initIdentity(){
     jwt:[tr('ostatni token','the last token'),tr('5 min + sesje','5 min + sessions'),tr('jeden serwis (aud)','one service (aud)'),.5,tr('5 min to ważność ostatniego SVID-a, nie gwarancja odcięcia. Usuwasz wpis rejestracji i agent nie dostanie nowych tokenów, ale ostatni działa do wygaśnięcia. Sesja chmury wymieniona w ostatniej chwili doda swój czas: w AWS STS to minimum 15 min.','5 min is the last SVID’s validity, not a cut-off guarantee. You delete the registration entry and the agent gets no new tokens, but the last one works until it expires. A cloud session exchanged at the last moment adds its own time: in AWS STS the minimum is 15 min.')],
     mtls:[tr('ostatni certyfikat','the last certificate'),tr('1 h + połączenia','1 h + connections'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale bieżący działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Do szybkiego odcięcia skróć TTL.','No new certificate comes, but the current one lasts until its TTL ends, and open connections last longer if the server doesn’t cap them. For a fast cut-off, shorten the TTL.')]}};
   let cred='key',att='shell',box=false;
-  const group=(mount,list,get,set)=>{const bs=list.map(([k,t])=>h('button',{type:'button',class:'btn ghost','aria-pressed':String(get()===k),onclick:e=>{set(k);pressed(bs,e.currentTarget);paint();}},t));mount.replaceChildren(...bs);};
-  function paint(){const shell=att==='shell',r=V[shell&&box?'box':att][cred];$('#idBoxRow').style.display=shell?'':'none';
+  const group=(mount,list,get,set)=>{const bs=list.map(([k,t,sub])=>h('button',{type:'button',class:'opt','aria-pressed':String(get()===k),onclick:e=>{set(k);pressed(bs,e.currentTarget);paint();}},h('b',{},t),sub?h('small',{},sub):''));mount.replaceChildren(...bs);};
+  function paint(){const shell=att==='shell',r=V[shell&&box?'box':att][cred];$('#idBox').hidden=!shell;
     $('#idGot').textContent=r[0];$('#idTime').textContent=r[1];$('#idReach').textContent=r[2];
     const m=$('#idMsg');m.className=r[3]===1?'verdict good':r[3]?'callout':'verdict bad';m.textContent=r[4];}
   group($('#idCred'),CRED,()=>cred,k=>cred=k);group($('#idAtt'),ATT,()=>att,k=>att=k);
-  const b=$('#idBox');b.addEventListener('click',()=>{box=!box;b.setAttribute('aria-pressed',String(box));paint();});paint();
+  const b=$('#idBox');b.addEventListener('click',()=>{box=!box;b.setAttribute('aria-checked',String(box));paint();});paint();
   const ID='spiffe://acme.example/agent/support',MCP='https://crm.example.com/mcp';
-  const WHO=[['op',tr('operator','operator')],['srv',tr('serwer SPIRE','SPIRE server')],['ag',tr('agent SPIRE','SPIRE agent')],['ai',tr('proces agenta','agent process')],['as',tr('serwer autoryzacji','authorization server')],['mcp',tr('serwer MCP','MCP server')]];
+  // [klucz, x, y, tytuł (linie), podpis]; schemat ma stały układ, zmienia się tylko podświetlenie
+  const NW=96,NH=46,N={op:[0,0,[tr('operator','operator')],tr('zapisuje reguły','writes rules')],srv:[122,0,[tr('serwer SPIRE','SPIRE server')],tr('urząd, wpisy','authority, entries')],
+    ag:[122,110,[tr('agent SPIRE','SPIRE agent')],tr('jeden na węzeł','one per node')],k:[244,110,[tr('jądro, kubelet','kernel, kubelet')],tr('fakty o procesie','process facts')],
+    as:[0,220,[tr('serwer','authorization'),tr('autoryzacji','server')],''],ai:[122,220,[tr('proces agenta','agent process')],'harness'],mcp:[244,220,[tr('serwer MCP','MCP server')],tr('własny SVID','own SVID')]};
+  const nm=k=>N[k][2].join(' ');
+  const E={'op-srv':[96,23,122,23],'ag-srv':[170,110,170,46],'ai-ag':[170,220,170,156],'ag-k':[218,133,244,133],'ai-as':[122,243,96,243],'ai-mcp':[218,243,244,243]};
+  const EL={'ag-srv':['mTLS',176,82],'ai-ag':['socket',176,192],'ai-as':['mTLS',109,212],'ai-mcp':['mTLS',231,212]};
   const NODE='spiffe://acme.example/spire/agent/k8s_psat/prod/<UID>';
   const STEPS=[
+   {l:tr('Cały układ','The whole system'),all:1,j:`${tr('serwer SPIRE','SPIRE server')}: ${tr('podpisuje SVID-y','signs SVIDs')}
+${tr('agent SPIRE','SPIRE agent')}: ${tr('sprawdza proces, wydaje SVID','checks the process, issues the SVID')}
+${tr('proces agenta','agent process')}: ${tr('dowodzi posiadania klucza','proves it holds the key')}
+${tr('serwer autoryzacji','authorization server')}: ${tr('wydaje token','issues a token')}
+${tr('serwer MCP','MCP server')}: ${tr('sprawdza i decyduje','checks and decides')}`,m:tr('Górna połowa wydaje tożsamość i działa zwykle przed wywołaniem narzędzia. Dolna jej używa. Serwer SPIRE nie bierze udziału w samym wywołaniu.','The top half issues identity, usually before any tool call. The bottom half uses it. The SPIRE server takes no part in the call itself.')},
    {l:tr('Wpis','Entry'),w:['op','srv'],j:`${tr('wpis rejestracji','registration entry')}:
   spiffe_id: ${ID}
   parent_id: ${NODE}
@@ -246,12 +257,13 @@ ${tr('potem, po mTLS: wpisy tego węzła + bundle','then, over mTLS: this node�
   csr: <${tr('klucz publiczny procesu','process public key')}>
 
 ← ${tr('certyfikat podpisany kluczem urzędu','certificate signed with the authority’s key')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera idzie tylko CSR, więc serwer nie dostaje klucza prywatnego procesu. Certyfikat czeka w cache’u, nawet zanim proces wystartuje.','The private key is created at the SPIRE agent. Only a CSR goes to the server, so the server doesn’t receive the process’s private key. The certificate waits in a cache, even before the process starts.')},
-   {l:tr('Atestacja','Attestation'),w:['ai','ag'],j:`→ unix:///run/spire/agent.sock
+   {l:tr('Atestacja','Attestation'),w:['ai','ag'],x:['ag','k'],j:`→ unix:///run/spire/agent.sock
   FetchX509SVID   {}   // ${tr('bez hasła','no password')}
 
 ${tr('jądro','kernel')}:   pid=4123
 cgroup:  pod 7c1e…
-kubelet: k8s:ns:prod, k8s:sa:support-agent
+kubelet: k8s:ns:prod
+         k8s:sa:support-agent
 
 ${tr('wymagane selektory wpisu','the entry’s selectors')}  ✓`,m:tr('Atestacja procesu. Proces startuje bez sekretu i nie mówi, kim jest. PID daje jądro, resztę kubelet, więc nie może podać fałszywych danych. Nagłówek workload.spiffe.io utrudnia SSRF, ale nie jest hasłem.','Workload attestation. The process starts with no secret and doesn’t say who it is. The kernel gives the PID and the kubelet the rest, so it can’t supply false data. The workload.spiffe.io header hinders SSRF, but it isn’t a password.')},
    {l:tr('SVID','SVID'),w:['ag','ai'],j:`← X509SVIDResponse { svids: [{
@@ -294,8 +306,17 @@ ${tr('zamówienie należy do użytkownika','order belongs to the user')}  ✓
 → ${tr('zgoda','allow')}
 
 amount: 500 → ${tr('zatwierdza człowiek','human approval')}`,m:tr('Do tego miejsca wszystko dowodziło tożsamości. Autoryzacja to osobna decyzja w narzędziu. Właśnie tu trzeba zatrzymać zmanipulowanego agenta, bo jego poświadczenia są prawdziwe.','Everything up to here proved identity. Authorization is a separate decision in the tool. This is where a manipulated agent has to be stopped, because its credentials are genuine.')}];
-  function render(i){const st=STEPS[i],nm=k=>WHO.find(x=>x[0]===k)[1];$('#idMap').replaceChildren(...WHO.map(([k,t])=>h('span',{class:'stage'+(st.w.includes(k)?' on':'')},t)));
-    $('#idWho').textContent=st.l+': '+st.w.map(nm).join(' → ');$('#idMap').setAttribute('aria-label',tr('Rozmawiają: ','Talking: ')+st.w.map(nm).join(', '));
+  $('#idMap').innerHTML=`<svg viewBox="0 0 340 266"><defs><marker id="idArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--accent)"/></marker></defs><text class="gr" x="0" y="96">${tr('wydawanie','issuing')}</text><text class="gr" x="0" y="206">${tr('wywołanie','calling')}</text>`
+    +Object.entries(E).map(([k,c])=>`<line class="ed${k==='ag-k'?' src':''}" id="ide-${k}" x1="${c[0]}" y1="${c[1]}" x2="${c[2]}" y2="${c[3]}"/>`).join('')
+    +Object.entries(EL).map(([k,[t,x,y]])=>`<text class="el" id="idl-${k}" x="${x}" y="${y}"${x<170||x>200?' text-anchor="middle"':''}>${t}</text>`).join('')
+    +Object.entries(N).map(([k,[x,y,t,sub]])=>{const mid=y+NH/2,ty=sub&&t.length===1?mid-3:t.length>1?mid-4:mid+4;return `<g class="nd" id="idn-${k}"><rect x="${x}" y="${y}" width="${NW}" height="${NH}" rx="8"/>`+t.map((l,i)=>`<text x="${x+NW/2}" y="${ty+i*15}">${l}</text>`).join('')+(sub?`<text class="s" x="${x+NW/2}" y="${mid+13}">${sub}</text>`:'')+'</g>';}).join('')+'</svg>';
+  const key=(a,b)=>E[a+'-'+b]?a+'-'+b:b+'-'+a;
+  function render(i){const st=STEPS[i],w=st.w||[],pairs=[...(w.length>1?[w]:[]),...(st.x?[st.x]:[])],on=new Set(st.all?Object.keys(N):[...w,...(st.x||[])]);
+    Object.keys(N).forEach(k=>$('#idn-'+k).classList.toggle('on',on.has(k)));
+    const lit=new Map(pairs.map(([a,b])=>[key(a,b),[a,b]]));
+    Object.entries(E).forEach(([k,c])=>{const l=$('#ide-'+k),t=$('#idl-'+k),p=lit.get(k),[A,B]=k.split('-');const fwd=!p||p[0]===A;l.setAttribute('x1',fwd?c[0]:c[2]);l.setAttribute('y1',fwd?c[1]:c[3]);l.setAttribute('x2',fwd?c[2]:c[0]);l.setAttribute('y2',fwd?c[3]:c[1]);
+      l.classList.toggle('on',!!p);l.classList.toggle('all',!!st.all);p?l.setAttribute('marker-end','url(#idArr)'):l.removeAttribute('marker-end');t?.classList.toggle('on',!!p);});
+    const who=st.all?tr('wszystkie elementy','all the parts'):w.map(nm).join(' → ');$('#idWho').textContent=st.l+': '+who;$('#idMap').setAttribute('aria-label',st.l+': '+who);
     const box=$('#idJson');box.textContent=st.j;box.scrollTop=0;$('#idStep').textContent=st.m;}
   PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:9000}));}
 /* end tożsamość agenta */
