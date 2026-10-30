@@ -1,7 +1,6 @@
 <section class="station" id="tozsamosc" data-hue="cost">
   <h2>Tożsamość agenta</h2>
   <p class="lede">Agent, który woła narzędzia, musi udowodnić, kim jest, a współdzielony klucz API tego nie mówi: potwierdza tylko, że ktoś ten klucz ma. SPIFFE daje każdemu procesowi krótko żyjącą tożsamość wydaną na podstawie tego, gdzie i jak działa. Odpowiada na pytanie „kto dzwoni”, ale nie na „czy powinien”.</p>
-  <p>To różnica między hasłem do drzwi a przepustką na godzinę. Hasło działa dla każdego, kto je usłyszał, i zmiana oznacza powiadomienie wszystkich. Przepustkę wydaje portier, który widzi, kim jesteś, a po godzinie jest bezwartościowa. Portier nie sprawdza jednak, co zrobisz w środku.</p>
   <div class="lab">
     <p class="lab-title">Wybierz, czym agent uwierzytelnia się w narzędziach i co poszło źle. Patrz, co ma atakujący, jak długo to działa i gdzie</p>
     <p class="hint">Poświadczenie agenta</p>
@@ -43,18 +42,15 @@
     <li>Narzędzie, które woła kolejną usługę, nie przekazuje tokena dalej (AIMS nazywa to antywzorcem, a MCP zabrania tego jako token passthrough). Wymienia go na nowy, węższy token. Wieloetapowe łańcuchy agent, subagent, narzędzie to wciąż otwarta praca: grupa WIMSE ma kilka konkurencyjnych indywidualnych szkiców.</li>
     <li>Do chmury agent wchodzi bez kluczy: JWT-SVID z <code>aud</code> dla AWS trafia do <code>sts:AssumeRoleWithWebIdentity</code>, AWS sprawdza podpis przez publiczny OIDC Discovery Provider, a warunek w roli porównuje <code>sub</code> ze SPIFFE ID. W odpowiedzi agent dostaje tymczasowe poświadczenia AWS.</li>
   </ul>
-  <h3 class="sub">Gdzie to nie chroni</h3>
+  <h3 class="sub">Gdzie to nie chroni i kiedy się opłaca</h3>
   <ul class="notes">
     <li>Tożsamość opisuje proces, nie intencję. Zmanipulowany agent ma poprawny SVID i wykonuje poprawne wywołanie. Przed tym chronią zakres uprawnień, polityka po stronie narzędzia i zatwierdzanie przez człowieka. AIMS dodaje, że lokalne okno potwierdzenia w aplikacji agenta nie wystarcza jako autoryzacja, a obserwowalność traktuje jako kontrolę bezpieczeństwa.</li>
-    <li>Atestacja nie odróżnia harnessu od shella, który uruchomił. Oba mają ten sam pod i te same selektory, a to wywołujący wybiera <code>aud</code> w <code>FetchJWTSVID</code>. Jeśli model może odpalić polecenie w kontenerze z socketem Workload API, może pobrać SVID dla dowolnego serwisu. Socket trzymaj tylko w procesie harnessu, a kod z narzędzi uruchamiaj w osobnej piaskownicy z innymi selektorami (temat „Harness agenta kodującego”).</li>
-    <li>Odcięcie agenta nie jest natychmiastowe. Usunięcie wpisu rejestracji zatrzymuje wydawanie nowych SVID-ów, ale wydane działają do wygaśnięcia. Otwarte połączenia TLS trwają dłużej, jeśli ich nie ograniczysz, a tymczasowe poświadczenia AWS mają własny czas życia. Czas odcięcia to najdłuższy z tych czasów, więc TTL dobieraj do niego, nie do wygody.</li>
+    <li>Przy wpisie opartym na namespace i service account atestacja nie odróżni harnessu od shella, który uruchomił: oba mają te same selektory, a to wywołujący wybiera <code>aud</code> w <code>FetchJWTSVID</code>. Jeśli model może odpalić polecenie w kontenerze z socketem Workload API, dostanie tożsamość agenta i token dla każdego serwisu, który ją przyjmie. Selektory ścieżki albo hasha pliku wykonywalnego zawężają wpis, ale prostszą granicą jest kontener: socket tylko przy harnessie, a kod z narzędzi w osobnej piaskownicy z innymi selektorami (temat „Harness agenta kodującego”).</li>
+    <li>Odcięcie agenta nie jest natychmiastowe. Usunięcie wpisu rejestracji zatrzymuje wydawanie nowych SVID-ów, ale wydane działają do wygaśnięcia. Agent SPIRE może jeszcze przez chwilę działać na wpisach z cache’u, a poświadczenia się sumują: JWT-SVID ważny 5 min, wymieniony tuż przed wygaśnięciem na 15-minutową sesję AWS, daje prawie 20 min dostępu. Podobnie otwarte połączenie TLS trwa, dopóki serwer go nie ograniczy. Najgorszy czas odcięcia to suma całego łańcucha, więc TTL dobieraj do niego, nie do wygody.</li>
     <li>Repliki zwykle współdzielą jeden ID, bo mają te same selektory. Osobny ID na instancję wymaga wpisu na każdego poda, np. z selektorem <code>k8s:pod-uid</code>, i kontrolera, który te wpisy tworzy i usuwa. Tańsza opcja: ID wspólny dla roli agenta, a numer sesji w logach. Polityka i tak działa na rolach.</li>
     <li>Selektory są wiarygodne tylko dla nieuprzywilejowanych procesów. Dokumentacja SPIRE zaznacza, że root na węźle może zmienić przynależność do cgroup. Skompromitowany węzeł oznacza dostęp do wszystkich tożsamości, które ten węzeł może wydawać.</li>
-  </ul>
-  <h3 class="sub">Czy tego potrzebujesz</h3>
-  <ul class="notes">
     <li>Agent w jednej chmurze: zacznij od natywnej tożsamości obciążenia, np. ról IAM dla podów. Daje krótko żyjące poświadczenia bez własnej infrastruktury. SPIFFE opłaca się, gdy agenci i narzędzia działają w kilku chmurach lub klastrach albo gdy potrzebujesz jednego modelu tożsamości w różnych systemach.</li>
-    <li>SPIRE to usługa krytyczna: jego awaria blokuje wydawanie i odnawianie SVID-ów, a krótkie TTL zostawiają mało czasu na naprawę. Agent kodujący na laptopie, który działa jako ty, nie ma czego atestować. Tam liczą się piaskownica i tokeny z wąskim zakresem.</li>
+    <li>SPIRE to usługa krytyczna: jego awaria blokuje wydawanie i odnawianie SVID-ów, a krótkie TTL zostawiają mało czasu na naprawę. Agent kodujący na laptopie działa jako ty, więc atestacja niewiele tam wnosi. Liczą się piaskownica i tokeny z wąskim zakresem.</li>
     <li>Stan na październik 2026: SPIFFE jest standardem produkcyjnym, a warstwa dla agentów dopiero powstaje. AIMS to informacyjny szkic grupy WIMSE, który składa istniejące standardy i nie definiuje protokołu ani profilu dla MCP. Nazwy i szczegóły szkiców mogą się zmienić.</li>
   </ul>
 </section>

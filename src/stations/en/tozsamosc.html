@@ -1,7 +1,6 @@
 <section class="station" id="tozsamosc" data-hue="cost">
   <h2>Agent identity</h2>
   <p class="lede">An agent calling tools has to prove who it is, and a shared API key can’t do that: it only shows that someone holds the key. SPIFFE gives each process a short-lived identity issued from where and how it runs. It answers “who is calling”, but not “should they be”.</p>
-  <p>It’s the difference between a door password and a one-hour visitor pass. A password works for anyone who overheard it, and changing it means telling everyone. A pass comes from a receptionist who sees who you are, and it’s worthless an hour later. The receptionist still doesn’t check what you do inside.</p>
   <div class="lab">
     <p class="lab-title">Pick how the agent authenticates to tools and what went wrong. See what the attacker holds, how long it works and where</p>
     <p class="hint">Agent credential</p>
@@ -43,18 +42,15 @@
     <li>A tool that calls another service doesn’t forward the token (AIMS calls this an antipattern, and MCP forbids it as token passthrough). It exchanges it for a new, narrower one. Multi-hop chains of agent, subagent and tool are still open work: the WIMSE group has several competing individual drafts.</li>
     <li>The agent reaches the cloud without keys: a JWT-SVID with an AWS <code>aud</code> goes to <code>sts:AssumeRoleWithWebIdentity</code>, AWS checks the signature through a public OIDC Discovery Provider, and a condition on the role compares <code>sub</code> with the SPIFFE ID. The agent gets temporary AWS credentials back.</li>
   </ul>
-  <h3 class="sub">Where it doesn’t protect you</h3>
+  <h3 class="sub">Where it doesn’t protect you and when it pays off</h3>
   <ul class="notes">
     <li>Identity describes a process, not an intent. A manipulated agent has a valid SVID and makes a valid call. Scope limits, policy on the tool side and human approval protect against that. AIMS adds that a local confirmation prompt in the agent’s app isn’t sufficient authorization, and treats observability as a security control.</li>
-    <li>Attestation can’t tell a harness from the shell it started. Both share the pod and the selectors, and the caller picks the <code>aud</code> in <code>FetchJWTSVID</code>. If the model can run a command in a container with the Workload API socket, it can fetch an SVID for any service. Keep the socket in the harness process only, and run tool code in a separate sandbox with different selectors (see “The coding-agent harness”).</li>
-    <li>Cutting an agent off isn’t instant. Deleting the registration entry stops new SVIDs, but issued ones work until they expire. Open TLS connections last longer unless you cap them, and temporary AWS credentials have their own lifetime. The cut-off time is the longest of these, so choose TTLs for it, not for convenience.</li>
+    <li>With an entry based on namespace and service account, attestation can’t tell a harness from the shell it started: both have the same selectors, and the caller picks the <code>aud</code> in <code>FetchJWTSVID</code>. If the model can run a command in a container with the Workload API socket, it gets the agent’s identity and a token for any service that accepts it. Executable path or hash selectors narrow the entry, but the container is a simpler boundary: the socket only beside the harness, and tool code in a separate sandbox with different selectors (see “The coding-agent harness”).</li>
+    <li>Cutting an agent off isn’t instant. Deleting the registration entry stops new SVIDs, but issued ones work until they expire. The SPIRE agent may keep working from cached entries for a moment, and credentials add up: a 5-minute JWT-SVID exchanged just before expiry for a 15-minute AWS session gives almost 20 minutes of access. Likewise, an open TLS connection lasts until the server caps it. The worst-case cut-off is the sum of the whole chain, so choose TTLs for it, not for convenience.</li>
     <li>Replicas usually share one ID because they have the same selectors. A per-instance ID needs an entry per pod, for example with the <code>k8s:pod-uid</code> selector, and a controller to create and delete those entries. The cheaper option is one ID per agent role with a session number in the logs. Policy works on roles anyway.</li>
     <li>Selectors are trustworthy only for unprivileged processes. SPIRE’s documentation notes that root on the node can change cgroup membership. A compromised node means access to every identity that node can issue.</li>
-  </ul>
-  <h3 class="sub">Do you need it</h3>
-  <ul class="notes">
     <li>An agent in one cloud: start with native workload identity, such as IAM roles for pods. You get short-lived credentials with no infrastructure of your own. SPIFFE pays off when agents and tools run across several clouds or clusters, or when you need one identity model across different systems.</li>
-    <li>SPIRE is a critical service: an outage blocks issuing and renewing SVIDs, and short TTLs leave little time to fix it. A coding agent on a laptop, running as you, has nothing to attest. There, the sandbox and narrowly scoped tokens matter most.</li>
+    <li>SPIRE is a critical service: an outage blocks issuing and renewing SVIDs, and short TTLs leave little time to fix it. A coding agent on a laptop runs as you, so attestation adds little there. The sandbox and narrowly scoped tokens matter most.</li>
     <li>As of October 2026, SPIFFE is a production standard, while the layer for agents is still forming. AIMS is an informational WIMSE draft that composes existing standards and defines no protocol or MCP profile. Draft names and details may change.</li>
   </ul>
 </section>
