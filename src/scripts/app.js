@@ -237,14 +237,15 @@ function initIdentity(){
   csr: <${tr('klucz publiczny agenta SPIRE','SPIRE agent public key')}>
 
 ← SVID ${tr('agenta SPIRE','of the SPIRE agent')}: ${NODE}
-← ${tr('wpisy tego węzła + bundle','this node’s entries + bundle')}`,m:tr('Atestacja węzła. Agent SPIRE sprawdza serwer bundle’em ustawionym przez operatora, a serwer sprawdza token przez Kubernetes TokenReview. Odtąd rozmawiają przez mTLS.','Node attestation. The SPIRE agent checks the server with a bundle set by the operator, and the server checks the token through Kubernetes TokenReview. From then on they talk over mTLS.')},
+
+${tr('potem, po mTLS: wpisy tego węzła + bundle','then, over mTLS: this node’s entries + bundle')}`,m:tr('Atestacja węzła. Agent SPIRE sprawdza serwer bundle’em ustawionym przez operatora, a serwer sprawdza token przez Kubernetes TokenReview. Odtąd rozmawiają przez mTLS.','Node attestation. The SPIRE agent checks the server with a bundle set by the operator, and the server checks the token through Kubernetes TokenReview. From then on they talk over mTLS.')},
    {l:tr('Klucze','Keys'),w:['ag','srv'],j:`${tr('agent SPIRE: nowa para kluczy procesu','SPIRE agent: new process key pair')}
 
 → svid.v1.SVID/BatchNewX509SVID
   entry_id: e-91f
   csr: <${tr('klucz publiczny procesu','process public key')}>
 
-← ${tr('certyfikat podpisany kluczem urzędu','certificate signed with the authority’s key')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera idzie tylko CSR, więc serwer nie dostaje klucza prywatnego procesu. Certyfikat czeka w cache’u, nawet zanim proces wystartuje.','The private key is created at the SPIRE agent. Only a CSR goes to the server, so the server never receives the process’s private key. The certificate waits in a cache, even before the process starts.')},
+← ${tr('certyfikat podpisany kluczem urzędu','certificate signed with the authority’s key')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera idzie tylko CSR, więc serwer nie dostaje klucza prywatnego procesu. Certyfikat czeka w cache’u, nawet zanim proces wystartuje.','The private key is created at the SPIRE agent. Only a CSR goes to the server, so the server doesn’t receive the process’s private key. The certificate waits in a cache, even before the process starts.')},
    {l:tr('Atestacja','Attestation'),w:['ai','ag'],j:`→ unix:///run/spire/agent.sock
   FetchX509SVID   {}   // ${tr('bez hasła','no password')}
 
@@ -281,8 +282,9 @@ Authorization: Bearer eyJ…
    {l:tr('Sprawdzenie','Checks'),w:['mcp'],j:`${tr('certyfikat','certificate')}: ${tr('podpis urzędu','authority signature')}   ✓ bundle
 ${tr('podpis tokena, exp','token signature, exp')}          ✓ ${tr('klucz serwera autoryzacji','auth server key')}
 aud == ${tr('ten serwer','this server')}            ✓
-sha256(${tr('certyfikat','certificate')}) == cnf       ✓
-${tr('ID z certyfikatu','certificate ID')} == client_id   ✓`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał urząd SPIRE, a token serwer autoryzacji. Niezgodny certyfikat oznacza 401 invalid_token, więc token skradziony z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. A mismatched certificate means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
+${tr('skrót certyfikatu','certificate thumbprint')}
+  == cnf["x5t#S256"]            ✓
+${tr('ID z certyfikatu','certificate ID')} == client_id   ✓`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał urząd SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodny oznacza 401 invalid_token, więc token skradziony z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
    {l:tr('Decyzja','Decision'),w:['mcp'],j:`${tr('agent','agent')}: ${ID}
 ${tr('użytkownik','user')}: user-4821
 ${tr('narzędzie','tool')}: refund, amount: 80
@@ -295,7 +297,7 @@ amount: 500 → ${tr('zatwierdza człowiek','human approval')}`,m:tr('Do tego mi
   function render(i){const st=STEPS[i],nm=k=>WHO.find(x=>x[0]===k)[1];$('#idMap').replaceChildren(...WHO.map(([k,t])=>h('span',{class:'stage'+(st.w.includes(k)?' on':'')},t)));
     $('#idWho').textContent=st.l+': '+st.w.map(nm).join(' → ');$('#idMap').setAttribute('aria-label',tr('Rozmawiają: ','Talking: ')+st.w.map(nm).join(', '));
     const box=$('#idJson');box.textContent=st.j;box.scrollTop=0;$('#idStep').textContent=st.m;}
-  PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:3600}));}
+  PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:9000}));}
 /* end tożsamość agenta */
 
 /* ---------- evals ---------- */
