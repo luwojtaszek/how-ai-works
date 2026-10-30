@@ -291,12 +291,12 @@ Authorization: Bearer eyJ…
  "method": "tools/call",
  "params": {"name": "refund",
   "arguments": {"order": 123, "amount": 80}}}`,m:tr('Model podaje tylko nazwę narzędzia i argumenty. Certyfikat i token dokłada harness, więc model ich nie widzi i nie może ich ujawnić.','The model only wrote the tool name and arguments. The harness adds the certificate and token, so the model can’t see or reveal them.')},
-   {l:tr('Sprawdzenie','Checks'),w:['mcp'],j:`${tr('certificate','certificate')}: ${tr('CA signature','authority signature')}   ✓ bundle
-${tr('token signature, exp','token signature, exp')}          ✓ ${tr('auth server key','auth server key')}
-aud == ${tr('this server','this server')}            ✓
-${tr('certificate hash','certificate thumbprint')}
-  == cnf["x5t#S256"]            ✓
-${tr('certificate ID','certificate ID')} == client_id   ✓`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisało CA w SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
+   {l:tr('Sprawdzenie','Checks'),w:['mcp'],j:`CA signature    ✓ bundle
+token signature ✓ auth server key
+token exp       ✓
+aud             ✓ this server
+cnf["x5t#S256"] ✓ certificate hash
+client_id       ✓ certificate ID`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisało CA w SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
    {l:tr('Decyzja','Decision'),w:['mcp'],j:`${tr('agent','agent')}: ${ID}
 ${tr('user','user')}: user-4821
 ${tr('tool','tool')}: refund, amount: 80
