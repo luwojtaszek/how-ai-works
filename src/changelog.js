@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-10-30',
+    added: ['tozsamosc'],
+    updated: ['mcp'],
+    en: 'New topic: Agent identity. One widget compares an API key, a JWT-SVID and mTLS across four failures, including a shell in the agent’s own container, where SPIFFE doesn’t help. A second walks one tool call from process start, through attestation and a token bound to a certificate, to the MCP server’s decision. MCP now links to it from the authorization note.',
+    pl: 'Nowy temat: Tożsamość agenta. Jeden widżet porównuje klucz API, JWT-SVID i mTLS w czterech awariach, także przy shellu w kontenerze agenta, gdzie SPIFFE nie pomaga. Drugi prowadzi jedno wywołanie narzędzia od startu procesu, przez atestację i token powiązany z certyfikatem, do decyzji serwera MCP. MCP odsyła teraz do niego z notatki o autoryzacji.',
+  },
+  {
     date: '2026-10-15',
     added: ['kompakcja'],
     updated: ['kontekst', 'harness', 'promptcache'],
