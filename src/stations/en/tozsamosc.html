@@ -13,12 +13,12 @@
   <div class="lab">
     <p class="lab-title">Pick how the agent authenticates to tools and what went wrong. See what the attacker holds, how long it works and where</p>
     <p class="hint">An SVID is a short-lived proof of identity issued through SPIFFE: a token or a certificate. Anyone who copies a token can use it. A certificate also needs a private key.</p>
-    <p class="hint">How the agent authenticates</p>
+    <p class="hint">Agent credential</p>
     <div class="opts" id="idCred" role="group" aria-label="Agent credential"></div>
-    <p class="hint" style="margin-top:14px">What went wrong</p>
+    <p class="hint" style="margin-top:14px">Scenario</p>
     <div class="opts four" id="idAtt" role="group" aria-label="Scenario"></div>
     <button type="button" class="id-sw" id="idBox" role="switch" aria-checked="false"><i aria-hidden="true"></i>Tools in a separate sandbox</button>
-    <dl class="id-res"><div><dt>What the attacker holds</dt><dd id="idGot"></dd></div><div><dt>How long it works</dt><dd id="idTime"></dd></div><div><dt>Where it works</dt><dd id="idReach"></dd></div></dl>
+    <dl class="id-res"><div><dt>Attacker holds</dt><dd id="idGot"></dd></div><div><dt>Access time</dt><dd id="idTime"></dd></div><div><dt>Reach</dt><dd id="idReach"></dd></div></dl>
     <div id="idMsg" aria-live="polite"></div>
     <p class="hint">Times are SPIRE’s default TTLs: 1 h for a certificate and 5 min for a token. Both can be shortened. A “bound token” is an OAuth token that only works with the client certificate.</p>
   </div>

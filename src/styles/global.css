@@ -606,7 +606,7 @@ svg{display:block;max-width:100%;height:auto}
 .opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
 .opts.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 .opt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:48px;padding:7px 6px;border:1px solid var(--line-strong);border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:.86rem;line-height:1.25;text-align:center;cursor:pointer}
-.opt b{font-weight:600}
+.opt b{font-weight:500;text-wrap:balance}
 .opt small{font-size:.76rem;color:var(--muted)}
 .opt:hover{background:var(--sunken)}
 .opt[aria-pressed="true"]{background:var(--accent-t);border-color:var(--accent)}
@@ -619,22 +619,24 @@ svg{display:block;max-width:100%;height:auto}
 .id-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 0}
 .id-res>div{border-top:1px solid var(--line);padding-top:8px}
 .id-res dt{font-size:.8rem;color:var(--muted)}
-.id-res dd{margin:2px 0 0;font-weight:600;font-size:1rem;line-height:1.3}
+.id-res dd{margin:2px 0 0;font-weight:500;font-size:1rem;line-height:1.3}
 .id-d{max-width:460px;margin:14px auto 0}
 .id-d svg{display:block;width:100%;height:auto;overflow:visible}
 .id-d .nd rect{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.2;transition:fill .2s,stroke .2s}
 .id-d .nd text{fill:var(--ink);font-size:12.5px;font-weight:600;text-anchor:middle}
-.id-d .nd text.s{fill:var(--muted);font-size:10.5px;font-weight:400}
+.id-d .nd text.s{fill:var(--muted);font-size:11.5px;font-weight:400}
 .id-d .nd.on rect{fill:var(--accent-t);stroke:var(--accent);stroke-width:2}
 .id-d .ed{stroke:var(--line-strong);stroke-width:1.5}
 .id-d .ed.src{stroke-dasharray:3 3}
 .id-d .ed.all{stroke:var(--accent)}
 .id-d .ed.on{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4;animation:idflow .7s linear infinite}
 @keyframes idflow{to{stroke-dashoffset:-10}}
-.id-d .el{fill:var(--muted);font-size:10.5px}
+.id-d .el{fill:var(--muted);font-size:11.5px}
 .id-d .el.on{fill:var(--accent);font-weight:600}
-.id-d .gr{fill:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
-.id-who{margin:10px 0 0;text-align:center;font-size:.9rem;font-weight:600}
+.id-d .gr{fill:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.id-who{margin:10px 0 0;font-size:.9rem;font-weight:500;text-wrap:pretty}
+#idJson{white-space:pre;overflow-x:auto;overflow-wrap:normal}
+#tozsamosc .notes{gap:14px}
 @media (prefers-reduced-motion:reduce){.id-d .ed.on{animation:none}.id-sw i,.id-sw i::after{transition:none}}
 @media (max-width:600px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}.id-res{grid-template-columns:1fr;gap:0}.id-res>div{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:10px;padding:7px 0;align-items:baseline}.id-res dd{margin:0;font-size:.95rem}}
 /* end tozsamosc */
