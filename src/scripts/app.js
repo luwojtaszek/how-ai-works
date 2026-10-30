@@ -316,7 +316,8 @@ amount: 500 → ${tr('zatwierdza człowiek','human approval')}`,m:tr('Do tego mi
     const lit=new Map(pairs.map(([a,b])=>[key(a,b),[a,b]]));
     Object.entries(E).forEach(([k,c])=>{const l=$('#ide-'+k),t=$('#idl-'+k),p=lit.get(k),[A,B]=k.split('-');const fwd=!p||p[0]===A;l.setAttribute('x1',fwd?c[0]:c[2]);l.setAttribute('y1',fwd?c[1]:c[3]);l.setAttribute('x2',fwd?c[2]:c[0]);l.setAttribute('y2',fwd?c[3]:c[1]);
       l.classList.toggle('on',!!p);l.classList.toggle('all',!!st.all);p?l.setAttribute('marker-end','url(#idArr)'):l.removeAttribute('marker-end');t?.classList.toggle('on',!!p);});
-    const who=st.all?tr('wszystkie elementy','all the parts'):w.map(nm).join(' → ');$('#idWho').textContent=st.l+': '+who;$('#idMap').setAttribute('aria-label',st.l+': '+who);
+    const who=st.all?tr('wszystkie elementy','all the parts'):[...w,...(st.x||[]).slice(1)].map(nm).join(' → ');$('#idWho').textContent=st.l+': '+who;
+    $('#idMap').setAttribute('aria-label',st.all?tr('Operator zapisuje reguły w serwerze SPIRE. Serwer SPIRE łączy się z agentem SPIRE, a ten przez socket z procesem agenta i pyta jądro oraz kubeleta o proces. Proces agenta woła serwer autoryzacji i serwer MCP.','The operator writes rules to the SPIRE server. The SPIRE server connects to the SPIRE agent, which connects over a socket to the agent process and asks the kernel and kubelet about it. The agent process calls the authorization server and the MCP server.'):st.l+': '+who);
     const box=$('#idJson');box.textContent=st.j;box.scrollTop=0;$('#idStep').textContent=st.m;}
   PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:9000}));}
 /* end tożsamość agenta */
