@@ -191,7 +191,7 @@ function initInj(){const CAPS=[['data',tr('Ma dostęp do prywatnej skrzynki','Ha
 
 /* ---------- tożsamość agenta ---------- */
 function initIdentity(){
-  const CRED=[['key',tr('Klucz API w env','API key in env')],['jwt',tr('JWT-SVID','JWT-SVID')],['mtls',tr('mTLS + token z certyfikatem','mTLS + certificate-bound token')]];
+  const CRED=[['key',tr('Klucz API w env','API key in env')],['jwt',tr('Krótki token SPIFFE (JWT-SVID)','Short SPIFFE token (JWT-SVID)')],['mtls',tr('Certyfikat SPIFFE + powiązany token (mTLS)','SPIFFE certificate + bound token (mTLS)')]];
   const ATT=[['shell',tr('Model uruchomił shell','The model ran a shell')],['log',tr('Token trafił do logu','A token reached a log')],['abuse',tr('Agenta zmanipulowano','The agent was manipulated')],['cut',tr('Trzeba odciąć agenta','The agent must be cut off')]];
   const ROT=tr('do ręcznej rotacji','until manually rotated'),ALL=tr('każde API z kluczem','every API using the key'),NONE=tr('nigdzie','nowhere'),PERM=tr('uprawnienia agenta','the agent’s permissions'),RUN=tr('póki agent działa','while the agent runs'),GRANT=tr('to, na co ma zgodę','whatever it’s allowed'),TRUST=tr('serwisy ufające agentowi','services that trust the agent');
   // [co ma atakujący, jak długo, gdzie, wynik: 0 źle, 1 dobrze, .5 częściowo, wyjaśnienie]
@@ -213,8 +213,8 @@ function initIdentity(){
     mtls:[PERM,RUN,GRANT,.5,tr('Najmocniejsze poświadczenie zmienia tu tyle samo co JWT-SVID, czyli nic w samym ataku. Tożsamość mówi, kto wywołał narzędzie, a nie czy powinien.','The strongest credential changes as much as a JWT-SVID here: nothing about the attack itself. Identity says who called the tool, not whether it should have.')]},
    cut:{
     key:[tr('ważny klucz','a valid key'),tr('do zmiany wszędzie','until changed everywhere'),ALL,0,tr('Musisz zmienić klucz w każdym systemie, a przy okazji odcinasz wszystkich, którzy go współdzielą.','You have to change the key in every system, and you also cut off everyone sharing it.')],
-    jwt:[tr('ostatni token','the last token'),tr('do 5 min','up to 5 min'),tr('jeden serwis (aud)','one service (aud)'),.5,tr('Usuwasz wpis rejestracji i agent nie dostanie nowych tokenów, ale ostatni działa do wygaśnięcia. Sesja chmury wymieniona w ostatniej chwili doda swój czas: w AWS STS to minimum 15 min.','You delete the registration entry and the agent gets no new tokens, but the last one works until it expires. A cloud session exchanged at the last moment adds its own time: in AWS STS the minimum is 15 min.')],
-    mtls:[tr('ostatni certyfikat','the last certificate'),tr('do 1 h','up to 1 h'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale bieżący działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Do szybkiego odcięcia skróć TTL.','No new certificate comes, but the current one lasts until its TTL ends, and open connections last longer if the server doesn’t cap them. For a fast cut-off, shorten the TTL.')]}};
+    jwt:[tr('ostatni token','the last token'),tr('5 min + sesje','5 min + sessions'),tr('jeden serwis (aud)','one service (aud)'),.5,tr('5 min to ważność ostatniego SVID-a, nie gwarancja odcięcia. Usuwasz wpis rejestracji i agent nie dostanie nowych tokenów, ale ostatni działa do wygaśnięcia. Sesja chmury wymieniona w ostatniej chwili doda swój czas: w AWS STS to minimum 15 min.','5 min is the last SVID’s validity, not a cut-off guarantee. You delete the registration entry and the agent gets no new tokens, but the last one works until it expires. A cloud session exchanged at the last moment adds its own time: in AWS STS the minimum is 15 min.')],
+    mtls:[tr('ostatni certyfikat','the last certificate'),tr('1 h + połączenia','1 h + connections'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale bieżący działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Do szybkiego odcięcia skróć TTL.','No new certificate comes, but the current one lasts until its TTL ends, and open connections last longer if the server doesn’t cap them. For a fast cut-off, shorten the TTL.')]}};
   let cred='key',att='shell',box=false;
   const group=(mount,list,get,set)=>{const bs=list.map(([k,t])=>h('button',{type:'button',class:'btn ghost','aria-pressed':String(get()===k),onclick:e=>{set(k);pressed(bs,e.currentTarget);paint();}},t));mount.replaceChildren(...bs);};
   function paint(){const shell=att==='shell',r=V[shell&&box?'box':att][cred];$('#idBoxRow').style.display=shell?'':'none';
@@ -223,51 +223,67 @@ function initIdentity(){
   group($('#idCred'),CRED,()=>cred,k=>cred=k);group($('#idAtt'),ATT,()=>att,k=>att=k);
   const b=$('#idBox');b.addEventListener('click',()=>{box=!box;b.setAttribute('aria-pressed',String(box));paint();});paint();
   const ID='spiffe://acme.example/agent/support',MCP='https://crm.example.com/mcp';
+  const WHO=[['op',tr('operator','operator')],['srv',tr('serwer SPIRE','SPIRE server')],['ag',tr('agent SPIRE','SPIRE agent')],['ai',tr('proces agenta','agent process')],['as',tr('serwer autoryzacji','authorization server')],['mcp',tr('serwer MCP','MCP server')]];
+  const NODE='spiffe://acme.example/spire/agent/k8s_psat/prod/<UID>';
   const STEPS=[
-   {l:tr('Start','Start'),j:`→ unix:///run/spire/agent.sock
-gRPC SpiffeWorkloadAPI/FetchX509SVID
-workload.spiffe.io: true
+   {l:tr('Wpis','Entry'),w:['op','srv'],j:`${tr('wpis rejestracji','registration entry')}:
+  spiffe_id: ${ID}
+  parent_id: ${NODE}
+  selectors: [k8s:ns:prod, k8s:sa:support-agent]
+  x509_svid_ttl: 3600`,m:tr('Operator lub kontroler zapisuje w serwerze SPIRE regułę: który proces, na jakich węzłach, dostanie ten ID. Nikt nie rozdaje tu żadnego sekretu.','An operator or controller stores a rule in the SPIRE server: which process, on which nodes, gets this ID. Nobody hands out a secret here.')},
+   {l:tr('Węzeł','Node'),w:['ag','srv'],j:`→ agent.v1.Agent/AttestAgent
+  type: k8s_psat
+  token: eyJ…   // ${tr('podpisany przez Kubernetes','signed by Kubernetes')}
+  csr: <${tr('klucz publiczny agenta SPIRE','SPIRE agent public key')}>
 
-{}   // ${tr('bez hasła i tokena','no password or token')}`,m:tr('Proces agenta startuje bez żadnego sekretu i otwiera strumień do lokalnego Workload API. Pusta treść żądania to celowy wybór: specyfikacja zabrania bezpośredniego uwierzytelniania klienta.','The agent process starts with no secret and opens a stream to the local Workload API. The empty request body is deliberate: the specification forbids direct client authentication.')},
-   {l:tr('Atestacja','Attestation'),j:`${tr('jądro','kernel')}:   pid=4123
+← SVID ${tr('agenta SPIRE','of the SPIRE agent')}: ${NODE}
+← ${tr('wpisy tego węzła + bundle','this node’s entries + bundle')}`,m:tr('Atestacja węzła. Agent SPIRE sprawdza serwer bundle’em ustawionym przez operatora, a serwer sprawdza token przez Kubernetes TokenReview. Odtąd rozmawiają przez mTLS.','Node attestation. The SPIRE agent checks the server with a bundle set by the operator, and the server checks the token through Kubernetes TokenReview. From then on they talk over mTLS.')},
+   {l:tr('Klucze','Keys'),w:['ag','srv'],j:`${tr('agent SPIRE: nowa para kluczy procesu','SPIRE agent: new process key pair')}
+
+→ svid.v1.SVID/BatchNewX509SVID
+  entry_id: e-91f
+  csr: <${tr('klucz publiczny procesu','process public key')}>
+
+← ${tr('certyfikat podpisany kluczem urzędu','certificate signed with the authority’s key')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera idzie tylko CSR, więc serwer nie dostaje klucza prywatnego procesu. Certyfikat czeka w cache’u, nawet zanim proces wystartuje.','The private key is created at the SPIRE agent. Only a CSR goes to the server, so the server never receives the process’s private key. The certificate waits in a cache, even before the process starts.')},
+   {l:tr('Atestacja','Attestation'),w:['ai','ag'],j:`→ unix:///run/spire/agent.sock
+  FetchX509SVID   {}   // ${tr('bez hasła','no password')}
+
+${tr('jądro','kernel')}:   pid=4123
 cgroup:  pod 7c1e…
-kubelet: k8s:ns:prod
-         k8s:sa:support-agent
-         k8s:pod-label:app:support
+kubelet: k8s:ns:prod, k8s:sa:support-agent
 
-${tr('wpis','entry')} ${ID}
-  ${tr('wymaga','requires')} [k8s:ns:prod, k8s:sa:support-agent]  ✓`,m:tr('Agent SPIRE nie pyta procesu, kim jest. PID daje jądro, resztę kubelet, więc proces nie może podać fałszywych danych. Wszystkie selektory wpisu muszą się zgadzać.','The SPIRE agent doesn’t ask the process who it is. The kernel gives the PID and the kubelet the rest, so the process can’t supply false data. Every selector in the entry must match.')},
-   {l:tr('SVID','SVID'),j:`← X509SVIDResponse { svids: [{
+${tr('wymagane selektory wpisu','the entry’s selectors')}  ✓`,m:tr('Atestacja procesu. Proces startuje bez sekretu i nie mówi, kim jest. PID daje jądro, resztę kubelet, więc nie może podać fałszywych danych. Nagłówek workload.spiffe.io utrudnia SSRF, ale nie jest hasłem.','Workload attestation. The process starts with no secret and doesn’t say who it is. The kernel gives the PID and the kubelet the rest, so it can’t supply false data. The workload.spiffe.io header hinders SSRF, but it isn’t a password.')},
+   {l:tr('SVID','SVID'),w:['ag','ai'],j:`← X509SVIDResponse { svids: [{
   spiffe_id: "${ID}",
   x509_svid: <${tr('certyfikat','certificate')}, URI SAN = ${tr('ten ID','this ID')}, 1 h>,
   x509_svid_key: <${tr('klucz prywatny','private key')}>,
-  bundle: <${tr('CA domeny zaufania','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, nie do kontekstu modelu. Strumień zostaje otwarty i odnowiony certyfikat przyjdzie nim sam.','The certificate and key go over the local socket to the harness, not into the model’s context. The stream stays open, and the renewed certificate arrives on it by itself.')},
-   {l:tr('Token','Token'),j:`→ POST https://auth.example.com/token   (mTLS)
+  bundle: <${tr('CA domeny zaufania','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, nie do kontekstu modelu. Bundle to publiczne klucze urzędu: nimi proces sprawdzi drugą stronę. Strumień zostaje otwarty i odnowiony certyfikat przyjdzie nim sam.','The certificate and key go over the local socket to the harness, not into the model’s context. The bundle is the authority’s public keys: the process uses it to check the other side. The stream stays open, and the renewed certificate arrives on it by itself.')},
+   {l:tr('Token','Token'),w:['ai','as'],j:`→ POST https://auth.example.com/token   (mTLS)
 grant_type=authorization_code
 code=<${tr('kod po zgodzie użytkownika','code after user consent')}>
 client_id=${ID}
 resource=${MCP}
 
 ← { "access_token": "eyJ…", "expires_in": 300 }`,m:tr('Użytkownik wyraził zgodę w serwerze autoryzacji, więc agent nie widzi jego hasła. Agent dowodzi swojej tożsamości certyfikatem: client_id musi zgadzać się z URI SAN. Token dostaje tylko dla jednego serwera MCP.','The user consented at the authorization server, so the agent never sees their password. The agent proves its identity with the certificate: client_id must match the URI SAN. It gets a token for one MCP server only.')},
-   {l:tr('Co jest w tokenie','Token claims'),j:`{ "sub": "user-4821",
+   {l:tr('Co jest w tokenie','Token claims'),w:['as','ai'],j:`{ "sub": "user-4821",
   "client_id": "${ID}",
   "aud": "${MCP}",
   "scope": "refunds:write",
   "exp": <${tr('za 5 min','in 5 min')}>,
-  "cnf": { "x5t#S256": "bwcK0esc3AC…" } }`,m:tr('W jednym tokenie są obie tożsamości: użytkownik w sub i agent w client_id. Pole cnf przypina token do certyfikatu agenta. Bez niego byłby to zwykły token na okaziciela.','One token carries both identities: the user in sub and the agent in client_id. The cnf field pins the token to the agent’s certificate. Without it, this would be an ordinary bearer token.')},
-   {l:tr('Wywołanie','Call'),j:`→ POST ${MCP}   (mTLS)
+  "cnf": { "x5t#S256": "bwcK0esc3AC…" } }`,m:tr('W jednym tokenie są obie tożsamości: użytkownik w sub i agent w client_id. To nie JWT-SVID, tylko token OAuth podpisany kluczem serwera autoryzacji. Pole cnf przypina go do certyfikatu agenta, a aud do jednego serwera.','One token carries both identities: the user in sub and the agent in client_id. This isn’t a JWT-SVID but an OAuth token signed with the authorization server’s key. The cnf field pins it to the agent’s certificate, and aud to one server.')},
+   {l:tr('Wywołanie','Call'),w:['ai','mcp'],j:`→ POST ${MCP}   (mTLS)
 Authorization: Bearer eyJ…
 
 {"jsonrpc": "2.0", "id": 7,
  "method": "tools/call",
  "params": {"name": "refund",
   "arguments": {"order": 123, "amount": 80}}}`,m:tr('Model wypisał tylko nazwę narzędzia i argumenty. Certyfikat i token dokłada harness, więc model ich nie widzi i nie może ich zdradzić.','The model only wrote the tool name and arguments. The harness adds the certificate and token, so the model can’t see or reveal them.')},
-   {l:tr('Sprawdzenie','Checks'),j:`${tr('łańcuch certyfikatu do CA','certificate chain to CA')}        ✓
-${tr('podpis tokena, exp','token signature, exp')}             ✓
-aud == ${tr('ten serwer','this server')}               ✓
-sha256(${tr('certyfikat','certificate')}) == cnf.x5t#S256  ✓
-${tr('ID z certyfikatu','certificate ID')} == client_id      ✓`,m:tr('Serwer MCP sprawdza te warunki, zanim uruchomi narzędzie. Niezgodny certyfikat oznacza 401 invalid_token. Token skradziony z logu nie zadziała bez klucza prywatnego.','The MCP server checks these conditions before running the tool. A mismatched certificate means a 401 invalid_token. A token stolen from a log won’t work without the private key.')},
-   {l:tr('Decyzja','Decision'),j:`${tr('agent','agent')}: ${ID}
+   {l:tr('Sprawdzenie','Checks'),w:['mcp'],j:`${tr('certyfikat','certificate')}: ${tr('podpis urzędu','authority signature')}   ✓ bundle
+${tr('podpis tokena, exp','token signature, exp')}          ✓ ${tr('klucz serwera autoryzacji','auth server key')}
+aud == ${tr('ten serwer','this server')}            ✓
+sha256(${tr('certyfikat','certificate')}) == cnf       ✓
+${tr('ID z certyfikatu','certificate ID')} == client_id   ✓`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał urząd SPIRE, a token serwer autoryzacji. Niezgodny certyfikat oznacza 401 invalid_token, więc token skradziony z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. A mismatched certificate means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
+   {l:tr('Decyzja','Decision'),w:['mcp'],j:`${tr('agent','agent')}: ${ID}
 ${tr('użytkownik','user')}: user-4821
 ${tr('narzędzie','tool')}: refund, amount: 80
 
@@ -276,7 +292,8 @@ ${tr('zamówienie należy do użytkownika','order belongs to the user')}  ✓
 → ${tr('zgoda','allow')}
 
 amount: 500 → ${tr('zatwierdza człowiek','human approval')}`,m:tr('Do tego miejsca wszystko dowodziło tożsamości. Autoryzacja to osobna decyzja w narzędziu. Właśnie tu trzeba zatrzymać zmanipulowanego agenta, bo jego poświadczenia są prawdziwe.','Everything up to here proved identity. Authorization is a separate decision in the tool. This is where a manipulated agent has to be stopped, because its credentials are genuine.')}];
-  function render(i){const st=STEPS[i];$('#idStages').replaceChildren(...STEPS.map((x,k)=>h('span',{class:'stage'+(k===i?' on':k<i?' done':'')},x.l)));
+  function render(i){const st=STEPS[i],nm=k=>WHO.find(x=>x[0]===k)[1];$('#idMap').replaceChildren(...WHO.map(([k,t])=>h('span',{class:'stage'+(st.w.includes(k)?' on':'')},t)));
+    $('#idWho').textContent=st.l+': '+st.w.map(nm).join(' → ');$('#idMap').setAttribute('aria-label',tr('Rozmawiają: ','Talking: ')+st.w.map(nm).join(', '));
     const box=$('#idJson');box.textContent=st.j;box.scrollTop=0;$('#idStep').textContent=st.m;}
   PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:3600}));}
 /* end tożsamość agenta */
