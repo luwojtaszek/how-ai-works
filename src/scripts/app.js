@@ -270,7 +270,7 @@ ${tr('required selectors','the entry’s selectors')}  ✓`,m:tr('Atestacja proc
   spiffe_id: "${ID}",
   x509_svid: <${tr('certificate','certificate')}, URI SAN = ${tr('ID','this ID')}, 1 h>,
   x509_svid_key: <${tr('private key','private key')}>,
-  bundle: <${tr('trust domain CA','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, a nie do kontekstu modelu. Zestawem kluczy CA proces sprawdzi drugą stronę. Strumień zostaje otwarty i przyjdzie nim odnowiony certyfikat.','The certificate and key go over the local socket to the harness, not into the model’s context. The bundle is the authority’s public keys: the process uses it to check the other side. The stream stays open, and the renewed certificate arrives on it by itself.')},
+  bundle: <${tr('trust domain CA','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, a nie do kontekstu modelu. Zestawem kluczy proces sprawdzi drugą stronę. Strumień zostaje otwarty i przyjdzie nim odnowiony certyfikat.','The certificate and key go over the local socket to the harness, not into the model’s context. The bundle is the authority’s public keys: the process uses it to check the other side. The stream stays open, and the renewed certificate arrives on it by itself.')},
    {l:tr('Token','Token'),w:['ai','as'],j:`→ POST https://auth.example.com/token   (mTLS)
 grant_type=authorization_code
 code=<${tr('code after user consent','code after user consent')}>
@@ -296,7 +296,7 @@ token signature ✓ auth server key
 token exp       ✓
 aud             ✓ this server
 cnf["x5t#S256"] ✓ certificate hash
-client_id       ✓ certificate ID`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisało CA w SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
+client_id       ✓ certificate ID`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał serwer SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
    {l:tr('Decyzja','Decision'),w:['mcp'],j:`${tr('agent','agent')}: ${ID}
 ${tr('user','user')}: user-4821
 ${tr('tool','tool')}: refund, amount: 80

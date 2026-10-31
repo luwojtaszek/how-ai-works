@@ -4,7 +4,7 @@
   <h3 class="sub">Po co agentowi SPIFFE</h3>
   <ul class="notes">
     <li><b>Wspólny klucz.</b> Klucz API działa jak hasło: wystarczy go znać. Jeśli używają go wszystkie repliki agenta i dwa inne zespoły, w logu widać tylko „klucz X”. Zmiana dotyka wszystkich naraz, więc zwykle się ją odkłada i klucz działa miesiącami.</li>
-    <li><b>Ryzyko u agentów.</b> Na zachowanie agenta wpływa też treść, którą czyta, więc do wycieku klucza ze zmiennej środowiskowej może wystarczyć jedno polecenie w powłoce (temat „Prompt injection”). A agent korzystający z wielu systemów może mieć kilka takich kluczy.</li>
+    <li><b>Ryzyko wycieku.</b> Na zachowanie agenta wpływa też treść, którą czyta, więc do wycieku klucza ze zmiennej środowiskowej może wystarczyć jedno polecenie w powłoce (temat „Prompt injection”). A agent korzystający z wielu systemów może mieć kilka takich kluczy.</li>
     <li><b>Pierwszy sekret.</b> Menedżer sekretów nie rozwiązuje sprawy, bo żeby coś z niego pobrać, proces potrzebuje innego sekretu. To problem „secret zero”: skąd wziąć pierwsze poświadczenie.</li>
     <li><b>Poświadczenie z SPIFFE.</b> Proces startuje bez sekretu i prosi lokalną usługę o poświadczenie. Usługa rozpoznaje go na podstawie danych z systemu. W SPIRE poświadczenie jest domyślnie ważne godzinę albo 5 minut, a proces odbiera nowe, zanim stare wygaśnie.</li>
     <li><b>Co to daje.</b> W konfiguracji aplikacji nie ma stałego sekretu, a skradzione poświadczenie szybko wygasa. Każda rola agenta może mieć własną tożsamość, więc widać ją w logach i można zablokować jedną rolę bez wpływu na pozostałe.</li>
@@ -33,11 +33,11 @@
     <p class="hint">Wiadomości są skrócone, a nazwy i wartości przykładowe. To złożenie istniejących standardów dla usług we własnej domenie zaufania, a nie gotowy profil: specyfikacja MCP nie opisuje mTLS ani SPIFFE, a serwer autoryzacji musi obsługiwać powiązanie tokena z certyfikatem.</p>
   </div>
   <ul class="notes">
-    <li>SPIFFE to standard, a SPIRE jego najpopularniejsza implementacja. SPIFFE ID, np. <code>spiffe://acme.example/agent/support</code>, to nazwa tożsamości w domenie zaufania <code>acme.example</code>, czyli w obszarze jednego urzędu certyfikacji (CA). SVID to podpisane poświadczenie tego ID: certyfikat X.509 albo JWT. Proces pobiera je przez lokalny socket Workload API. Zestaw publicznych kluczy CA (bundle) służy do sprawdzania SVID. Dalej „agent SPIRE” oznacza usługę na węźle, a „agent” agenta AI.</li>
+    <li>SPIFFE to standard, a SPIRE jego najpopularniejsza implementacja. SPIFFE ID, np. <code>spiffe://acme.example/agent/support</code>, to nazwa tożsamości w domenie zaufania <code>acme.example</code>, czyli w obszarze jednego urzędu certyfikacji (CA). SVID to podpisane poświadczenie tego ID: certyfikat X.509 albo JWT. Proces pobiera je przez lokalny socket Workload API. Publiczne klucze domeny tworzą zestaw kluczy (bundle), którym sprawdza się SVID. Dalej „agent SPIRE” oznacza usługę na węźle, a „agent” agenta AI.</li>
     <li><b>Serwer SPIRE</b> pełni rolę CA i podpisuje SVID. Przechowuje też wpisy, czyli reguły określające, który proces na których węzłach dostaje dane ID.</li>
     <li><b>Agent SPIRE</b> działa na każdym węźle. Rozpoznaje proces, który łączy się z socketem, i wydaje mu tylko jego SVID. Przechowuje SVID i klucze procesów z tego węzła.</li>
-    <li><b>Proces agenta</b> ma certyfikat, klucz prywatny i zestaw kluczy CA. Przy każdym połączeniu dowodzi, że ma klucz, i sprawdza drugą stronę.</li>
-    <li><b>Serwer autoryzacji</b> sprawdza SVID agenta i zgodę użytkownika, a potem wydaje token podpisany własnym kluczem. <b>Serwer MCP</b> ma własny SVID i zestaw kluczy CA. Sprawdza certyfikat, token i politykę dostępu, a potem decyduje.</li>
+    <li><b>Proces agenta</b> ma certyfikat, klucz prywatny i zestaw kluczy. Przy każdym połączeniu dowodzi, że ma klucz, i sprawdza drugą stronę.</li>
+    <li><b>Serwer autoryzacji</b> sprawdza SVID agenta i zgodę użytkownika, a potem wydaje token podpisany własnym kluczem. <b>Serwer MCP</b> ma własny SVID i zestaw kluczy. Sprawdza certyfikat, token i politykę dostępu, a potem decyduje.</li>
     <li><b>Atestacja węzła.</b> Zanim agent SPIRE cokolwiek wyda, serwer musi mu zaufać. Agent SPIRE sprawdza serwer zestawem kluczy od operatora, a w Kubernetes przedstawia podpisany token konta usługi, który serwer sprawdza przez TokenReview API. Dostaje własny SVID i odtąd łączy się z serwerem przez mTLS. Otrzymuje tylko wpisy dla swojego węzła lub jego grupy. W ten sposób secret zero przechodzi z aplikacji do konfiguracji platformy.</li>
     <li><b>Atestacja procesu.</b> Workload API celowo nie uwierzytelnia klienta wprost. Agent SPIRE pobiera PID z jądra, na podstawie cgroup ustala poda, a od kubeleta dostaje selektory, np. <code>k8s:ns:prod</code> i <code>k8s:sa:support-agent</code>. Muszą pasować wszystkie selektory wpisu, inaczej proces dostaje <code>PermissionDenied</code>.</li>
     <li><b>Klucze.</b> Agent SPIRE tworzy parę kluczy procesu. Do serwera wysyła tylko CSR, czyli klucz publiczny z prośbą o podpis. Serwer podpisuje certyfikat kluczem CA i nie dostaje klucza prywatnego procesu. Certyfikat czeka w cache, aż proces go pobierze, a przy wywołaniu narzędzia serwer SPIRE nie jest potrzebny. JWT-SVID nie ma pary kluczy procesu: serwer podpisuje go osobnym kluczem JWT.</li>
@@ -52,7 +52,7 @@
     <li>Agent nie powinien znać hasła użytkownika ani mieć jego długotrwałego tokena. Dostaje token dla jednego serwera i zakresu, a wobec serwera autoryzacji uwierzytelnia się swoim SVID.</li>
     <li>Narzędzie, które wywołuje kolejną usługę, wymienia token na nowy, węższy. MCP zabrania przekazywania tokena dalej (token passthrough).</li>
   </ul>
-  <h3 class="sub">Ograniczenia i kiedy to się opłaca</h3>
+  <h3 class="sub">Ograniczenia i zastosowania</h3>
   <ul class="notes">
     <li>mTLS chroni przed podsłuchem, użyciem certyfikatu bez klucza i podszyciem się, o ile sprawdzasz oczekiwany SPIFFE ID. Nie chroni przed kradzieżą klucza ani kodem z dostępem do socketu.</li>
     <li>TTL skraca czas użycia skradzionego poświadczenia. Nie zatrzyma ataku w toku ani procesu, który przez socket pobiera nowe.</li>
@@ -65,7 +65,7 @@
     <li>Repliki zwykle mają wspólne ID, bo mają te same selektory. W logach wystarczy ID roli i numer sesji. Osobne ID instancji wymaga wpisu dla każdego poda.</li>
     <li>Selektory są wiarygodne tylko dla nieuprzywilejowanych procesów: według dokumentacji SPIRE root na węźle może zmienić przynależność do cgroup. Przejęcie węzła daje dostęp do tożsamości dopuszczonych tam przez wpisy, także wspólnych z innymi węzłami. Jeśli któraś z nich może uzyskać pośrednie CA lub zarządzać serwerem SPIRE, zagrożona jest cała domena. Tak samo przy przejęciu serwera SPIRE.</li>
     <li>W jednej chmurze zacznij od jej własnych mechanizmów, np. ról IAM dla podów. Dają krótkotrwałe poświadczenia bez dodatkowej infrastruktury. SPIFFE opłaca się, gdy agenci i narzędzia działają w kilku chmurach lub klastrach albo gdy różne systemy mają korzystać ze wspólnego modelu tożsamości.</li>
-    <li>SPIRE to usługa krytyczna: awaria blokuje wydawanie i odnawianie SVID, a krótkie TTL dają mało czasu na naprawę. Na laptopie agent kodujący działa jako użytkownik, więc atestacja niewiele wnosi. Tam liczą się piaskownica i tokeny o wąskim zakresie.</li>
+    <li>SPIRE to usługa krytyczna: awaria blokuje wydawanie i odnawianie SVID, a krótkie TTL dają mało czasu na naprawę. Na laptopie agent kodujący działa na twoim koncie, więc atestacja niewiele wnosi. Tam liczą się piaskownica i tokeny o wąskim zakresie.</li>
     <li>Stan na październik 2026: SPIFFE działa produkcyjnie, ale standardy dla agentów dopiero powstają. AIMS, informacyjny szkic grupy WIMSE w IETF, łączy istniejące standardy. Nie definiuje protokołu ani profilu dla MCP.</li>
   </ul>
 </section>
