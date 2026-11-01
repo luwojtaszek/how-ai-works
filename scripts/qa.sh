@@ -18,6 +18,7 @@ ids=("$@"); [ ${#ids[@]} -eq 0 ] && ids=("" $(bun -e "import {ORDER} from './src
 slug() { [ -z "$2" ] || [ "$1" = pl/ ] && { echo "$2"; return; }; bun -e "import {SLUG_EN} from './src/data.en.js'; console.log(SLUG_EN['$2']||'$2')"; }
 fail=0
 python3 scripts/qa/links.py "$out" || fail=1
+python3 scripts/qa/copy.py || fail=1
 for vp in "390 844" "1440 900"; do for lang in "" "pl/"; do for id in "${ids[@]}"; do
   s=$(slug "$lang" "$id"); url="http://127.0.0.1:$port/$lang$s${s:+/}"
   ab set viewport ${vp% *} ${vp#* } >/dev/null
