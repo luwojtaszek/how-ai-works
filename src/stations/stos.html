@@ -16,7 +16,7 @@
   <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
   <ul class="notes">
     <li>Rozumowanie nie ma własnego poziomu. Dla serwera inferencji to zwykłe tokeny, a dla CUDA zwykłe mnożenia macierzy. To, czy model wygeneruje kolejny token rozumowania, zależy od promptu, dotychczasowych tokenów i wag. Niektóre otwarte modele rozumujące generują takie tokeny między znacznikami początku i końca myślenia.</li>
-    <li>Effort to parametr API. W modelach otwartych może przez szablon czatu stać się kilkoma tokenami w prompcie, a serwer może też ograniczyć długość rozumowania. Zależy to od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
+    <li>Reasoning effort to parametr API. W modelach otwartych może przez szablon czatu stać się kilkoma tokenami w prompcie, a serwer może też ograniczyć długość rozumowania. Zależy to od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
     <li>Wyższy effort nie przydziela modelowi dodatkowego GPU. Rozmowa dłużej zajmuje miejsce w batchu i w KV cache.</li>
   </ul>
   <h3 class="sub">Co zawiera obraz kontenera, a co jest na hoście</h3>
