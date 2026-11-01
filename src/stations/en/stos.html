@@ -3,16 +3,15 @@
   <p class="lede">Before a chat message becomes matrix multiplication, it passes through a gateway, an inference server, the model, libraries, a driver and the graphics processor. Each level has its own job and knows little about the others.</p>
   <p>When an answer arrives slowly or the server runs out of memory, the API alone doesn’t reveal the cause. Dividing the stack into levels shows which component to inspect.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Follow a request down the stack. Tap an element to see its role</p>
+    <p class="lab-title">Step through generating an answer. Tap an element for details</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Stack levels"></div>
     <div id="skView"></div>
     <p class="hint">An example open stack: Kubernetes, vLLM, PyTorch and an NVIDIA H100. GPU figures are H100 specifications; the replica count, request, token IDs and tensor shapes are illustrative and simplified. OpenAI and Anthropic don’t publish their stacks.</p>
   </div>
   <h3 class="sub">The return path: from logits to text</h3>
   <ul class="notes">
-    <li>After a step, logits sit in GPU memory, one vector per conversation in the batch. The sampler turns them into token IDs, which go back to the engine process. The engine process appends each token to its conversation and checks for an end token or a length limit.</li>
-    <li>The detokeniser in the API process turns the ID into text, checks for stop sequences and sends an SSE event over the open connection, without waiting for the answer to finish. A text fragment isn’t always one token: if a token is only part of a UTF-8 character, the decoder waits for the next one.</li>
-    <li>For an agent, the model’s response can be a tool call. The application runs the tool, appends the result to the history and sends a new request, which passes through all the levels again (see “The agent loop”).</li>
+    <li>A text fragment isn’t always one token: if a token is only part of a UTF-8 character, the decoder waits for the next one.</li>
+    <li>An agent’s new request passes through all the levels again (see “The agent loop”).</li>
   </ul>
   <h3 class="sub">Where reasoning and reasoning effort live</h3>
   <ul class="notes">

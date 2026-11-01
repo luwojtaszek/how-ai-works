@@ -1017,7 +1017,6 @@ svg{display:block;max-width:100%;height:auto}
 .sk-d .nd[data-id]{cursor:pointer}
 .sk-d .nd text{font-size:12px}
 .sk-d .nd text.s{font-size:10.5px}
-.sk-d .nd.go rect{stroke:var(--hue);stroke-width:1.5}
 .sk-d .nd[data-id]:hover rect{fill:var(--sunken)}
 .sk-d .nd.on rect{fill:var(--tint);stroke:var(--hue);stroke-width:2}
 .sk-d .nd:focus-visible rect{stroke:var(--ink);stroke-width:2.5}
@@ -1038,6 +1037,7 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 .sk-li.s{border-top:2px dotted var(--muted)}
 .sk-rl{margin-top:14px;font-size:.8rem;color:var(--muted)}
 .sk-req{margin:4px 0 0;padding:10px 12px;border-radius:8px;background:var(--sunken);font:400 .8rem/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.sk-step{font-size:.8rem;color:var(--muted);margin-bottom:2px}
 .sk-actions{display:flex;gap:8px;margin-top:10px}
 .sk-actions .btn{min-height:44px;flex:0 1 auto}
 .sk-actions .btn:last-child:not(:first-child){flex:1}

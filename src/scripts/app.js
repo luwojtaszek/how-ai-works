@@ -2141,26 +2141,26 @@ function initStack(){const root=$('#skLab');if(!root)return;const nav=$('#skNav'
 // Hand-drawn C4-style diagram per level, in a 340-wide viewBox. b: boundaries [key,x,y,w,h,kind]; n: boxes [id,x,y,w,h,ghost];
 // e: arrows [points,kind (q request, r response, s setup),label key,label x,label y,anchor,ids that light it up]; f: request block height is free.
 const GEO=[
-{zoom:'api',h:262,b:[['app',0,66,340,74,'out'],['api',0,190,340,72,'out']],
+{h:262,b:[['app',0,66,340,74,'out'],['api',0,190,340,72,'out']],
  n:[['user',100,0,140,42],['app',10,86,190,44],['tools',220,86,110,44],['api',70,210,200,44]],
  e:[['140,42 140,86','q','msg',134,58,'end','user app'],['200,86 200,42','r','text',206,58,'start','user app'],['200,100 220,100','q',0,0,0,0,'app tools'],['220,116 200,116','r',0,0,0,0,'app tools'],
   ['140,130 140,210','q','https',134,168,'end','app api'],['220,210 220,130','r','sse',226,168,'start','app api']]},
-{zoom:'rep',h:256,b:[['cluster',0,0,340,256,'out'],['node1',8,150,104,96,'proc','b'],['node2',118,150,104,96,'proc','b'],['node3',228,150,104,96,'proc','b']],
+{h:256,b:[['cluster',0,0,340,256,'out'],['node1',8,150,104,96,'proc','b'],['node2',118,150,104,96,'proc','b'],['node3',228,150,104,96,'proc','b']],
  n:[['gw',70,22,200,42],['lb',70,86,200,42],['rep',14,160,92,64],['rep2',124,160,92,64,1],['rep3',234,160,92,64,1]],
  e:[['130,64 130,86','q','openai',124,79,'end','gw lb'],['210,86 210,64','r','sse',216,79,'start','gw lb'],
   ['80,128 80,140 44,140 44,160','q',0,0,0,0,'lb rep'],['170,128 170,160','q',0,0,0,0,'lb'],['260,128 260,140 280,140 280,160','q',0,0,0,0,'lb'],['96,160 96,128','r',0,0,0,0,'lb rep']]},
-{zoom:'run',h:414,b:[['pod',0,0,340,414,'out'],['papi',8,20,324,118,'proc'],['pengine',8,182,324,114,'proc'],['pworker',8,340,324,66,'proc']],
+{h:414,b:[['pod',0,0,340,414,'out'],['papi',8,20,324,118,'proc'],['pengine',8,182,324,114,'proc'],['pworker',8,340,324,66,'proc']],
  n:[['http',16,38,308,40],['tmpl',16,90,150,40],['detok',174,90,150,40],['wait',16,200,150,40],['sched',174,200,150,40],['kvm',16,248,150,40],['mask',174,248,150,40],['run',16,358,150,40],['smp',174,358,150,40]],
  e:[['91,78 91,90','q',0,0,0,0,'http tmpl'],['249,90 249,78','r',0,0,0,0,'http detok'],['91,130 91,200','q','zmq',97,164,'start','tmpl wait'],['249,182 249,130','r','newtok',255,164,'start','detok sched'],
   ['166,220 174,220','q',0,0,0,0,'wait sched'],['120,296 120,358','q','step',126,322,'start','sched mask kvm run'],['249,358 249,296','r','picked',255,322,'start','smp sched'],['166,378 174,378','q',0,0,0,0,'run smp']]},
-{zoom:'attn',h:350,b:[['step',0,0,340,350,'out'],['layers',6,140,198,110,'proc'],['mem',214,82,120,164,'gpu']],
+{h:350,b:[['step',0,0,340,350,'out'],['layers',6,140,198,110,'proc'],['mem',214,82,120,164,'gpu']],
  n:[['tok',10,22,190,38],['emb',10,82,190,38],['attn',14,158,182,38],['mlp',14,204,182,38],['head',10,272,190,38],['wg',222,100,104,62],['kv',222,176,104,62]],
  e:[['105,60 105,82','q',0,0,0,0,'tok emb'],['105,120 105,158','q',0,0,0,0,'emb attn'],['105,196 105,204','q',0,0,0,0,'attn mlp'],['105,242 105,272','q',0,0,0,0,'mlp head'],['105,310 105,340','q','logits',112,330,'start','head'],
   ['222,104 200,104','s',0,0,0,0,'wg emb'],['222,152 212,152 212,166 196,166','s',0,0,0,0,'wg attn'],['222,182 196,182','s',0,0,0,0,'kv attn']]},
-{zoom:'rt',h:292,b:[['libs',0,0,340,262,'out'],['ckern',8,96,324,76,'proc']],
+{h:292,b:[['libs',0,0,340,262,'out'],['ckern',8,96,324,76,'proc']],
  n:[['torch',70,26,200,40],['blas',16,114,150,44],['fa',174,114,150,44],['rt',70,210,200,42]],
  e:[['120,66 120,114','q','matmul',114,86,'end','torch blas'],['220,66 220,114','q','attnk',226,86,'start','torch fa'],['120,158 120,210','q','launch',114,192,'end','blas rt'],['220,158 220,210','q',0,0,0,0,'fa rt'],['170,252 170,288','q','todrv',176,278,'start','rt']]},
-{zoom:'db',h:318,b:[['uspace',0,0,340,84,'proc'],['kernel',0,130,216,92,'host','r'],['gpu',0,266,340,48,'gpu']],
+{h:318,b:[['uspace',0,0,340,84,'proc'],['kernel',0,130,216,92,'host','r'],['gpu',0,266,340,48,'gpu']],
  n:[['ud',10,22,150,46],['db',180,22,150,46],['ko',8,150,96,58],['uvm',112,150,96,58]],
  e:[['160,45 180,45','q',0,0,0,0,'ud db'],['56,68 56,150','s','once',62,104,'start','ud ko'],['56,208 56,266','s','conf',62,246,'start','ko'],['270,68 270,266','q','bell',264,246,'end','db'],['310,266 310,68','r',0,0,0,0,'db']]},
 {h:316,b:[['card',0,0,340,292,'gpu'],['sm',8,88,324,110,'proc']],
@@ -2265,6 +2265,56 @@ const T=tr({lv:[
   hbm:['HBM3','80 GB, about 3.35 TB/s','GPU memory. During generation it limits speed more often than compute does. See “Why the GPU is idle”.'],
   nvl:['NVLink','900 GB/s','The link between GPUs of one replica. With tensor parallelism, GPUs exchange intermediate results over it at every step.']}
 });
+// the whole chain for one answer: [level, box, what happens]; steps 7-16 repeat for every token
+const ST=tr([
+[0,'app','Aplikacja wysyła przez HTTPS całą historię i parametry: model, temperaturę, limit długości, ewentualny schemat. Połączenie zostaje otwarte na strumień odpowiedzi.'],
+[1,'gw','Bramka sprawdza klucz i limity, a potem przekazuje żądanie do wybranego modelu.'],
+[1,'lb','Router wybiera jedną replikę. Od tej chwili całą pracą nad żądaniem zajmuje się ta replika.'],
+[2,'http','Proces API przyjmuje żądanie i zostawia połączenie otwarte.'],
+[2,'tmpl','Szablon czatu skleja wiadomości w jeden tekst, a tokenizer zamienia go na identyfikatory tokenów. Przez ZMQ trafiają one do procesu silnika.'],
+[2,'wait','Żądanie czeka w kolejce repliki, aż w batchu będzie miejsce.'],
+[2,'sched','Tu zaczyna się pętla kontrolna. W każdym kroku scheduler wybiera rozmowy do policzenia i przydziela im bloki KV cache. Pierwszy krok rozmowy to prefill całego promptu, kolejne liczą po jednym tokenie.'],
+[2,'mask','Jeśli żądanie wymusza format, silnik wylicza maskę dozwolonych tokenów na ten krok i dołącza ją do polecenia dla procesu roboczego.'],
+[2,'run','Proces roboczy dostaje polecenie kroku, buduje tensory wejściowe batcha i uruchamia kod modelu.'],
+[3,'emb','Kod modelu wykonuje stałą sekwencję operacji. Najpierw zamienia tokeny na wektory, korzystając z wag w pamięci GPU.'],
+[3,'attn','Attention i MLP przekształcają wektory przez wszystkie warstwy. Attention czyta z KV cache wcześniejsze tokeny i dopisuje nowe klucze i wartości.'],
+[4,'torch','Każda operacja modelu to wywołanie PyTorcha. Dispatcher wybiera jej implementację dla CUDA.'],
+[4,'blas','Mnożenie macierzy wykonuje gotowy program na GPU, czyli compute kernel, np. z cuBLAS.'],
+[4,'rt','CUDA runtime zleca uruchomienie kernela na strumieniu i nie czeka na wynik. Dane już leżą w pamięci GPU, przesyłane jest tylko polecenie.'],
+[5,'ud','Sterownik libcuda.so zamienia to zlecenie na polecenia sprzętowe. Jądro Linuksa przygotowało wcześniej kanał i mapowania pamięci.'],
+[5,'db','Sterownik zapisuje polecenia w buforze i powiadamia GPU zapisem do doorbella, bez wywołania systemowego.'],
+[6,'hi','GPU odczytuje polecenia z kanału i dzieli kernel na bloki wątków.'],
+[6,'tc','Rdzenie liczą równolegle, czytając wagi i KV cache z pamięci HBM. Przy kilku GPU wymieniają się wynikami przez NVLink.'],
+[3,'head','Po ostatniej warstwie głowica wyjściowa daje logity: po jednej liczbie na każdy token słownika, osobno dla każdej rozmowy w batchu.'],
+[2,'smp','Proces roboczy nakłada maskę, jeśli jest, a sampler wybiera po jednym tokenie na rozmowę. Wynik wraca do procesu silnika.'],
+[2,'sched','Silnik dopisuje token do rozmowy i sprawdza token końca oraz limit długości. Jeśli to nie koniec, pętla wraca do schedulera: następny krok, następny token.'],
+[2,'detok','Równolegle detokenizer w procesie API zamienia nowy token na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE.'],
+[0,'app','Aplikacja dostaje tekst fragmentami, aż do zdarzenia końca. W agencie odpowiedź może być wywołaniem narzędzia: aplikacja je uruchamia i wysyła nowe żądanie.']
+],[
+[0,'app','The application sends the whole history and parameters over HTTPS: model, temperature, length limit, perhaps a schema. The connection stays open for the response stream.'],
+[1,'gw','The gateway checks the key and limits, then passes the request to the chosen model.'],
+[1,'lb','The router picks one replica. From now on that replica does all the work on the request.'],
+[2,'http','The API process accepts the request and keeps the connection open.'],
+[2,'tmpl','The chat template joins the messages into one text, and the tokeniser turns it into token IDs. They reach the engine process over ZMQ.'],
+[2,'wait','The request waits in the replica’s queue until the batch has room.'],
+[2,'sched','This is where the control loop starts. At every step the scheduler picks the conversations to compute and gives them KV cache blocks. A conversation’s first step is the prefill of the whole prompt; later steps compute one token each.'],
+[2,'mask','If the request enforces a format, the engine works out the mask of allowed tokens for this step and adds it to the worker’s command.'],
+[2,'run','The worker process receives the step command, builds the batch’s input tensors and runs the model code.'],
+[3,'emb','The model code runs a fixed sequence of operations. First it turns tokens into vectors, using weights in GPU memory.'],
+[3,'attn','Attention and the MLP transform the vectors through all the layers. Attention reads earlier tokens from the KV cache and appends new keys and values.'],
+[4,'torch','Each model operation is a PyTorch call. The dispatcher picks its CUDA implementation.'],
+[4,'blas','A matrix multiplication runs as a ready-made GPU program, a compute kernel, for example from cuBLAS.'],
+[4,'rt','The CUDA runtime queues the kernel launch on a stream and doesn’t wait for the result. The data is already in GPU memory, so only a command travels.'],
+[5,'ud','The libcuda.so driver turns this launch into hardware commands. The Linux kernel set up the channel and memory mappings earlier.'],
+[5,'db','The driver writes the commands to a buffer and notifies the GPU with a doorbell write, with no system call.'],
+[6,'hi','The GPU reads the commands from the channel and splits the kernel into thread blocks.'],
+[6,'tc','The cores compute in parallel, reading weights and the KV cache from HBM. With several GPUs, they exchange results over NVLink.'],
+[3,'head','After the last layer the output head produces logits: one number for every token in the vocabulary, separately for each conversation in the batch.'],
+[2,'smp','The worker applies the mask, if there is one, and the sampler picks one token per conversation. The result goes back to the engine process.'],
+[2,'sched','The engine appends the token to its conversation and checks for an end token and the length limit. If it isn’t finished, the loop returns to the scheduler: next step, next token.'],
+[2,'detok','Meanwhile the detokeniser in the API process turns the new token into text, checks for stop sequences and sends an SSE event.'],
+[0,'app','The application receives text in fragments until the final event. In an agent the response can be a tool call: the application runs it and sends a new request.']
+]);
 const MARK={q:'skQ',r:'skR',s:'skS'};
 const diagram=g=>{
   const mk=(id,c)=>S('marker',{id,viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:5,markerHeight:5,orient:'auto'},S('path',{d:'M0,0L10,5L0,10z',class:c}));
@@ -2272,28 +2322,28 @@ const diagram=g=>{
   const es=g.e.flatMap(([pts,k,lab,lx,ly,anchor,ids])=>{const on=ids.split(' ').includes(sel),cls=' '+k+(on?' on':'');
     return [S('polyline',{class:'sk-e'+cls,points:pts,'marker-end':`url(#${MARK[k]})`}),lab?S('text',{class:'sk-el'+cls,x:lx,y:ly,'text-anchor':anchor},T.e[lab]):null];});
   const ns=g.n.map(([id,x,y,w,hh,ghost])=>{const[name,tech]=T.n[id],on=id===sel,cx=x+w/2,my=y+hh/2;
-    const a=ghost?{class:'nd ghost'}:{class:'nd'+(on?' on':'')+(id===g.zoom?' go':''),role:'button',tabindex:0,'aria-pressed':on?'true':'false','aria-label':name+', '+tech,'data-id':id};
+    const a=ghost?{class:'nd ghost'}:{class:'nd'+(on?' on':''),role:'button',tabindex:0,'aria-pressed':on?'true':'false','aria-label':name+', '+tech,'data-id':id};
     return S('g',a,S('rect',{x,y,width:w,height:hh,rx:7}),S('text',{x:cx,y:my-2},name),S('text',{class:'s',x:cx,y:my+12},tech));});
   const svg=S('svg',{viewBox:`0 0 340 ${g.h}`,role:'group','aria-label':T.lv[cur].n},S('defs',{},mk('skQ','q'),mk('skR','r'),mk('skS','s')),bs,es,ns);
-  const pick=e=>{const n=e.target.closest('.nd[data-id]');if(!n)return;sel=n.dataset.id;draw();$(`.nd[data-id="${sel}"]`,main).focus();};
+  const pick=e=>{const n=e.target.closest('.nd[data-id]');if(!n)return;sel=n.dataset.id;free=true;draw();$(`.nd[data-id="${sel}"]`,main).focus();};
   svg.addEventListener('click',pick);svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e);}});
   return svg;};
-let cur=0,sel=GEO[0].zoom;
+let cur=0,sel='app',step=0,free=false;
 const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'callout sk-detail','aria-live':'polite'}),acts=h('div',{class:'sk-actions'}),main=h('div',{class:'sk-main'},h('div',{},fig,legend),h('div',{},detail,acts)),req=h('div');
 view.append(head,main,req);
-const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{if(i!==cur)go(i,i>cur?'in':'out');}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
-const go=(i,dir)=>{cur=i;sel=GEO[i].zoom||GEO[i].n[0][0];draw(dir);};
+const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{if(i!==cur)to(ST.findIndex(s=>s[0]===i));}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
+const to=k=>{const[l,b]=ST[k],dir=l>cur?'in':l<cur?'out':null;step=k;cur=l;sel=b;free=false;draw(dir);};
 const lastBtn=()=>$('.btn:last-child',acts);
-const draw=dir=>{const l=T.lv[cur],g=GEO[cur],nx=T.lv[cur+1],[name,,text]=T.n[sel];
+const draw=dir=>{const l=T.lv[cur],g=GEO[cur],[name,,text]=T.n[sel];
   lvBtns.forEach((e,i)=>e.setAttribute('aria-pressed',i===cur?'true':'false'));
   head.replaceChildren(...[h('p',{class:'sk-head'},h('b',{},tr('Poziom ','Level ')+(cur+1)+'. '+l.n),' '+l.q),h('p',{class:'sk-freq'},l.fr),
     h('dl',{class:'id-res sk-res'},h('div',{},h('dt',{},tr('Odpowiada za','Responsible for')),h('dd',{},l.dec)),h('div',{},h('dt',{},tr('Nie wie','Doesn’t know')),h('dd',{},l.blind))),
     l.fact?h('p',{class:'sk-fact'},l.fact):null].filter(Boolean));
   fig.replaceChildren(diagram(g));fig.className='id-d sk-d'+(dir?' sk-'+dir:'');
-  detail.replaceChildren(h('p',{},h('b',{},name+'. '),text));
-  acts.replaceChildren(...[cur?h('button',{type:'button',class:'btn ghost',onclick:()=>{go(cur-1,'out');lastBtn().focus();}},tr('Wyżej','Up')):null,
-    nx?(sel===g.zoom?h('button',{type:'button',class:'btn',onclick:()=>{go(cur+1,'in');lastBtn().focus();}},tr('Głębiej: ','Deeper: ')+name):h('button',{type:'button',class:'btn ghost',onclick:()=>{sel=g.zoom;draw();$('.nd.on',main).focus();}},tr('Pokaż, gdzie iść dalej','Show the way down')))
-      :h('button',{type:'button',class:'btn',onclick:()=>{go(0,'out');lvBtns[0].focus();}},tr('Wróć na górę','Back to the top'))].filter(Boolean));
+  detail.replaceChildren(h('p',{class:'sk-step'},tr('Krok ','Step ')+(step+1)+tr(' z ',' of ')+ST.length),h('p',{},h('b',{},name+'. '),free?text:ST[step][2]));
+  const last=step===ST.length-1;
+  acts.replaceChildren(...[step?h('button',{type:'button',class:'btn ghost',onclick:()=>{to(step-1);lastBtn().focus();}},tr('Wstecz','Back')):null,
+    h('button',{type:'button',class:'btn',onclick:()=>{to(last?0:step+1);lastBtn().focus();}},last?tr('Od początku','Start again'):tr('Dalej','Next'))].filter(Boolean));
   req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
 draw();}
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,

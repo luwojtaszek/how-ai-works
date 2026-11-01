@@ -3,16 +3,15 @@
   <p class="lede">Zanim wiadomość z czatu stanie się mnożeniem macierzy, przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych.</p>
   <p>Gdy odpowiedź przychodzi wolno albo serwerowi brakuje pamięci, samo API nie wskazuje przyczyny. Podział stosu na poziomy pokazuje, który element sprawdzić.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Śledź żądanie w dół stosu. Stuknij element, żeby poznać jego rolę</p>
+    <p class="lab-title">Idź krok po kroku przez generowanie. Stuknij element po szczegóły</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
     <div id="skView"></div>
     <p class="hint">Przykładowy otwarty stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Liczby przy GPU to dane H100, a liczba replik, żądanie, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują swoich stosów.</p>
   </div>
   <h3 class="sub">Droga powrotna: od logitów do tekstu</h3>
   <ul class="notes">
-    <li>Po kroku obliczeń logity są w pamięci GPU, po jednym wektorze na rozmowę w batchu. Sampler zamienia je na identyfikatory tokenów, które wracają do procesu silnika. Proces silnika dopisuje tokeny do rozmów i sprawdza tokeny końca oraz limity długości.</li>
-    <li>Detokenizer w procesie API zamienia identyfikator na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE przez otwarte połączenie, nie czekając na koniec odpowiedzi. Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
-    <li>W agencie odpowiedź może być wywołaniem narzędzia. Aplikacja je uruchamia, dokleja wynik do historii i wysyła nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
+    <li>Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
+    <li>Nowe żądanie w agencie przechodzi przez wszystkie poziomy od nowa (zobacz „Pętla agenta”).</li>
   </ul>
   <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
   <ul class="notes">
