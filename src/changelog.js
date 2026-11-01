@@ -7,7 +7,7 @@ export const CHANGELOG = [
     added: ['stos'],
     updated: [],
     en: 'New topic: From chat to GPU. A zoomable map follows one request through seven levels: application, cluster, vLLM, model, libraries, driver and GPU. It shows what each level is responsible for, what it can’t see and how the request appears at that level. Notes cover the way back, where reasoning lives, and what sits in the container image and on the host.',
-    pl: 'Nowy temat: Od czatu do GPU. Mapa z przybliżaniem prowadzi jedno żądanie przez siedem poziomów, od aplikacji przez klaster, vLLM, model, biblioteki i sterownik do Tensor Cores. Pokazuje, za co odpowiada każdy poziom, czego nie widzi i jak wygląda tam żądanie. Notki opisują drogę powrotną, rolę rozumowania oraz to, co zawiera obraz kontenera, a co jest na hoście.',
+    pl: 'Nowy temat: Od czatu do GPU. Mapa z przybliżaniem prowadzi jedno żądanie przez siedem poziomów, od aplikacji przez klaster, vLLM, model, biblioteki i sterownik do GPU. Pokazuje, za co odpowiada każdy poziom, czego nie widzi i jak wygląda tam żądanie. Notki opisują drogę powrotną, rolę rozumowania oraz to, co zawiera obraz kontenera, a co jest na hoście.',
   },
   {
     date: '2026-11-01',

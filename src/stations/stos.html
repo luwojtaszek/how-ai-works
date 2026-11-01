@@ -1,16 +1,16 @@
 <section class="station" id="stos" data-hue="cost">
   <h2>Od czatu do GPU</h2>
-  <p class="lede">Zanim wiadomość z czatu stanie się mnożeniem macierzy, przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych.</p>
+  <p class="lede">Zanim model odpowie na wiadomość z czatu, żądanie przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych.</p>
   <p>Gdy odpowiedź przychodzi wolno albo serwerowi brakuje pamięci, samo API nie wskazuje przyczyny. Podział stosu na poziomy pokazuje, który element sprawdzić.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Idź krok po kroku przez generowanie. Stuknij element po szczegóły</p>
+    <p class="lab-title">Prześledź generowanie. Stuknij element, by zobaczyć szczegóły</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
     <div id="skView"></div>
-    <p class="hint">Przykładowy otwarty stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Liczby przy GPU to dane H100, a liczba replik, żądanie, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują swoich stosów.</p>
+    <p class="hint">Przykładowy stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Liczby przy GPU to dane H100, a liczba replik, żądanie, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują pełnych stosów.</p>
   </div>
   <h3 class="sub">Droga powrotna: od logitów do tekstu</h3>
   <ul class="notes">
-    <li>Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
+    <li>Token nie zawsze daje gotowy fragment tekstu: gdy zawiera tylko część znaku UTF-8, dekoder czeka na kolejny.</li>
     <li>Nowe żądanie w agencie przechodzi przez wszystkie poziomy od nowa (zobacz „Pętla agenta”).</li>
   </ul>
   <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
@@ -28,7 +28,7 @@
   </ul>
   <h3 class="sub">Co z tego wynika przy budowaniu systemu</h3>
   <ul class="notes">
-    <li>Objaw pomaga wskazać poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Spadek jakości po zmianie serwera inferencji to często szablon czatu albo inne ustawienia samplera.</li>
+    <li>Objaw pomaga wskazać poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Przy spadku jakości po zmianie serwera inferencji sprawdź szablon czatu i ustawienia samplera.</li>
     <li>Serwer inferencji można wymienić bez zmiany wag, jeśli nowy obsługuje architekturę i format modelu: vLLM, SGLang, TensorRT-LLM albo llama.cpp. Szybkość i zużycie pamięci potrafią się mocno różnić przy tych samych wagach, więc porównuj je na własnym ruchu (zobacz „Modele open-weight”).</li>
     <li>Niższe poziomy zależą od sprzętu. Zamiast CUDA i sterownika NVIDIA na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA. Poziomy 1–4 wyglądają podobnie, a zmieniają się poziomy 5–7.</li>
   </ul>

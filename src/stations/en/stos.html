@@ -1,19 +1,19 @@
 <section class="station" id="stos" data-hue="cost">
   <h2>From chat to GPU</h2>
-  <p class="lede">Before a chat message becomes matrix multiplication, it passes through a gateway, an inference server, the model, libraries, a driver and the graphics processor. Each level has its own job and knows little about the others.</p>
+  <p class="lede">Before the model answers a chat message, the request passes through a gateway, an inference server, the model, libraries, a driver and the GPU. Each level has its own job and knows little about the others.</p>
   <p>When an answer arrives slowly or the server runs out of memory, the API alone doesn’t reveal the cause. Dividing the stack into levels shows which component to inspect.</p>
   <div class="lab" id="skLab">
     <p class="lab-title">Step through generating an answer. Tap an element for details</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Stack levels"></div>
     <div id="skView"></div>
-    <p class="hint">An example open stack: Kubernetes, vLLM, PyTorch and an NVIDIA H100. GPU figures are H100 specifications; the replica count, request, token IDs and tensor shapes are illustrative and simplified. OpenAI and Anthropic don’t publish their stacks.</p>
+    <p class="hint">Example stack: Kubernetes, vLLM, PyTorch and an NVIDIA H100. GPU figures are H100 specifications; the replica count, request, token IDs and tensor shapes are illustrative and simplified. OpenAI and Anthropic don’t publish their full stacks.</p>
   </div>
   <h3 class="sub">The return path: from logits to text</h3>
   <ul class="notes">
-    <li>A text fragment isn’t always one token: if a token is only part of a UTF-8 character, the decoder waits for the next one.</li>
+    <li>A token may hold only part of a UTF-8 character, so the decoder waits for enough tokens to complete it.</li>
     <li>An agent’s new request passes through all the levels again (see “The agent loop”).</li>
   </ul>
-  <h3 class="sub">Where reasoning and reasoning effort live</h3>
+  <h3 class="sub">Reasoning and the reasoning effort setting</h3>
   <ul class="notes">
     <li>Reasoning has no level of its own. To the inference server it is ordinary tokens, and to CUDA ordinary matrix multiplication. Whether the model generates another reasoning token depends on the prompt, the tokens so far and its weights. Some open reasoning models generate these tokens between start-of-thinking and end-of-thinking markers.</li>
     <li>Effort is an API parameter. In open models the chat template can turn it into a few tokens in the prompt, and the server can also limit reasoning length. It depends on the model. A server-side parser separates reasoning tokens from the answer. In closed models the details aren’t public (see “Reasoning models”).</li>
@@ -28,7 +28,7 @@
   </ul>
   <h3 class="sub">What this means when you build a system</h3>
   <ul class="notes">
-    <li>Use the symptom to narrow down the level. A long time to first token under load usually means the queue or prefill, level 3. When memory runs out, check the logs for what failed to allocate: weights, working buffers or CUDA Graphs. Under KV cache pressure, vLLM usually pauses conversations and recomputes their cached state; fewer concurrent conversations help. A quality drop after switching inference servers is often the chat template or different sampler settings.</li>
+    <li>Use the symptom to narrow down the level. A long time to first token under load usually means the queue or prefill, level 3. When memory runs out, check the logs for what failed to allocate: weights, working buffers or CUDA Graphs. Under KV cache pressure, vLLM usually pauses conversations and recomputes their cached state; fewer concurrent conversations help. A quality drop after switching inference servers often comes from a changed template or sampler settings.</li>
     <li>You can switch inference servers without changing the weights if the new one supports the model’s architecture and format: vLLM, SGLang, TensorRT-LLM or llama.cpp. Speed and memory use can differ a lot on identical weights, so compare them on your own traffic (see “Open-weight models”).</li>
     <li>Lower levels depend on the hardware. Instead of CUDA and the NVIDIA driver, AMD GPUs use ROCm, Macs use Metal and TPUs use the XLA compiler. Levels 1–4 look similar; levels 5–7 change.</li>
   </ul>
