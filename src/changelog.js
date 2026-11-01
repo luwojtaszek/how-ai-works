@@ -6,8 +6,8 @@ export const CHANGELOG = [
     date: '2026-11-02',
     added: ['stos'],
     updated: [],
-    en: 'New topic: The inference stack. Diagrams of seven levels and a 23-step walk follow one answer from the API through the server, model, libraries and driver to the GPU and back, including the control loop that repeats for every token. Notes cover reasoning, what goes in the container image and on the host, and how to narrow a symptom down to a level.',
-    pl: 'Nowy temat: Stos inferencji. Diagramy siedmiu poziomów i 23 kroki prowadzą jedną odpowiedź od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą kontrolną, która powtarza się dla każdego tokena. Notki opisują rozumowanie, zawartość obrazu kontenera i hosta oraz to, jak po objawie wskazać poziom.',
+    en: 'New topic: The inference stack. A seven-level diagram and a 23-step walkthrough trace one answer from the API through the server, model, libraries and driver to the GPU and back, including the control loop that repeats for every token. Notes cover reasoning, what goes in the container image and on the host, and how to use a symptom to identify the level.',
+    pl: 'Nowy temat: Stos inferencji. Diagram siedmiu poziomów i opis 23 kroków pokazują drogę jednej odpowiedzi od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą kontrolną, która powtarza się dla każdego tokena. Notki opisują rozumowanie, zawartość obrazu kontenera i hosta oraz to, jak na podstawie objawu wskazać poziom.',
   },
   {
     date: '2026-11-01',
