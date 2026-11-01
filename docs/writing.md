@@ -89,6 +89,17 @@ They look for:
 - Conclusions that hold only for this example, and "must" where it is a choice.
 - Comparisons that break down. Say where the analogy stops.
 
+They also ask the owner's questions, the ones that found what accuracy review missed:
+
+- Scale it up. Multiply a number to real traffic, or to the reader's own use, and compare with what exists. "13 conversations per replica" against millions of chats; "500,000 tokens × millions of sessions" against the GPU memory on Earth. If the result is absurd, the page is missing a mechanism.
+- Push past the limit. What happens to user 25 when 13 fit: wait, fail, swap?
+- Follow the state through time. For anything stored, say where it lives, who owns it, how long it lasts and what happens next: after the answer, at the next message, when idle, when memory runs out. Stopping at the happy path is the usual gap.
+- Start from the reader's own experience. They use these products daily and have seen a cache lasting an hour, a long session, a model that gets slower. Reconcile the page with what they have seen, and don't make them bring it up.
+- Name the scope. "In vLLM by default" is not "at large providers". Say which system a claim covers, and keep what is documented apart from what is inferred. Where a provider publishes nothing, say so.
+- Distrust absence. "There is no X", "not by Y" and "only Z" need a search for the counterexample first. "Routing uses tokens, not a thread ID" came from three systems checked; session-key routing exists in all of them.
+- Look for the familiar comparison. A connection pool explained more than the numbers did, once its limit was stated.
+- Ask whether it can be simpler. A precise label a reader can't parse is worse than a plain one with the nuance in the notes: "many times per token" beat "steps 12–14".
+
 Answer the question on the page or cut the number. Prefer the one fix that removes the wrong conclusion over a caveat on every sentence. Run it on new text too: the sceptic's own fixes can be wrong, as "two 84 GB conversations fill 140 GB" was.
 
 Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
