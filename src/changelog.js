@@ -6,8 +6,8 @@ export const CHANGELOG = [
     date: '2026-10-30',
     added: ['tozsamosc'],
     updated: ['mcp'],
-    en: 'New topic: Agent identity. One widget compares an OAuth token, a JWT-SVID and mTLS in four scenarios, including a shell in the agent’s container, where SPIFFE doesn’t help. Another follows a SPIRE entry through node and workload attestation and certificate signing to the MCP server’s decision. The diagram highlights the participants at each step. “MCP” links to the topic from its authorization section.',
-    pl: 'Nowy temat: Tożsamość agenta. Jeden widżet porównuje token OAuth, JWT-SVID i mTLS w czterech scenariuszach, także z powłoką w kontenerze agenta, gdzie SPIFFE nie pomaga. Drugi prowadzi od wpisu w SPIRE, przez atestację węzła i procesu oraz podpisanie certyfikatu, do decyzji serwera MCP, a na schemacie podświetla, kto w danym kroku się komunikuje. Temat „MCP” odsyła do niego z punktu o autoryzacji.',
+    en: 'New topic: Agent identity. One widget compares an OAuth token, a JWT-SVID and mTLS in six scenarios, including a shell in the agent’s container, where SPIFFE doesn’t help. Another follows a SPIRE entry through node and workload attestation and certificate signing to the MCP server’s decision. The diagram highlights the participants at each step. “MCP” links to the topic from its authorization section.',
+    pl: 'Nowy temat: Tożsamość agenta. Jeden widżet porównuje token OAuth, JWT-SVID i mTLS w sześciu scenariuszach, także z powłoką w kontenerze agenta, gdzie SPIFFE nie pomaga. Drugi prowadzi od wpisu w SPIRE, przez atestację węzła i procesu oraz podpisanie certyfikatu, do decyzji serwera MCP, a na schemacie podświetla, kto w danym kroku się komunikuje. Temat „MCP” odsyła do niego z punktu o autoryzacji.',
   },
   {
     date: '2026-10-15',
