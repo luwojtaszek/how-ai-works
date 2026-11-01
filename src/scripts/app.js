@@ -191,7 +191,7 @@ function initInj(){const CAPS=[['data',tr('Ma dostęp do prywatnej skrzynki','Ha
 
 /* ---------- tożsamość agenta ---------- */
 function initIdentity(){
-  const CRED=[['key',tr('Klucz API','API key')],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
+  const CRED=[['key',tr('Klucz API','API key'),'.env'],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
   // [wiersz, nazwa, opis, krótkie wyniki w kolumnach]
   const ROWS=[['log',tr('Wyciek do logu','Leak to a log'),tr('Poświadczenie wysyłane z żądaniem trafiło do logu, który czyta atakujący.','The credential sent with a request reached a log the attacker can read.'),[tr('do zmiany klucza','until rotated'),tr('5 min, jedna usługa','5 min, one service'),tr('nie działa','doesn’t work')]],
     ['shell',tr('Polecenie w powłoce','Shell command'),tr('Treść maila skłoniła model do uruchomienia polecenia w kontenerze agenta.','An email’s content got the model to run a command in the agent’s container.'),[tr('do zmiany klucza','until rotated'),tr('atak + do 5\u00a0min','attack + up to 5\u00a0min'),tr('atak + do 1\u00a0h','attack + up to 1\u00a0h')]],
