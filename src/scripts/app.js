@@ -230,7 +230,7 @@ function initIdentity(){
     h('tbody',{},...ROWS.map(([r,name,,short])=>h('tr',{},h('th',{},name),...CRED.map(([k],i)=>h('td',{'data-c':k},h('button',{type:'button',class:'id-c '+lvl(V[r][k][3]),'data-k':r+'-'+k,'aria-label':name+', '+CRED[i].slice(1).join(' ')+': '+short[i]+'. '+VERD[lvl(V[r][k][3])],onclick:()=>showCell(r,k)},short[i]))))))));
   function mark(){$$('#idMx [data-c]').forEach(e=>e.classList.toggle('on',e.dataset.c===col));$$('#idMx .id-c').forEach(e=>e.classList.toggle('sel',e.dataset.k===cell));}
   function showCell(r,k){const row=ROWS.find(x=>x[0]===r),v=V[r][k],c=CRED.find(x=>x[0]===k);cell=r+'-'+k;col=null;mark();
-    $('#idCmpWho').textContent=row[1]+', '+c[1].toLowerCase();$('#idCmpCode').hidden=true;$('#idCmpRes').hidden=false;$('#idGot').textContent=v[0];$('#idTime').textContent=v[1];$('#idReach').textContent=v[2];
+    $('#idCmpWho').textContent=row[1]+', '+c[1];$('#idCmpCode').hidden=true;$('#idCmpRes').hidden=false;$('#idGot').textContent=v[0];$('#idTime').textContent=v[1];$('#idReach').textContent=v[2];
     const m=$('#idMsg');m.className=v[3]===1?'verdict good':v[3]?'callout':'verdict bad';m.textContent=row[2]+' '+v[4];}
   const WHY=[
    {l:tr('Macierz','The matrix'),m:tr('Każda komórka pokazuje, co zostaje atakującemu przy danym poświadczeniu. Stuknij ją, żeby zobaczyć szczegóły. Kolejne kroki wyjaśniają kolumny po kolei.','Each cell shows what the attacker is left with for that credential. Tap one for details. The next steps explain the columns in turn.')},
