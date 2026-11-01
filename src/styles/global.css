@@ -995,11 +995,6 @@ svg{display:block;max-width:100%;height:auto}
 /* stos */
 .opts.sk-nav{grid-template-columns:repeat(7,minmax(0,1fr));margin:0 0 12px}
 .sk-nav small{display:none}
-.sk-in{animation:sk-in .24s ease-out}
-.sk-out{animation:sk-out .24s ease-out}
-@keyframes sk-in{from{opacity:0;transform:scale(.94)}}
-@keyframes sk-out{from{opacity:0;transform:scale(1.05)}}
-@media (prefers-reduced-motion:reduce){.sk-in,.sk-out{animation:none}}
 .sk-head{color:var(--muted)}
 .sk-head b{color:var(--ink)}
 .sk-freq{font-size:.8rem;color:var(--muted)}
