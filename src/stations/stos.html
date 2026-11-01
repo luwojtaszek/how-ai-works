@@ -7,30 +7,55 @@
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
     <div id="skView"></div>
     <div id="skPlayer"></div>
-    <p class="hint">Przykładowy stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Liczby przy GPU to dane H100, a liczba replik, żądanie, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują pełnych stosów.</p>
+    <p class="hint">Przykładowy stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Przykładowy model ma 70 mld parametrów i 80 warstw. Liczby przy GPU to dane H100, a model, liczba replik, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują pełnych stosów.</p>
   </div>
-  <h3 class="sub">Droga powrotna: od logitów do tekstu</h3>
+  <h3 class="sub">Poziom 1. System: kroki 1 i 23</h3>
   <ul class="notes">
-    <li>Token nie zawsze daje gotowy fragment tekstu: gdy zawiera tylko część znaku UTF-8, dekoder czeka na kolejny.</li>
-    <li>Nowe żądanie w agencie przechodzi przez wszystkie poziomy od nowa (zobacz „Pętla agenta”).</li>
+    <li><b>Historia.</b> W kroku 1 aplikacja wysyła całą historię i trzyma połączenie otwarte do zdarzenia końca. Między wiadomościami historia leży w aplikacji, a bezczynny czat nie rezerwuje pamięci GPU.</li>
+    <li><b>Powrót.</b> W kroku 23 tekst przychodzi fragmentami, w miarę wybierania tokenów. Wywołanie narzędzia w odpowiedzi oznacza nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
   </ul>
-  <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
+  <h3 class="sub">Poziom 2. Klaster: kroki 2 i 3</h3>
   <ul class="notes">
-    <li>Rozumowanie nie ma własnego poziomu. Dla serwera inferencji to zwykłe tokeny, a dla CUDA zwykłe mnożenia macierzy. To, czy model wygeneruje kolejny token rozumowania, zależy od promptu, dotychczasowych tokenów i wag. Niektóre otwarte modele rozumujące generują takie tokeny między znacznikami początku i końca myślenia.</li>
-    <li>Reasoning effort to parametr API. W modelach otwartych może przez szablon czatu stać się kilkoma tokenami w prompcie, a serwer może też ograniczyć długość rozumowania. Zależy to od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
-    <li>Wyższy effort nie przydziela modelowi dodatkowego GPU. Rozmowa dłużej zajmuje miejsce w batchu i w KV cache.</li>
+    <li><b>Żądanie.</b> Bramka sprawdza klucz i limity, a router wybiera jedną replikę. Zwykły Service nie zagląda do promptu. Router znający prefiksy (llm-d, NVIDIA Dynamo) może wybrać replikę, która wciąż ma bloki tej rozmowy, uwzględniając też jej obciążenie.</li>
+    <li><b>Czemu replika ma cztery GPU.</b> Przykładowy model ma 70 mld parametrów, czyli 140 GB wag, a jeden H100 ma 80 GB pamięci. Jedna kopia modelu musi więc zająć kilka GPU, jak opisuje poziom 7. Trzy repliki to trzy niezależne kopie, każda z własnym KV cache.</li>
+    <li><b>Rozmieszczenie.</b> Zanim przyjdą żądania, Kubernetes umieszcza pod na węźle z wolnymi GPU. Pod prosi o <code>nvidia.com/gpu: 4</code>, a NVIDIA Device Plugin zgłasza tylko liczbę GPU, bez informacji o tym, jak są połączone. Szybkie połączenie tej czwórki wynika z budowy węzła albo z przydziału Dynamic Resource Allocation, który wybiera urządzenia po atrybutach.</li>
+    <li><b>Kilka węzłów.</b> Model za duży na jeden węzeł działa jako grupa podów jednej repliki. Tą grupą zarządza LeaderWorkerSet, procesy robocze może koordynować Ray, a włączony gang scheduling uruchamia pody razem albo wcale, bo bez jednego z nich model nie policzy tokena.</li>
   </ul>
-  <h3 class="sub">Co zawiera obraz kontenera, a co jest na hoście</h3>
+  <h3 class="sub">Poziom 3. Serwer: kroki 4–9 i 20–22</h3>
   <ul class="notes">
-    <li>Obraz kontenera zawiera vLLM, PyTorch i biblioteki CUDA, czyli cuBLAS i runtime. Pełny CUDA Toolkit służy do budowania oprogramowania, więc do samego uruchomienia zwykle nie jest potrzebny na węźle.</li>
-    <li>Moduł sterownika działa w jądrze hosta, które kontener współdzieli. NVIDIA Container Toolkit udostępnia kontenerowi biblioteki sterownika, w tym <code>libcuda.so</code>, oraz urządzenia <code>/dev/nvidia*</code>. Sterownik musi więc być dość nowy dla bibliotek CUDA z obrazu. Przy błędzie o zbyt starym sterowniku porównaj wersję sterownika na hoście z wersją CUDA w obrazie, zanim ruszysz kod.</li>
-    <li>NVIDIA Device Plugin zgłasza kubeletowi zasób <code>nvidia.com/gpu</code>, a scheduler klastra umieszcza poda z takim limitem na węźle, który ma wolne GPU. GPU Operator instaluje te elementy automatycznie.</li>
-    <li>Trzy repliki to trzy pełne kopie wag i większa przepustowość. Tensor parallelism dzieli wagi i obliczenia jednej kopii między kilka GPU, najczęściej dlatego, że model nie mieści się na jednym.</li>
+    <li><b>Start.</b> Zanim przyjmie pierwsze żądanie, vLLM ładuje wagi, mierzy bufory robocze i CUDA Graphs, a resztę budżetu pamięci GPU (domyślnie 92%, <code>gpu_memory_utilization</code>) przeznacza na KV cache. W przykładzie cztery H100 to 320 GB, a po wagach i buforach zostaje około 140 GB.</li>
+    <li><b>Przyjęcie.</b> Kroki 4–6 stosują szablon czatu, tokenizują wiadomości i ustawiają żądanie w kolejce repliki.</li>
+    <li><b>Przebieg modelu.</b> To jedno wykonanie wszystkich warstw dla całego batcha, czyli grupy rozmów przetwarzanych razem. Przed każdym przebiegiem (krok 7) scheduler daje blok każdej trwającej rozmowie, która go potrzebuje, a potem wpuszcza oczekujące żądania, dopóki starcza wolnych bloków i limitów (<code>max_num_seqs</code>, <code>max_num_batched_tokens</code>). Reszta czeka, dlatego otwartych czatów może być znacznie więcej niż rozmów liczonych naraz.</li>
+    <li><b>Prefill i decode.</b> Prefill liczy KV cache promptu, czasem w kilku przebiegach, a po ostatnim można wybrać pierwszy token odpowiedzi. Decode przetwarza ostatnio wybrany token, żeby wybrać następny. Jeden batch może łączyć decode trwających rozmów z fragmentem prefillu nowej.</li>
+    <li><b>Bloki.</b> Menedżer KV cache dzieli tę pamięć na bloki po 16 tokenów, w przykładzie po 5,2 MB. Daje je rozmowie w miarę wzrostu i prowadzi jej tablicę bloków, więc bloki jednej rozmowy mogą leżeć w różnych miejscach pamięci (PagedAttention). Zakończona rozmowa od razu je oddaje.</li>
+    <li><b>Cache prefiksu.</b> Zwolniony pełny blok zachowuje zawartość i hash tokenów od początku promptu do swojego końca. Żądanie z tym samym początkiem dostaje go jako policzony i pomija jego prefill, a jako pierwsze nadpisywane są bloki najdłużej nieużywane. Dlatego kolejna tura czatu bywa tania (zobacz „Prompt caching”).</li>
+    <li><b>Brak miejsca.</b> Gdy w trakcie generowania kończą się wolne bloki, scheduler wstrzymuje rozmowę, zwykle ostatnio wpuszczoną, i zwalnia jej bloki. Po wznowieniu vLLM V1 domyślnie liczy brakujący cache od nowa, a użytkownik widzi zacięcie strumienia.</li>
+    <li><b>Powrót.</b> Kroki 20–22 wybierają tokeny, sprawdzają warunki końca i wysyłają tekst zdarzeniami SSE. Niepełny znak UTF-8 czeka na kolejny token. Jeśli to nie koniec, pętla wraca do kroku 7.</li>
+    <li><b>Rozumowanie.</b> Dla serwera to zwykłe tokeny, a parser oddziela je od odpowiedzi. Wyższy reasoning effort nie daje dodatkowego GPU: rozmowa dłużej zajmuje bloki i miejsce w batchu (zobacz „Modele rozumujące”).</li>
   </ul>
-  <h3 class="sub">Co z tego wynika przy budowaniu systemu</h3>
+  <h3 class="sub">Poziom 4. Model: kroki 10, 11 i 19</h3>
   <ul class="notes">
-    <li>Objaw pomaga wskazać poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Przy spadku jakości po zmianie serwera inferencji sprawdź szablon czatu i ustawienia samplera.</li>
-    <li>Serwer inferencji można wymienić bez zmiany wag, jeśli nowy obsługuje architekturę i format modelu: vLLM, SGLang, TensorRT-LLM albo llama.cpp. Szybkość i zużycie pamięci potrafią się mocno różnić przy tych samych wagach, więc porównuj je na własnym ruchu (zobacz „Modele open-weight”).</li>
-    <li>Niższe poziomy zależą od sprzętu. Zamiast CUDA i sterownika NVIDIA na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA. Poziomy 1–4 wyglądają podobnie, a zmieniają się poziomy 5–7.</li>
+    <li><b>Wspólne wagi.</b> W decode jeden przebieg daje każdej rozmowie w batchu jeden nowy token. Wagi są czytane raz na przebieg dla całego batcha, więc osiem rozmów kosztuje tyle odczytów wag, co jedna. Po to jest batch. KV cache każdej rozmowy jest osobny.</li>
+    <li><b>Cache jednej rozmowy.</b> Każda warstwa trzyma klucz i wartość każdego tokena dla każdej głowicy KV. W przykładzie: 2 × 80 warstw × 8 głowic × 128 liczb × 2 bajty = 0,33 MB na token, czyli 10,5 GB dla 32 000 tokenów. Bez grouped-query attention, z 64 głowicami KV, byłoby to 84 GB, więcej niż ma jeden H100. Wzór i prawdziwe modele są w „Pętla generowania i KV cache”.</li>
+    <li><b>Ile rozmów się mieści.</b> 140 GB na cache to około 430 000 tokenów: 13 rozmów po 32 000 tokenów albo proporcjonalnie więcej krótszych. Liczbę rozmów naraz ograniczają też limity schedulera z poziomu 3.</li>
+  </ul>
+  <h3 class="sub">Poziom 5. Biblioteki: kroki 12–14</h3>
+  <ul class="notes">
+    <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia kerneli GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego kernela osobno. GPU i tak wykonuje je wszystkie.</li>
+    <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć dostaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez udziału niższych poziomów.</li>
+    <li><b>Inny sprzęt.</b> Poziomy 5–7 zależą od sprzętu: na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA.</li>
+  </ul>
+  <h3 class="sub">Poziom 6. Sterownik: kroki 15 i 16</h3>
+  <ul class="notes">
+    <li><b>Zasoby.</b> Sterownik w jądrze hosta tworzy kanały GPU i mapuje pamięć do procesu przy starcie i przy przydziałach. Ponowne użycie bloku KV cache nie wymaga nowego mapowania.</li>
+    <li><b>Zlecanie pracy.</b> Potem uruchomienie kernela to zapis do bufora poleceń i do doorbella, bez wywołania systemowego. Dlatego kolejne uruchomienia nie obciążają jądra Linuksa.</li>
+    <li><b>Obraz i host.</b> vLLM, PyTorch, cuBLAS i CUDA runtime pochodzą z obrazu kontenera, a <code>libcuda.so</code> i moduł jądra z hosta, przez NVIDIA Container Toolkit. Sterownik hosta musi być dość nowy dla wersji CUDA z obrazu.</li>
+  </ul>
+  <h3 class="sub">Poziom 7. GPU: kroki 17 i 18</h3>
+  <ul class="notes">
+    <li><b>Tensor parallelism.</b> Dzieli jedną warstwę między GPU: każda macierz wag jest pocięta na cztery części, a każde GPU trzyma 2 z 8 głowic KV. Rozmowa o długości 32 000 tokenów zajmuje więc po około 2,6 GB na każdym z czterech GPU. Żadne z nich nie ma pełnego wyniku warstwy, więc muszą go wspólnie policzyć.</li>
+    <li><b>Skąd wymóg szybkich łączy.</b> W klasycznym układzie GPU sumują wyniki częściowe (all-reduce) dwa razy w każdej warstwie, czyli 160 razy na przebieg przy 80 warstwach, a wszystkie cztery czekają na każdą wymianę. W decode jedna wymiana jest mała, 8 tokenów × 8192 liczby × 2 bajty = 131 KB, więc liczy się opóźnienie. W prefillu 32 000 tokenów jedna wymiana to 524 MB, około 84 GB na przebieg, więc liczy się przepustowość. Liczby przykładowe.</li>
+    <li><b>NVLink i sieć.</b> NVLink w H100 daje 900 GB/s łącznie, około 450 GB/s w każdą stronę. Port sieciowy 400 Gb/s (InfiniBand albo RoCE) to 50 GB/s w każdą stronę, nawet z RDMA, który pisze prosto do pamięci GPU. Te 84 GB to około 0,2 s na NVLink i około 2 s na jednym porcie, a to tylko limity interfejsów, bez narzutu. Dlatego grupę tensor parallelism trzyma się w jednej domenie NVLink.</li>
+    <li><b>Pipeline parallelism.</b> Dzieli model na grupy warstw, po jednej na węzeł, każda z własnymi wagami i cache. Między etapami idzie jedno przekazanie wyniku zamiast 160 wymian, więc wystarcza sieć. Ceną jest opóźnienie, bo token przechodzi etapy po kolei, choć kilka batchy na różnych etapach może podnieść przepustowość. Reguła z dokumentacji vLLM: tensor parallelism równy liczbie GPU w węźle, pipeline parallelism równy liczbie węzłów.</li>
   </ul>
 </section>
