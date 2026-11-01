@@ -6,8 +6,8 @@ export const CHANGELOG = [
     date: '2026-11-02',
     added: ['stos'],
     updated: [],
-    en: 'New topic: From chat to GPU. A zoomable map follows one request through seven levels: application, cluster, vLLM, model, libraries, driver and GPU. It shows what each level is responsible for, what it can’t see and how the request appears at that level. Notes cover the way back, where reasoning lives, and what sits in the container image and on the host.',
-    pl: 'Nowy temat: Od czatu do GPU. Mapa z przybliżaniem prowadzi jedno żądanie przez siedem poziomów, od aplikacji przez klaster, vLLM, model, biblioteki i sterownik do GPU. Pokazuje, za co odpowiada każdy poziom, czego nie widzi i jak wygląda tam żądanie. Notki opisują drogę powrotną, rolę rozumowania oraz to, co zawiera obraz kontenera, a co jest na hoście.',
+    en: 'New topic: The inference stack. Diagrams of seven levels and a 23-step walk follow one answer from the API through the server, model, libraries and driver to the GPU and back, including the control loop that repeats for every token. Notes cover reasoning, what goes in the container image and on the host, and how to narrow a symptom down to a level.',
+    pl: 'Nowy temat: Stos inferencji. Diagramy siedmiu poziomów i 23 kroki prowadzą jedną odpowiedź od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą kontrolną, która powtarza się dla każdego tokena. Notki opisują rozumowanie, zawartość obrazu kontenera i hosta oraz to, jak po objawie wskazać poziom.',
   },
   {
     date: '2026-11-01',
