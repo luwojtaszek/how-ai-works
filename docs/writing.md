@@ -12,7 +12,8 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - Test each sentence with "which ones, of what, why". "Gives shorter sequences" fails the test.
 - Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
-- Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each.
+- Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each. A widget's "step" is not the mechanism's step: the inference page keeps "step" for the player and says "model pass" for the computation.
+- A word like "always", "once" or "at every step" names its clock: which step, per what. "At every step, many times" says nothing.
 - Vary the sentence. Don't repeat one shape down a list ("X stops, X won't stop"), and don't end a paragraph on a slogan or punchline.
 - Don't build the text on contrast ("not X but Y") or on groups of three unless the content has that shape.
 - Say who does the thing. "SPIFFE keeps them out of the context" was wrong: the harness does.
@@ -64,10 +65,30 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 Every new topic and every heavy rewrite passes this, per language, before the preview:
 
 1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
-2. A sceptical reader goes through every number and claim, asks what a reader would wrongly conclude and how it fits the real world, and the findings are fixed before anyone else reads the text.
+2. Run the two reader reviews below, the learner and the sceptic, as read-only agents. Verify each finding, fix it, and repeat the sceptical read on what changed. Accuracy review doesn't replace them: a claim can be true and still leave the wrong picture.
 3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
 4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
 5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
 6. Write the scores, reviewers and reviewed revision in the handover.
+
+### Learner
+
+An engineer new to the topic reads the page and widget and reports where they got lost, terms used before they are defined, jumps that don't connect, what they still can't explain afterwards, and what needs a picture.
+
+### Sceptic
+
+A senior engineer who uses these products daily and doesn't accept a claim because it is true. They go through every number and strong claim, including widget text, steps, self-check answers and follow-ups, and for each one that fails they report the quote, the wrong conclusion or the unanswered "but what about X?", and a short fix.
+
+They look for:
+
+- Numbers without their conditions: a worst case read as typical, an example read as a limit. "A replica fits 13 conversations" was true and read as "a replica serves 13 users".
+- Claims that don't square with the real world the reader knows, such as how large services actually run.
+- Arithmetic a reader will redo. "140 GB over 80 GB per GPU, so four GPUs" invites "why not two?".
+- Mechanisms a reader expects and can't find, such as swapping out memory.
+- Contradictions between levels, or between the widget and the notes.
+- Conclusions that hold only for this example, and "must" where it is a choice.
+- Comparisons that break down. Say where the analogy stops.
+
+Answer the question on the page or cut the number. Prefer the one fix that removes the wrong conclusion over a caveat on every sentence. Run it on new text too: the sceptic's own fixes can be wrong, as "two 84 GB conversations fill 140 GB" was.
 
 Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
