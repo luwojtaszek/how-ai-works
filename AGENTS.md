@@ -26,8 +26,8 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 3. Data: `ST.<id>` and `X.<id>` in `src/data.js`, `ST_EN.<id>` and `X_EN.<id>` in `src/data.en.js`; `ht` in `X`/`X_EN` is the search title (what people type into Google, ≤ ~60 chars). For a new topic add the id to a chapter in `GROUPS` and an English slug to `SLUG_EN`. Never change a published slug.
 4. Widget: an `init…` function in `src/scripts/app.js` added to `inits`; every visible string through `tr()`; colours only via CSS variables so light and dark both work. Choices are equal tiles (`.opts` and `.opt`) with labels of one or two short lines, not wrapping pill buttons; an on/off option is a `role="switch"`. A flow between parties is one SVG with the talking nodes and paths highlighted and the protocol text below it, never text art.
 5. Changelog: add an entry at the top of `src/changelog.js` (`added` for new topics, `updated` for meaningful changes, text in both languages).
-6. New or renamed topic: run `scripts/og.sh` to regenerate the preview images.
-7. Language: write to `docs/writing.md`, then pass its "Review before anyone reads it" steps for every language before the preview.
+6. Language: write according to `docs/writing.md`, then pass its "Review before anyone reads it" steps for every language before the preview.
+7. New or renamed topic: run `scripts/og.sh` to regenerate the preview images.
 8. Check: `bun run build`, then `scripts/qa.sh <id>` (both languages, phone and desktop). Look at the page yourself on a phone width.
 
 ## Content standard
@@ -54,7 +54,7 @@ Record real corrections in the changelog (`updated`).
 
 - `.github/workflows/freshness.yml`: on the 1st of every month Claude Code rechecks dated claims against primary sources and opens a pull request with the fixes. Run it by hand (Actions → Freshness → Run workflow) with a task such as "Add a topic on <X>".
 - `.github/workflows/claude.yml`: mention `@claude` in an issue or pull request comment (write access only), for example on an error report.
-- Both need the repository secret `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). CI has no browser, so pull requests from CI skip `scripts/og.sh` and `scripts/qa.sh`: new topics fall back to the site preview image until `scripts/og.sh` is run locally.
+- Both need the repository secret `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). CI has no browser and no independent reviewers, so pull requests from CI skip `scripts/og.sh`, `scripts/qa.sh` and the language review, which runs locally before merge: new topics fall back to the site preview image until `scripts/og.sh` is run locally.
 
 ## Deploy
 

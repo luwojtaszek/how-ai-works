@@ -27,7 +27,7 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | Avoid | Write |
 |---|---|
 | kto dzwoni, woła system | kto wysłał żądanie, wywołuje usługę |
-| dowód tożsamości (for a credential) | poświadczenie |
+| dowód tożsamości (for a credential; a real ID in an analogy is fine) | poświadczenie |
 | krótko ważny, krótko żyjący | krótkotrwały |
 | urząd (alone) | urząd certyfikacji (CA), then CA |
 | sekret na okaziciela | klucz, którego może użyć każdy, kto go ma |
@@ -39,7 +39,7 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | service account | konto usługi |
 | natywna tożsamość obciążenia | name the mechanism, e.g. role IAM |
 | zdezorientowany zastępca | confused deputy |
-| skuteczne uprawnienia | co wolno i agentowi, i użytkownikowi |
+| skuteczne uprawnienia | uprawnienia, które faktycznie obowiązują |
 | SVID-y, bundle’em, cache’u | SVID, zestaw kluczy (bundle), cache, without declension |
 
 Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X" as a calque of "you want X", "do X" rather than "pod X" for targets, and nouns joined to a clause in headings ("Ograniczenia i kiedy to się opłaca"). "Czego nie chroni" asks about the protected thing; write "przed czym nie chroni".
@@ -48,7 +48,7 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 
 - Translated rhythm reads as badly as translated Polish. Check phrases such as "the area of one authority", "the decision has to see" and "where the model ends".
 - Prefer concrete verbs. "Issues identity" is vague; say what is issued, to whom.
-- A credential is the object, identity is who the process is, and proof is what a handshake shows about a key.
+- Keep words for an object, a subject and an action apart. In identity topics, a credential is the object, identity is who the process is, and proof is what a handshake shows about a key.
 - Keep "certificate authority (CA)" at first use, then "CA".
 
 ## Code and widgets
@@ -61,10 +61,10 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 
 Every new topic and every heavy rewrite passes this, per language, before the preview:
 
-1. Run `scripts/qa/copy.py`. It rejects known mistakes; add each new one to its list.
-2. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They give exact replacements.
-3. Below 8/10 the text goes back for rewriting, then back to review.
-4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
-5. Write the scores and reviewers in the handover.
+1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
+2. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
+3. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
+4. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
+5. Write the scores, reviewers and reviewed revision in the handover.
 
 Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
