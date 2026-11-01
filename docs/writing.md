@@ -13,7 +13,7 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
 - Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each. A widget's "step" is not the mechanism's step: the inference page keeps "step" for the player and says "model pass" for the computation.
-- A word like "always", "once" or "at every step" names its clock: which step, per what. "At every step, many times" says nothing.
+- A frequency names its unit in words the reader already has: "once per message", "many times per token". "At every step, many times" says nothing, and neither do player step numbers such as "steps 12–14".
 - Vary the sentence. Don't repeat one shape down a list ("X stops, X won't stop"), and don't end a paragraph on a slogan or punchline.
 - Don't build the text on contrast ("not X but Y") or on groups of three unless the content has that shape.
 - Say who does the thing. "SPIFFE keeps them out of the context" was wrong: the harness does.
