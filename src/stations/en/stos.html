@@ -1,21 +1,21 @@
 <section class="station" id="stos" data-hue="cost">
   <h2>From chat to GPU</h2>
-  <p class="lede">Before a chat message becomes matrix multiplication, it passes through a gateway, an inference server, the model, libraries, a driver and the graphics processor. Their separate jobs let you switch inference engines without changing the weights and trace a fault to one level.</p>
+  <p class="lede">Before a chat message becomes matrix multiplication, it passes through a gateway, an inference server, the model, libraries, a driver and the graphics processor. Each level has its own job and knows little about the others.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Follow one request through the stack. Tap an element to see what it does</p>
-    <div class="sk-nav" id="skNav" role="group" aria-label="Stack levels"></div>
+    <p class="lab-title">Follow a request down the stack. Tap an element to see its role</p>
+    <div class="opts sk-nav" id="skNav" role="group" aria-label="Stack levels"></div>
     <div id="skView"></div>
     <p class="hint">An example open stack: Kubernetes, vLLM, PyTorch and an NVIDIA H100. GPU figures are H100 specifications; the request, token IDs and tensor shapes are illustrative and simplified. OpenAI and Anthropic don’t publish their stacks.</p>
   </div>
   <h3 class="sub">The way back: from logits to text on screen</h3>
   <ul class="notes">
-    <li>After a step, logits sit in GPU memory, one vector per conversation in the batch. The sampler turns them into token IDs, which go back to the engine process. The engine appends each token to its conversation and checks for an end token or a length limit.</li>
+    <li>After a step, logits sit in GPU memory, one vector per conversation in the batch. The sampler turns them into token IDs, which go back to the engine process. The engine process appends each token to its conversation and checks for an end token or a length limit.</li>
     <li>The detokeniser in the API process turns the ID into text, checks for stop sequences and sends an SSE event over the open connection while the next step is already running. A text fragment isn’t always one token: if a token is only part of a UTF-8 character, the decoder waits for the next one.</li>
     <li>For an agent, the model’s response can be a tool call. The application runs the tool, appends the result to the history and sends a new request, which passes through all the levels again (see “The agent loop”).</li>
   </ul>
   <h3 class="sub">Where reasoning and reasoning effort live</h3>
   <ul class="notes">
-    <li>Reasoning has no level of its own. To the engine it is ordinary tokens, and to CUDA ordinary matrix multiplication. The weights govern whether reasoning continues. In a typical open model they were trained so that after a start-of-thinking marker the next tokens are reasoning until the model generates the end marker.</li>
+    <li>Reasoning has no level of its own. To the inference server it is ordinary tokens, and to CUDA ordinary matrix multiplication. The weights govern whether reasoning continues. In a typical open model they were trained so that after a start-of-thinking marker the next tokens are reasoning until the model generates the end marker.</li>
     <li>Effort is an API parameter. In open models it can go into the chat template and become a few tokens in the prompt or a length limit, depending on the model. A server-side parser separates reasoning tokens from the answer. In closed models the details aren’t public (see “Reasoning models”).</li>
     <li>Higher effort doesn’t give the model an extra GPU. The conversation occupies its batch slot and KV cache memory for longer.</li>
   </ul>
@@ -23,13 +23,13 @@
   <ul class="notes">
     <li>The container image holds vLLM, PyTorch and the CUDA libraries, meaning cuBLAS and the runtime. The full CUDA Toolkit is for building software, so a node that only runs models usually doesn’t need it.</li>
     <li>The driver’s kernel module runs in the host kernel, which the container shares. The NVIDIA Container Toolkit exposes driver libraries, including <code>libcuda.so</code>, and the <code>/dev/nvidia*</code> devices to the container. So the driver must be new enough for the CUDA libraries in the image. If you get an “insufficient driver” error, compare the driver version on the host with the CUDA version in the image before touching your code.</li>
-    <li>Kubernetes doesn’t know about GPUs by itself. The NVIDIA Device Plugin reports the <code>nvidia.com/gpu</code> resource to the kubelet, and the cluster scheduler places a pod with that limit on a node with free GPUs. The GPU Operator installs these components automatically.</li>
-    <li>Replication and splitting a model are different things. Three replicas are three full copies of the weights and more throughput. Tensor parallelism splits one copy’s weights and computation across several GPUs, usually because the model doesn’t fit on one. Those GPUs exchange data at every step.</li>
+    <li>The NVIDIA Device Plugin reports the <code>nvidia.com/gpu</code> resource to the kubelet, and the cluster scheduler places a pod with that limit on a node with free GPUs. The GPU Operator installs these components automatically.</li>
+    <li>Three replicas are three full copies of the weights and more throughput. Tensor parallelism splits one copy’s weights and computation across several GPUs, usually because the model doesn’t fit on one.</li>
   </ul>
   <h3 class="sub">What this means when you build a system</h3>
   <ul class="notes">
-    <li>Use the symptom to narrow down the level. A long time to first token under load usually means the queue or prefill, level 3. When memory runs out, check the logs for what failed to allocate: weights, working buffers or CUDA Graphs. Under KV cache pressure, vLLM usually pauses conversations and recomputes their cached state; fewer concurrent conversations help. A quality drop after switching engines is often the chat template or different sampler settings, not the GPU.</li>
-    <li>You can switch inference engines without changing the weights if the new one supports the model’s architecture and format: vLLM, SGLang, TensorRT-LLM or llama.cpp. Speed and memory use can differ a lot on identical weights, so compare them on your own traffic (see “Open-weight models”).</li>
+    <li>Use the symptom to narrow down the level. A long time to first token under load usually means the queue or prefill, level 3. When memory runs out, check the logs for what failed to allocate: weights, working buffers or CUDA Graphs. Under KV cache pressure, vLLM usually pauses conversations and recomputes their cached state; fewer concurrent conversations help. A quality drop after switching engines is often the chat template or different sampler settings.</li>
+    <li>You can switch inference servers without changing the weights if the new one supports the model’s architecture and format: vLLM, SGLang, TensorRT-LLM or llama.cpp. Speed and memory use can differ a lot on identical weights, so compare them on your own traffic (see “Open-weight models”).</li>
     <li>Lower levels depend on the hardware. Instead of CUDA and the NVIDIA driver, AMD GPUs use ROCm, Macs use Metal and TPUs use the XLA compiler. Levels 1–4 look similar; levels 5–7 change.</li>
   </ul>
 </section>
