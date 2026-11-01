@@ -16,7 +16,7 @@
   </ul>
   <h3 class="sub">Where reasoning and reasoning effort live</h3>
   <ul class="notes">
-    <li>Reasoning has no level of its own. To the inference server it is ordinary tokens, and to CUDA ordinary matrix multiplication. Whether the model generates another reasoning token depends on the prompt, the tokens so far and its weights. An open model trained for reasoning generates these tokens between start-of-thinking and end-of-thinking markers.</li>
+    <li>Reasoning has no level of its own. To the inference server it is ordinary tokens, and to CUDA ordinary matrix multiplication. Whether the model generates another reasoning token depends on the prompt, the tokens so far and its weights. Some open reasoning models generate these tokens between start-of-thinking and end-of-thinking markers.</li>
     <li>Effort is an API parameter. In open models the chat template can turn it into a few tokens in the prompt, and the server can also limit reasoning length. It depends on the model. A server-side parser separates reasoning tokens from the answer. In closed models the details aren’t public (see “Reasoning models”).</li>
     <li>Higher effort doesn’t give the model an extra GPU. The conversation occupies its batch slot and KV cache memory for longer.</li>
   </ul>
