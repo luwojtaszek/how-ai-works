@@ -11,7 +11,7 @@
   </div>
   <h3 class="sub">Poziom 1. System: kroki 1 i 23</h3>
   <ul class="notes">
-    <li><b>Historia.</b> W kroku 1 aplikacja wysyła całą historię i trzyma połączenie otwarte do zdarzenia końca. Między wiadomościami historia leży w aplikacji, a bezczynny czat nie rezerwuje pamięci GPU.</li>
+    <li><b>Historia.</b> W kroku 1 aplikacja wysyła całą historię i trzyma połączenie otwarte do zdarzenia końca. Między wiadomościami aplikacja przechowuje historię, a bezczynny czat nie rezerwuje pamięci GPU.</li>
     <li><b>Powrót.</b> W kroku 23 tekst przychodzi fragmentami, w miarę wybierania tokenów. Wywołanie narzędzia w odpowiedzi oznacza nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
   </ul>
   <h3 class="sub">Poziom 2. Klaster: kroki 2 i 3</h3>
@@ -25,7 +25,7 @@
   <ul class="notes">
     <li><b>Start.</b> Zanim przyjmie pierwsze żądanie, vLLM ładuje wagi, mierzy bufory robocze i CUDA Graphs, a resztę budżetu pamięci GPU (domyślnie 92%, <code>gpu_memory_utilization</code>) przeznacza na KV cache. W przykładzie cztery H100 to 320 GB, a po wagach i buforach zostaje około 140 GB.</li>
     <li><b>Przyjęcie.</b> Kroki 4–6 stosują szablon czatu, tokenizują wiadomości i ustawiają żądanie w kolejce repliki.</li>
-    <li><b>Przebieg modelu.</b> To jedno wykonanie wszystkich warstw dla całego batcha, czyli grupy rozmów przetwarzanych razem. Przed każdym przebiegiem (krok 7) scheduler daje blok każdej trwającej rozmowie, która go potrzebuje, a potem wpuszcza oczekujące żądania, dopóki starcza wolnych bloków i limitów (<code>max_num_seqs</code>, <code>max_num_batched_tokens</code>). Reszta czeka, dlatego otwartych czatów może być znacznie więcej niż rozmów liczonych naraz.</li>
+    <li><b>Przebieg modelu.</b> To jedno wykonanie wszystkich warstw dla całego batcha, czyli grupy rozmów przetwarzanych razem. Przed każdym przebiegiem (krok 7) scheduler przydziela potrzebne bloki trwającym rozmowom, a potem wpuszcza oczekujące żądania, dopóki starcza wolnych bloków i limitów (<code>max_num_seqs</code>, <code>max_num_batched_tokens</code>). Reszta czeka, dlatego otwartych czatów może być znacznie więcej niż rozmów liczonych naraz.</li>
     <li><b>Prefill i decode.</b> Prefill liczy KV cache promptu, czasem w kilku przebiegach, a po ostatnim można wybrać pierwszy token odpowiedzi. Decode przetwarza ostatnio wybrany token, żeby wybrać następny. Jeden batch może łączyć decode trwających rozmów z fragmentem prefillu nowej.</li>
     <li><b>Bloki.</b> Menedżer KV cache dzieli tę pamięć na bloki po 16 tokenów, w przykładzie po 5,2 MB. Daje je rozmowie w miarę wzrostu i prowadzi jej tablicę bloków, więc bloki jednej rozmowy mogą leżeć w różnych miejscach pamięci (PagedAttention). Zakończona rozmowa od razu je oddaje.</li>
     <li><b>Cache prefiksu.</b> Zwolniony pełny blok zachowuje zawartość i hash tokenów od początku promptu do swojego końca. Żądanie z tym samym początkiem dostaje go jako policzony i pomija jego prefill, a jako pierwsze nadpisywane są bloki najdłużej nieużywane. Dlatego kolejna tura czatu bywa tania (zobacz „Prompt caching”).</li>
@@ -35,14 +35,14 @@
   </ul>
   <h3 class="sub">Poziom 4. Model: kroki 10, 11 i 19</h3>
   <ul class="notes">
-    <li><b>Wspólne wagi.</b> W decode jeden przebieg daje każdej rozmowie w batchu jeden nowy token. Wagi są czytane raz na przebieg dla całego batcha, więc osiem rozmów kosztuje tyle odczytów wag, co jedna. Po to jest batch. KV cache każdej rozmowy jest osobny.</li>
+    <li><b>Wspólne wagi.</b> W decode jeden przebieg daje każdej rozmowie w batchu jeden nowy token. Wagi są czytane raz na przebieg dla całego batcha, więc osiem rozmów kosztuje tyle odczytów wag, co jedna. Na tym polega zysk z batcha. KV cache każdej rozmowy jest osobny.</li>
     <li><b>Cache jednej rozmowy.</b> Każda warstwa trzyma klucz i wartość każdego tokena dla każdej głowicy KV. W przykładzie: 2 × 80 warstw × 8 głowic × 128 liczb × 2 bajty = 0,33 MB na token, czyli 10,5 GB dla 32 000 tokenów. Bez grouped-query attention, z 64 głowicami KV, byłoby to 84 GB, więcej niż ma jeden H100. Wzór i prawdziwe modele są w „Pętla generowania i KV cache”.</li>
     <li><b>Ile rozmów się mieści.</b> 140 GB na cache to około 430 000 tokenów: 13 rozmów po 32 000 tokenów albo proporcjonalnie więcej krótszych. Liczbę rozmów naraz ograniczają też limity schedulera z poziomu 3.</li>
   </ul>
   <h3 class="sub">Poziom 5. Biblioteki: kroki 12–14</h3>
   <ul class="notes">
     <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia kerneli GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego kernela osobno. GPU i tak wykonuje je wszystkie.</li>
-    <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć dostaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez udziału niższych poziomów.</li>
+    <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć otrzymaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez udziału niższych poziomów.</li>
     <li><b>Inny sprzęt.</b> Poziomy 5–7 zależą od sprzętu: na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA.</li>
   </ul>
   <h3 class="sub">Poziom 6. Sterownik: kroki 15 i 16</h3>
