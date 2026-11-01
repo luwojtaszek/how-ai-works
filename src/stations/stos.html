@@ -1,0 +1,35 @@
+<section class="station" id="stos" data-hue="cost">
+  <h2>Od czatu do GPU</h2>
+  <p class="lede">Zanim wiadomość z czatu stanie się mnożeniem macierzy, przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych. Dzięki temu silnik można wymienić bez zmiany wag, a przyczyny błędu szukać na konkretnym poziomie.</p>
+  <div class="lab" id="skLab">
+    <p class="lab-title">Śledź to samo żądanie na kolejnych poziomach. Stuknij element, żeby zobaczyć, za co odpowiada</p>
+    <div class="sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
+    <div id="skView"></div>
+    <p class="hint">Przykładowy otwarty stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Liczby przy GPU to dane H100, a żądanie, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują swoich stosów.</p>
+  </div>
+  <h3 class="sub">Droga powrotna: od liczby do tekstu na ekranie</h3>
+  <ul class="notes">
+    <li>Po kroku obliczeń w pamięci GPU są logity, po jednym wektorze na rozmowę w batchu. Sampler zamienia je na identyfikatory tokenów, które wracają do procesu silnika. Silnik dopisuje tokeny do rozmów i sprawdza tokeny końca oraz limity długości.</li>
+    <li>Detokenizer w procesie API zamienia identyfikator na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE przez otwarte połączenie, a następny krok już się liczy. Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
+    <li>W agencie odpowiedź może być wywołaniem narzędzia. Aplikacja je uruchamia, dokleja wynik do historii i wysyła nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
+  </ul>
+  <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
+  <ul class="notes">
+    <li>Rozumowanie nie ma własnego poziomu. Dla silnika to zwykłe tokeny, a dla CUDA zwykłe mnożenia macierzy. O tym, że model dalej rozumuje, decydują wagi. W typowym modelu otwartym wagi wytrenowano tak, by model po znaczniku początku myślenia generował tokeny rozumowania aż do znacznika końca.</li>
+    <li>Effort to parametr API. W modelach otwartych może trafić do szablonu czatu i stać się kilkoma tokenami w prompcie albo limitem długości, zależnie od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
+    <li>Wyższy effort nie przydziela modelowi dodatkowego GPU. Rozmowa dłużej zajmuje miejsce w batchu i w KV cache.</li>
+  </ul>
+  <h3 class="sub">Co zawiera obraz kontenera, a co jest na hoście</h3>
+  <ul class="notes">
+    <li>Obraz kontenera zawiera vLLM, PyTorch i biblioteki CUDA, czyli cuBLAS i runtime. Pełny CUDA Toolkit służy do budowania oprogramowania, więc do samego uruchomienia zwykle nie jest potrzebny na węźle.</li>
+    <li>Moduł sterownika działa w jądrze hosta, które kontener współdzieli. NVIDIA Container Toolkit udostępnia kontenerowi biblioteki sterownika, w tym <code>libcuda.so</code>, oraz urządzenia <code>/dev/nvidia*</code>. Sterownik musi więc być dość nowy dla bibliotek CUDA z obrazu. Przy błędzie o zbyt starym sterowniku porównaj wersję sterownika na hoście z wersją CUDA w obrazie, zanim ruszysz kod.</li>
+    <li>Kubernetes sam nie zna GPU. NVIDIA Device Plugin zgłasza kubeletowi zasób <code>nvidia.com/gpu</code>, a scheduler klastra umieszcza poda z takim limitem na węźle, który ma wolne GPU. GPU Operator instaluje te elementy automatycznie.</li>
+    <li>Replikacja i dzielenie modelu to różne rzeczy. Trzy repliki to trzy pełne kopie wag i większa przepustowość. Tensor parallelism dzieli wagi i obliczenia jednej kopii między kilka GPU, najczęściej dlatego, że model nie mieści się na jednym. Te GPU wymieniają dane w każdym kroku.</li>
+  </ul>
+  <h3 class="sub">Co z tego wynika przy budowaniu systemu</h3>
+  <ul class="notes">
+    <li>Objaw wskazuje poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Spadek jakości po zmianie silnika to często szablon czatu albo inne ustawienia samplera, a nie GPU.</li>
+    <li>Silnik można wymienić bez zmiany wag, jeśli obsługuje architekturę i format modelu: vLLM, SGLang, TensorRT-LLM albo llama.cpp. Szybkość i zużycie pamięci potrafią się mocno różnić przy tych samych wagach, więc porównuj je na własnym ruchu (zobacz „Modele open-weight”).</li>
+    <li>Niższe poziomy zależą od sprzętu. Zamiast CUDA i sterownika NVIDIA na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA. Poziomy 1–4 wyglądają podobnie, a zmieniają się poziomy 5–7.</li>
+  </ul>
+</section>
