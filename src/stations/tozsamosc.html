@@ -8,6 +8,7 @@
     <li><b>Pierwszy sekret.</b> Menedżer sekretów nie rozwiązuje sprawy, bo żeby coś z niego pobrać, proces potrzebuje innego sekretu. To problem „secret zero”: skąd wziąć pierwsze poświadczenie.</li>
     <li><b>Poświadczenie z SPIFFE.</b> Proces startuje bez sekretu i prosi lokalną usługę o poświadczenie. Usługa rozpoznaje go na podstawie danych z systemu. W SPIRE poświadczenie jest domyślnie ważne godzinę albo 5 minut, a proces odbiera nowe, zanim stare wygaśnie.</li>
     <li><b>Co to daje.</b> W konfiguracji aplikacji nie ma stałego sekretu, a skradzione poświadczenie szybko wygasa. Każda rola agenta może mieć własną tożsamość, więc widać ją w logach i można zablokować jedną rolę bez wpływu na pozostałe.</li>
+    <li><b>A zwykły token OAuth?</b> Krótkotrwały access token działa prawie tak samo jak JWT-SVID. Żeby go dostać, agent potrzebuje jednak stałego <code>client_secret</code>. Agent bez powłoki i dostępu do plików sam go nie wyniesie, ale sekret może wyciec z repozytorium, obrazu kontenera albo backupu. SPIFFE nie zastępuje tokena, tylko usuwa ten sekret. W jednej chmurze to samo dają jej role IAM.</li>
     <li><b>Czego to nie daje.</b> SPIFFE mówi, kto wysłał żądanie, ale nie, czy powinien to zrobić. Zmanipulowany agent ma prawdziwą tożsamość, a przejęty proces może pobierać nowe poświadczenia. Nadal potrzebne są wąskie uprawnienia, izolacja i zatwierdzanie przez człowieka.</li>
   </ul>
   <div class="lab">
