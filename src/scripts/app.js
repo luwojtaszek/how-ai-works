@@ -2265,7 +2265,7 @@ const T=tr({lv:[
   hbm:['HBM3','80 GB, about 3.35 TB/s','GPU memory. During generation it limits speed more often than compute does. See “Why the GPU is idle”.'],
   nvl:['NVLink','900 GB/s','The link between GPUs of one replica. With tensor parallelism, GPUs exchange intermediate results over it at every step.']}
 });
-// the whole chain for one answer: [level, box, what happens]; steps 7-16 repeat for every token
+// the whole chain for one answer: [level, box, what happens]; steps 7 to 22 repeat for every token
 const ST=tr([
 [0,'app','Aplikacja wysyła przez HTTPS całą historię i parametry: model, temperaturę, limit długości, ewentualny schemat. Połączenie zostaje otwarte na strumień odpowiedzi.'],
 [1,'gw','Bramka sprawdza klucz i limity, a potem przekazuje żądanie do wybranego modelu.'],
