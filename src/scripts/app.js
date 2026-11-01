@@ -192,29 +192,29 @@ function initInj(){const CAPS=[['data',tr('Ma dostęp do prywatnej skrzynki','Ha
 /* ---------- tożsamość agenta ---------- */
 function initIdentity(){
   const CRED=[['key',tr('Klucz API','API key'),tr('env','env')],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
-  const ATT=[['shell',tr('Polecenie w powłoce','Shell command')],['log',tr('Token w logu','Token in a log')],['abuse',tr('Manipulacja agentem','Agent manipulation')],['cut',tr('Blokada agenta','Agent block')]];
-  const ROT=tr('do zmiany klucza','until manually rotated'),ALL=tr('API z tym kluczem','every API using the key'),NONE=tr('nigdzie','nowhere'),PERM=tr('uprawnienia agenta','the agent’s permissions'),RUN=tr('gdy agent działa','while the agent runs'),GRANT=tr('to, na co ma zgodę','whatever it’s allowed'),TRUST=tr('usługi ufające agentowi','services that trust the agent');
+  const ATT=[['shell',tr('Polecenie w powłoce','Shell command')],['log',tr('Token w logu','Token in a log')],['abuse',tr('Manipulacja agentem','Manipulated agent')],['cut',tr('Blokada agenta','Block agent')]];
+  const ROT=tr('do zmiany klucza','until key rotation'),ALL=tr('API z tym kluczem','every API using the key'),NONE=tr('nigdzie','nowhere'),PERM=tr('uprawnienia agenta','the agent’s permissions'),RUN=tr('gdy agent działa','while the agent runs'),GRANT=tr('to, na co ma zgodę','permitted actions'),TRUST=tr('usługi ufające agentowi','services that trust the agent');
   // [co ma atakujący, jak długo, gdzie, wynik: 0 źle, 1 dobrze, .5 częściowo, wyjaśnienie]
   const V={shell:{
-    key:[tr('klucz API','the API key'),ROT,ALL,0,tr('Polecenie env w kontenerze harnessu ujawniło klucz. Atakujący może użyć go z własnej maszyny, a w logach będzie wyglądał jak agent.','The key leaked. Running env in the harness’s container was enough. The attacker can use the key from their own machine, and in the logs they look like the agent.')],
-    jwt:[tr('JWT z dowolnym aud','a JWT for any aud'),tr('5 min, z odnawianiem','5 min, then again'),TRUST,0,tr('SPIFFE tu nie pomaga. Przy wpisie opartym na namespace i koncie usługi powłoka ma te same selektory co harness, więc dostaje SVID z Workload API, a odbiorcę wybiera sama. Krótki TTL ogranicza tylko użycie poświadczeń poza kontenerem.','SPIFFE didn’t help here. With an entry based on namespace and service account, the shell has the same selectors as the harness, so the Workload API issued it an SVID, and the caller picks the audience. A short TTL only limits what gets out of the container.')],
-    mtls:[tr('klucz prywatny SVID','the SVID private key'),tr('czas ataku + do 1 h','while the attack lasts + up to 1 h'),TRUST,0,tr('Powłoka pobrała też klucz prywatny, więc powiązanie tokena nie pomaga. Atakujący ma certyfikat i klucz, a kolejne pobierze tak samo. Włącz piaskownicę i porównaj.','Token binding changes nothing, because the shell fetched the private key too. The attacker holds the certificate and key, and can fetch the renewed ones the same way. Turn on the sandbox and compare.')]},
+    key:[tr('klucz API','the API key'),ROT,ALL,0,tr('Polecenie env w kontenerze harnessu ujawniło klucz. Atakujący może użyć go z własnej maszyny, a w logach będzie wyglądał jak agent.','Running env in the harness’s container exposed the key. The attacker can use it from their own machine and appear as the agent in the logs.')],
+    jwt:[tr('JWT z dowolnym aud','a JWT for any aud'),tr('5 min, z odnawianiem','5 min, renewable'),TRUST,0,tr('SPIFFE tu nie pomaga. Przy wpisie opartym na namespace i koncie usługi powłoka ma te same selektory co harness, więc dostaje SVID z Workload API, a odbiorcę wybiera sama. Krótki TTL ogranicza tylko użycie poświadczeń poza kontenerem.','SPIFFE doesn’t help here. For entries based on namespace and service account, the shell matches the harness’s selectors and gets an SVID from the Workload API. It chooses the audience. A short TTL only limits credential use outside the container.')],
+    mtls:[tr('klucz prywatny SVID','the SVID private key'),tr('czas ataku + do 1 h','attack duration + up to 1 h'),TRUST,0,tr('Powłoka pobrała też klucz prywatny, więc powiązanie tokena nie pomaga. Atakujący ma certyfikat i klucz, a kolejne pobierze tak samo. Włącz piaskownicę i porównaj.','The shell also fetched the private key, so token binding doesn’t help. The attacker has the certificate and key and can fetch replacements. Turn on the sandbox and compare.')]},
    box:{
-    key:[tr('nic','nothing'),'–',NONE,1,tr('Nic nie wyciekło, ale to zasługa izolacji, a nie klucza: proces harnessu jest poza zasięgiem piaskownicy. Pozostałe wady klucza zostają. Sprawdź scenariusz z logiem.','Nothing leaked, but the credit goes to isolation, not the key. A key in the harness process is out of the sandbox’s reach, and its other weaknesses remain: try the log scenario.')],
-    jwt:[tr('nic','nothing'),'–',NONE,1,tr('Piaskownica nie ma socketu Workload API. Nawet z dostępem do niego ma inne selektory. Bez pasującego wpisu otrzyma PermissionDenied.','The sandbox has no Workload API socket. Even if it saw one, it has different selectors, so with no matching entry it gets PermissionDenied.')],
-    mtls:[tr('nic','nothing'),'–',NONE,1,tr('Piaskownica nie ma socketu, a klucz prywatny zostaje w procesie harnessu. Taki układ powinien być na produkcji.','The sandbox has no socket, and the private key stays in the harness process. This is what a production layout should look like.')]},
+    key:[tr('nic','nothing'),'–',NONE,1,tr('Nic nie wyciekło, ale to zasługa izolacji, a nie klucza: proces harnessu jest poza zasięgiem piaskownicy. Pozostałe wady klucza zostają. Sprawdź scenariusz z logiem.','Isolation prevented the leak: the sandbox can’t reach the harness process. The API key’s other weaknesses remain. Try the log scenario.')],
+    jwt:[tr('nic','nothing'),'–',NONE,1,tr('Piaskownica nie ma socketu Workload API. Nawet z dostępem do niego ma inne selektory. Bez pasującego wpisu otrzyma PermissionDenied.','The sandbox has no Workload API socket. Even with access, its selectors differ. Without a matching entry, it receives PermissionDenied.')],
+    mtls:[tr('nic','nothing'),'–',NONE,1,tr('Piaskownica nie ma socketu, a klucz prywatny zostaje w procesie harnessu. Taki układ powinien być na produkcji.','The sandbox has no socket, and the private key stays in the harness process. Use this arrangement in production.')]},
    log:{
-    key:[tr('klucz API','the API key'),ROT,ALL,0,tr('Skopiowany klucz działa z każdej maszyny, dopóki ktoś nie zauważy wycieku i nie zmieni go we wszystkich systemach.','A bearer key works from any machine until someone notices the leak and changes it in every system.')],
-    jwt:[tr('JWT-SVID','JWT-SVID'),tr('do 5 min','up to 5 min'),tr('jedna usługa (aud)','one service (aud)'),.5,tr('Token bearer można wykorzystać ponownie, ale tylko w jednej usłudze i przez kilka minut, o ile nie ma szerokiego aud.','This is a bearer token too, so it can be replayed. The damage is limited to one service and a few minutes, as long as nobody issues a token with a broad aud.')],
-    mtls:[tr('token bez klucza','a token without the key'),tr('nie działa','doesn’t work'),NONE,1,tr('Serwer porównuje certyfikat połączenia ze skrótem w cnf. Bez klucza prywatnego połączenie się nie uda, więc token dostanie 401.','The server compares the connection’s certificate with the hash in cnf. Without the private key there’s no valid connection, so the token fails with a 401.')]},
+    key:[tr('klucz API','the API key'),ROT,ALL,0,tr('Skopiowany klucz działa z każdej maszyny, dopóki ktoś nie zauważy wycieku i nie zmieni go we wszystkich systemach.','A copied key works from any machine until someone notices the leak and changes it in every system.')],
+    jwt:[tr('JWT-SVID','JWT-SVID'),tr('do 5 min','up to 5 min'),tr('jedna usługa (aud)','one service (aud)'),.5,tr('Token bearer można wykorzystać ponownie, ale tylko w jednej usłudze i przez kilka minut, o ile nie ma szerokiego aud.','A bearer token can be replayed, but only at one service for a few minutes, provided its aud isn’t broad.')],
+    mtls:[tr('token bez klucza','a token without the key'),tr('nie działa','doesn’t work'),NONE,1,tr('Serwer porównuje certyfikat połączenia ze skrótem w cnf. Bez klucza prywatnego połączenie się nie uda, więc token dostanie 401.','The server compares the connection’s certificate with the hash in cnf. Without the private key, the connection fails and the token gets a 401.')]},
    abuse:{
-    key:[PERM,RUN,GRANT,0,tr('Wywołanie jest poprawne, a w logach widać tylko wspólny klucz, bez informacji, która instancja go użyła.','The call is valid, and the log shows only the shared key. You can’t even tell which instance did it.')],
-    jwt:[PERM,RUN,GRANT,.5,tr('Agent ma ważny SVID, więc samo poświadczenie nie powstrzyma ataku. Zyskujesz logi z nazwą agenta i politykę opartą na jego ID. Szkodę ograniczają limity i zatwierdzanie przez człowieka.','The SVID is valid, because this is the real agent. No credential stops this. You gain a log naming the agent and policy based on its ID. Limits and human approval contain the damage.')],
-    mtls:[PERM,RUN,GRANT,.5,tr('Certyfikat, tak samo jak JWT-SVID, nie powstrzyma tego ataku. Pokazuje, kto wywołał narzędzie, ale nie ocenia, czy powinien.','The strongest credential changes as much as a JWT-SVID here: nothing about the attack itself. Identity says who called the tool, not whether it should have.')]},
+    key:[PERM,RUN,GRANT,0,tr('Wywołanie jest poprawne, a w logach widać tylko wspólny klucz, bez informacji, która instancja go użyła.','The call is valid, but the log shows only the shared key and doesn’t identify the instance.')],
+    jwt:[PERM,RUN,GRANT,.5,tr('Agent ma ważny SVID, więc samo poświadczenie nie powstrzyma ataku. Zyskujesz logi z nazwą agenta i politykę opartą na jego ID. Szkodę ograniczają limity i zatwierdzanie przez człowieka.','The agent has a valid SVID, so credentials alone can’t stop the attack. Logs identify the agent, and policy can use its ID. Limits and human approval reduce the damage.')],
+    mtls:[PERM,RUN,GRANT,.5,tr('Certyfikat, tak samo jak JWT-SVID, nie powstrzyma tego ataku. Pokazuje, kto wywołał narzędzie, ale nie ocenia, czy powinien.','A certificate can’t stop this attack any more than a JWT-SVID can. It identifies who called the tool, without judging whether the call was appropriate.')]},
    cut:{
-    key:[tr('ważny klucz','a valid key'),tr('do zmiany wszędzie','until changed everywhere'),ALL,0,tr('Klucz trzeba zmienić w każdym systemie, a dostęp tracą przy tym wszyscy, którzy go współdzielą.','You have to change the key in every system, and you also cut off everyone sharing it.')],
-    jwt:[tr('ostatni token','the last token'),tr('5 min + sesje','5 min + sessions'),tr('jedna usługa (aud)','one service (aud)'),.5,tr('5 min to ważność ostatniego SVID, a nie gwarancja blokady. Usunięcie wpisu wstrzymuje nowe tokeny, ale ostatni działa do wygaśnięcia. Sesja w chmurze uzyskana w ostatniej chwili doda swój czas: w AWS STS minimum 15 min.','5 min is the last SVID’s validity, not a cut-off guarantee. You delete the registration entry and the agent gets no new tokens, but the last one works until it expires. A cloud session exchanged at the last moment adds its own time: in AWS STS the minimum is 15 min.')],
-    mtls:[tr('ostatni certyfikat','the last certificate'),tr('1 h + połączenia','1 h + connections'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale obecny działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Żeby blokować szybciej, skróć TTL.','No new certificate comes, but the current one lasts until its TTL ends, and open connections last longer if the server doesn’t cap them. For a fast cut-off, shorten the TTL.')]}};
+    key:[tr('ważny klucz','a valid key'),tr('do zmiany wszędzie','until changed everywhere'),ALL,0,tr('Klucz trzeba zmienić w każdym systemie, a dostęp tracą przy tym wszyscy, którzy go współdzielą.','The key must change in every system, cutting off everyone who shares it.')],
+    jwt:[tr('ostatni token','the last token'),tr('5 min + sesje','5 min + sessions'),tr('jedna usługa (aud)','one service (aud)'),.5,tr('5 min to ważność ostatniego SVID, a nie gwarancja blokady. Usunięcie wpisu wstrzymuje nowe tokeny, ale ostatni działa do wygaśnięcia. Sesja w chmurze uzyskana w ostatniej chwili doda swój czas: w AWS STS minimum 15 min.','The last SVID lasts 5 min; blocking access may take longer. Deleting the entry stops new tokens, but the last one works until expiry. A cloud session obtained just before expiry adds its lifetime: at least 15 min in AWS STS.')],
+    mtls:[tr('ostatni certyfikat','the last certificate'),tr('1 h + połączenia','1 h + connections'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale obecny działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Żeby blokować szybciej, skróć TTL.','The current certificate works until its TTL expires, but no new one is issued. Open connections last longer unless the server caps them. Shorten TTLs to block access sooner.')]}};
   let cred='key',att='shell',box=false;
   const group=(mount,list,get,set)=>{const bs=list.map(([k,t,sub])=>h('button',{type:'button',class:'opt','aria-pressed':String(get()===k),onclick:e=>{set(k);pressed(bs,e.currentTarget);paint();}},h('b',{},t),sub?h('small',{},sub):''));mount.replaceChildren(...bs);};
   function paint(){const shell=att==='shell',r=V[shell&&box?'box':att][cred];$('#idBox').hidden=!shell;
@@ -232,16 +232,16 @@ function initIdentity(){
   const EL={'ag-srv':['mTLS',176,82],'ai-ag':['socket',176,192],'ai-as':['mTLS',109,212],'ai-mcp':['mTLS',231,212]};
   const NODE='spiffe://acme.example/spire/agent/k8s_psat/prod/<UID>';
   const STEPS=[
-   {l:tr('Cały schemat','The whole system'),all:1,j:`${tr('serwer SPIRE','SPIRE server')}: ${tr('podpisuje SVID','signs SVIDs')}
+   {l:tr('Cały schemat','System map'),all:1,j:`${tr('serwer SPIRE','SPIRE server')}: ${tr('podpisuje SVID','signs SVIDs')}
 ${tr('agent SPIRE','SPIRE agent')}: ${tr('sprawdza proces, wydaje SVID','checks the process, issues the SVID')}
 ${tr('proces agenta','agent process')}: ${tr('dowodzi posiadania klucza','proves it holds the key')}
 ${tr('serwer autoryzacji','authorization server')}: ${tr('wydaje token','issues a token')}
-${tr('serwer MCP','MCP server')}: ${tr('sprawdza i decyduje','checks and decides')}`,m:tr('Góra schematu wydaje poświadczenia, zwykle jeszcze przed wywołaniem narzędzia. Dół ich używa. Serwer SPIRE nie bierze udziału w samym wywołaniu.','The top half issues identity, usually before any tool call. The bottom half uses it. The SPIRE server takes no part in the call itself.')},
+${tr('serwer MCP','MCP server')}: ${tr('sprawdza i decyduje','checks and decides')}`,m:tr('Góra schematu wydaje poświadczenia, zwykle jeszcze przed wywołaniem narzędzia. Dół ich używa. Serwer SPIRE nie bierze udziału w samym wywołaniu.','The upper part issues credentials, usually before a tool call. The lower part uses them. The SPIRE server isn’t involved in the call.')},
    {l:tr('Wpis','Entry'),w:['op','srv'],j:`${tr('wpis SPIRE','registration entry')}:
   spiffe_id: ${ID}
   parent_id: ${NODE}
   selectors: [k8s:ns:prod, k8s:sa:support-agent]
-  x509_svid_ttl: 3600`,m:tr('Operator lub kontroler zapisuje w serwerze SPIRE regułę: który proces na których węzłach dostaje to ID. Nikt nie przekazuje tu żadnego sekretu.','An operator or controller stores a rule in the SPIRE server: which process, on which nodes, gets this ID. Nobody hands out a secret here.')},
+  x509_svid_ttl: 3600`,m:tr('Operator lub kontroler zapisuje w serwerze SPIRE regułę: który proces na których węzłach dostaje to ID. Nikt nie przekazuje tu żadnego sekretu.','An operator or controller stores a rule in the SPIRE server: which process on which nodes receives this ID. No secret is passed.')},
    {l:tr('Węzeł','Node'),w:['ag','srv'],j:`→ agent.v1.Agent/AttestAgent
   type: k8s_psat
   token: eyJ…   // ${tr('podpisany przez Kubernetes','signed by Kubernetes')}
@@ -249,14 +249,14 @@ ${tr('serwer MCP','MCP server')}: ${tr('sprawdza i decyduje','checks and decides
 
 ← SVID ${tr('agenta SPIRE','of the SPIRE agent')}: ${NODE}
 
-${tr('dalej przez mTLS: wpisy węzła + bundle','then, over mTLS: this node’s entries + bundle')}`,m:tr('Atestacja węzła. Agent SPIRE sprawdza serwer zestawem kluczy od operatora, a serwer sprawdza token przez Kubernetes TokenReview. Dalej łączą się przez mTLS.','Node attestation. The SPIRE agent checks the server with a bundle set by the operator, and the server checks the token through Kubernetes TokenReview. From then on they talk over mTLS.')},
+${tr('dalej przez mTLS: wpisy węzła + bundle','then over mTLS: node entries + bundle')}`,m:tr('Atestacja węzła. Agent SPIRE sprawdza serwer zestawem kluczy od operatora, a serwer sprawdza token przez Kubernetes TokenReview. Dalej łączą się przez mTLS.','Node attestation. The SPIRE agent verifies the server using a bundle from the operator. The server checks the token through Kubernetes TokenReview. They then connect over mTLS.')},
    {l:tr('Klucze','Keys'),w:['ag','srv'],j:`${tr('agent SPIRE: nowa para kluczy procesu','SPIRE agent: new process key pair')}
 
 → svid.v1.SVID/BatchNewX509SVID
   entry_id: e-91f
   csr: <${tr('process public key','process public key')}>
 
-← ${tr('certificate signed by CA','certificate signed with the authority’s key')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera trafia tylko CSR. Certyfikat czeka w cache, nawet zanim proces wystartuje.','The private key is created at the SPIRE agent. Only a CSR goes to the server, so the server doesn’t receive the process’s private key. The certificate waits in a cache, even before the process starts.')},
+← ${tr('certificate signed by CA','certificate signed by the CA')}`,m:tr('Klucz prywatny powstaje u agenta SPIRE. Do serwera trafia tylko CSR. Certyfikat czeka w cache, nawet zanim proces wystartuje.','The SPIRE agent creates the private key and sends only a CSR to the server. The certificate stays cached, even before the process starts.')},
    {l:tr('Atestacja','Attestation'),w:['ai','ag'],x:['ag','k'],j:`→ unix:///run/spire/agent.sock
   FetchX509SVID   {}   // ${tr('bez hasła','no password')}
 
@@ -265,38 +265,38 @@ cgroup:  pod 7c1e…
 kubelet: k8s:ns:prod
          k8s:sa:support-agent
 
-${tr('required selectors','the entry’s selectors')}  ✓`,m:tr('Atestacja procesu. Proces startuje bez sekretu i nie podaje, kim jest. PID pochodzi z jądra, a reszta od kubeleta, więc proces nie może ich sfałszować. Nagłówek workload.spiffe.io utrudnia SSRF, ale nie jest hasłem.','Workload attestation. The process starts with no secret and doesn’t say who it is. The kernel gives the PID and the kubelet the rest, so it can’t supply false data. The workload.spiffe.io header hinders SSRF, but it isn’t a password.')},
+${tr('required selectors','the entry’s selectors')}  ✓`,m:tr('Atestacja procesu. Proces startuje bez sekretu i nie podaje, kim jest. PID pochodzi z jądra, a reszta od kubeleta, więc proces nie może ich sfałszować. Nagłówek workload.spiffe.io utrudnia SSRF, ale nie jest hasłem.','Workload attestation. The process starts without a secret and doesn’t identify itself. Its PID comes from the kernel, the rest from the kubelet, so it can’t forge them. The workload.spiffe.io header hinders SSRF but isn’t a password.')},
    {l:tr('SVID','SVID'),w:['ag','ai'],j:`← X509SVIDResponse { svids: [{
   spiffe_id: "${ID}",
   x509_svid: <${tr('certificate','certificate')}, URI SAN = ${tr('ID','this ID')}, 1 h>,
   x509_svid_key: <${tr('private key','private key')}>,
-  bundle: <${tr('trust domain CA','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, a nie do kontekstu modelu. Zestawem kluczy proces sprawdzi drugą stronę. Strumień zostaje otwarty i przyjdzie nim odnowiony certyfikat.','The certificate and key go over the local socket to the harness, not into the model’s context. The bundle is the authority’s public keys: the process uses it to check the other side. The stream stays open, and the renewed certificate arrives on it by itself.')},
+  bundle: <${tr('trust domain CA','trust domain CA')}> }] }`,m:tr('Certyfikat i klucz trafiają przez lokalny socket do harnessu, a nie do kontekstu modelu. Zestawem kluczy proces sprawdzi drugą stronę. Strumień zostaje otwarty i przyjdzie nim odnowiony certyfikat.','The certificate and key reach the harness through the local socket, outside the model’s context. The process uses the bundle to verify the other side. The stream stays open to deliver renewed certificates.')},
    {l:tr('Token','Token'),w:['ai','as'],j:`→ POST https://auth.example.com/token   (mTLS)
 grant_type=authorization_code
 code=<${tr('code after user consent','code after user consent')}>
 client_id=${ID}
 resource=${MCP}
 
-← { "access_token": "eyJ…", "expires_in": 300 }`,m:tr('Użytkownik wyraża zgodę na serwerze autoryzacji, więc agent nie widzi jego hasła. Agent uwierzytelnia się certyfikatem: client_id musi zgadzać się z URI SAN. Token działa tylko dla jednego serwera MCP.','The user consented at the authorization server, so the agent never sees their password. The agent proves its identity with the certificate: client_id must match the URI SAN. It gets a token for one MCP server only.')},
+← { "access_token": "eyJ…", "expires_in": 300 }`,m:tr('Użytkownik wyraża zgodę na serwerze autoryzacji, więc agent nie widzi jego hasła. Agent uwierzytelnia się certyfikatem: client_id musi zgadzać się z URI SAN. Token działa tylko dla jednego serwera MCP.','The user gives consent at the authorization server, so the agent never sees their password. The agent authenticates with its certificate: client_id must match the URI SAN. The token works only at one MCP server.')},
    {l:tr('Zawartość tokena','Token claims'),w:['as','ai'],j:`{ "sub": "user-4821",
   "client_id": "${ID}",
   "aud": "${MCP}",
   "scope": "refunds:write",
   "exp": <${tr('in 5 min','in 5 min')}>,
-  "cnf": { "x5t#S256": "bwcK0esc3AC…" } }`,m:tr('W jednym tokenie są obie tożsamości: użytkownik w sub i agent w client_id. To token OAuth podpisany kluczem serwera autoryzacji, a nie JWT-SVID. Pole cnf wiąże go z certyfikatem agenta, a aud z jednym serwerem.','One token carries both identities: the user in sub and the agent in client_id. This isn’t a JWT-SVID but an OAuth token signed with the authorization server’s key. The cnf field pins it to the agent’s certificate, and aud to one server.')},
+  "cnf": { "x5t#S256": "bwcK0esc3AC…" } }`,m:tr('W jednym tokenie są obie tożsamości: użytkownik w sub i agent w client_id. To token OAuth podpisany kluczem serwera autoryzacji, a nie JWT-SVID. Pole cnf wiąże go z certyfikatem agenta, a aud z jednym serwerem.','The token contains both identities: the user in sub and the agent in client_id. It’s an OAuth token signed by the authorization server, not a JWT-SVID. The cnf field binds it to the agent’s certificate; aud limits it to one server.')},
    {l:tr('Wywołanie','Call'),w:['ai','mcp'],j:`→ POST ${MCP}   (mTLS)
 Authorization: Bearer eyJ…
 
 {"jsonrpc": "2.0", "id": 7,
  "method": "tools/call",
  "params": {"name": "refund",
-  "arguments": {"order": 123, "amount": 80}}}`,m:tr('Model podaje tylko nazwę narzędzia i argumenty. Certyfikat i token dokłada harness, więc model ich nie widzi i nie może ich ujawnić.','The model only wrote the tool name and arguments. The harness adds the certificate and token, so the model can’t see or reveal them.')},
+  "arguments": {"order": 123, "amount": 80}}}`,m:tr('Model podaje tylko nazwę narzędzia i argumenty. Certyfikat i token dokłada harness, więc model ich nie widzi i nie może ich ujawnić.','The model gives only the tool name and arguments. The harness adds the certificate and token, which the model can’t see or reveal.')},
    {l:tr('Sprawdzenie','Checks'),w:['mcp'],j:`CA signature    ✓ bundle
 token signature ✓ auth server key
 token exp       ✓
 aud             ✓ this server
 cnf["x5t#S256"] ✓ certificate hash
-client_id       ✓ certificate ID`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał serwer SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','These are two separate sources of trust: the SPIRE authority signed the certificate, and the authorization server signed the token. The thumbprint is a SHA-256 of the certificate. A mismatch means a 401 invalid_token, so a token stolen from a log won’t work without the private key.')},
+client_id       ✓ certificate ID`,m:tr('To dwa osobne źródła zaufania: certyfikat podpisał serwer SPIRE, a token serwer autoryzacji. Skrót to SHA-256 certyfikatu. Niezgodność daje 401 invalid_token, więc token z logu nie zadziała bez klucza prywatnego.','The certificate and token have separate trust sources: the SPIRE server signs the certificate; the authorization server signs the token. The thumbprint is the certificate’s SHA-256 hash. A mismatch returns 401 invalid_token, so a logged token won’t work without the private key.')},
    {l:tr('Decyzja','Decision'),w:['mcp'],j:`${tr('agent','agent')}: ${ID}
 ${tr('user','user')}: user-4821
 ${tr('tool','tool')}: refund, amount: 80
@@ -305,7 +305,7 @@ ${tr('agent: refunds up to 100','agent role: refunds up to 100')}     ✓
 ${tr('order belongs to user','order belongs to the user')}  ✓
 → ${tr('allow','allow')}
 
-amount: 500 → ${tr('human approval','human approval')}`,m:tr('Dotąd sprawdzana była tożsamość. O uprawnieniach narzędzie decyduje osobno i to tutaj trzeba zatrzymać zmanipulowanego agenta, bo jego poświadczenia są prawdziwe.','Everything up to here proved identity. Authorization is a separate decision in the tool. This is where a manipulated agent has to be stopped, because its credentials are genuine.')}];
+amount: 500 → ${tr('human approval','human approval')}`,m:tr('Dotąd sprawdzana była tożsamość. O uprawnieniach narzędzie decyduje osobno i to tutaj trzeba zatrzymać zmanipulowanego agenta, bo jego poświadczenia są prawdziwe.','So far, the checks have verified identity. The tool decides permissions separately. It must stop a manipulated agent here, because the agent’s credentials are valid.')}];
   $('#idMap').innerHTML=`<svg viewBox="0 0 340 266"><defs><marker id="idArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--accent)"/></marker></defs><text class="gr" x="0" y="96">${tr('wydawanie','issuing')}</text><text class="gr" x="0" y="206">${tr('wywołanie','calling')}</text>`
     +Object.entries(E).map(([k,c])=>`<line class="ed${k==='ag-k'?' src':''}" id="ide-${k}" x1="${c[0]}" y1="${c[1]}" x2="${c[2]}" y2="${c[3]}"/>`).join('')
     +Object.entries(EL).map(([k,[t,x,y]])=>`<text class="el" id="idl-${k}" x="${x}" y="${y}"${x<170||x>200?' text-anchor="middle"':''}>${t}</text>`).join('')
@@ -316,8 +316,8 @@ amount: 500 → ${tr('human approval','human approval')}`,m:tr('Dotąd sprawdzan
     const lit=new Map(pairs.map(([a,b])=>[key(a,b),[a,b]]));
     Object.entries(E).forEach(([k,c])=>{const l=$('#ide-'+k),t=$('#idl-'+k),p=lit.get(k),[A,B]=k.split('-');const fwd=!p||p[0]===A;l.setAttribute('x1',fwd?c[0]:c[2]);l.setAttribute('y1',fwd?c[1]:c[3]);l.setAttribute('x2',fwd?c[2]:c[0]);l.setAttribute('y2',fwd?c[3]:c[1]);
       l.classList.toggle('on',!!p);l.classList.toggle('all',!!st.all);p?l.setAttribute('marker-end','url(#idArr)'):l.removeAttribute('marker-end');t?.classList.toggle('on',!!p);});
-    const who=st.all?tr('wszystkie elementy','all the parts'):[...w,...(st.x||[]).slice(1)].map(nm).join(', ');$('#idWho').textContent=st.l+': '+who;
-    $('#idMap').setAttribute('aria-label',st.all?tr('Operator zapisuje wpisy w serwerze SPIRE. Serwer łączy się z agentem SPIRE, a ten przez socket z agentem AI i pyta jądro oraz kubeleta o proces. Agent AI wywołuje serwer autoryzacji i serwer MCP.','The operator writes rules to the SPIRE server. The SPIRE server connects to the SPIRE agent, which connects over a socket to the agent process and asks the kernel and kubelet about it. The agent process calls the authorization server and the MCP server.'):st.l+': '+who);
+    const who=st.all?tr('wszystkie elementy','all elements'):[...w,...(st.x||[]).slice(1)].map(nm).join(', ');$('#idWho').textContent=st.l+': '+who;
+    $('#idMap').setAttribute('aria-label',st.all?tr('Operator zapisuje wpisy w serwerze SPIRE. Serwer łączy się z agentem SPIRE, a ten przez socket z agentem AI i pyta jądro oraz kubeleta o proces. Agent AI wywołuje serwer autoryzacji i serwer MCP.','The operator stores entries in the SPIRE server. The server connects to the SPIRE agent, which connects to the AI agent through a socket and queries the kernel and kubelet about the process. The AI agent calls the authorization server and MCP server.'):st.l+': '+who);
     const box=$('#idJson');box.textContent=st.j;box.scrollTop=0;$('#idStep').textContent=st.m;}
   PLAYERS.push(player($('#idPlayer'),{steps:STEPS.length-1,render,interval:9000,group:k=>k<=3?0:k<=6?1:2}));}
 /* end tożsamość agenta */
