@@ -10,6 +10,7 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - One fact, one place. Notes carry what the widget doesn't show.
 - Define a term at first use, with a concrete value. Keep confusable terms apart.
 - Test each sentence with "which ones, of what, why". "Gives shorter sequences" fails the test.
+- Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
 - Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each.
 - Vary the sentence. Don't repeat one shape down a list ("X stops, X won't stop"), and don't end a paragraph on a slogan or punchline.
@@ -63,9 +64,10 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 Every new topic and every heavy rewrite passes this, per language, before the preview:
 
 1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
-2. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
-3. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
-4. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
-5. Write the scores, reviewers and reviewed revision in the handover.
+2. A sceptical reader goes through every number and claim, asks what a reader would wrongly conclude and how it fits the real world, and the findings are fixed before anyone else reads the text.
+3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
+4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
+5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
+6. Write the scores, reviewers and reviewed revision in the handover.
 
 Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
