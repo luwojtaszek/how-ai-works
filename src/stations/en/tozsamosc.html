@@ -48,7 +48,7 @@
   <h3 class="sub">Agent and user identity</h3>
   <ul class="notes">
     <li>A SPIFFE ID identifies the agent, but not the user it works for. Without that information, a broadly privileged agent can become a “confused deputy”: a user obtains data they can’t access through an agent that can. Access decisions must account for both identities and allow only what both the agent and user may do.</li>
-    <li>RFC 8693 distinguishes impersonation from delegation. With impersonation, A acts as B and doesn’t appear in the logs. With delegation, A keeps its identity in the token’s <code>act</code> claim. Agents need delegation so an audit can distinguish a human click from a model’s decision. In the authorization code flow above, <code>client_id</code> identifies the agent; <code>act</code> usually appears with token exchange.</li>
+    <li>RFC 8693 distinguishes impersonation from delegation. With impersonation, the token recipient treats A as B. With delegation, A keeps its identity in the token’s <code>act</code> claim. Agents need delegation so an audit can distinguish a human click from a model’s decision. In the authorization code flow above, <code>client_id</code> identifies the agent; <code>act</code> usually appears with token exchange.</li>
     <li>The agent shouldn’t know the user’s password or hold their long-lived token. It gets a token for one server and scope, and authenticates to the authorization server with its SVID.</li>
     <li>A tool calling another service exchanges the token for a new, narrower one. MCP forbids forwarding it (token passthrough).</li>
   </ul>
