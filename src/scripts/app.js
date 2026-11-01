@@ -2329,23 +2329,18 @@ const diagram=g=>{
   svg.addEventListener('click',pick);svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e);}});
   return svg;};
 let cur=0,sel='app',step=0,free=false;
-const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'callout sk-detail','aria-live':'polite'}),acts=h('div',{class:'sk-actions'}),main=h('div',{class:'sk-main'},h('div',{},fig,legend),h('div',{},detail,acts)),req=h('div');
+const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'callout sk-detail','aria-live':'polite'}),main=h('div',{class:'sk-main'},h('div',{},fig,legend),detail),req=h('div');
 view.append(head,main,req);
-const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{if(i!==cur)to(ST.findIndex(s=>s[0]===i));}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
-const to=k=>{const[l,b]=ST[k],dir=l>cur?'in':l<cur?'out':null;step=k;cur=l;sel=b;free=false;draw(dir);};
-const lastBtn=()=>$('.btn:last-child',acts);
+const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{if(i!==cur)pl.set(ST.findIndex(s=>s[0]===i));}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
 const draw=dir=>{const l=T.lv[cur],g=GEO[cur],[name,,text]=T.n[sel];
   lvBtns.forEach((e,i)=>e.setAttribute('aria-pressed',i===cur?'true':'false'));
   head.replaceChildren(...[h('p',{class:'sk-head'},h('b',{},tr('Poziom ','Level ')+(cur+1)+'. '+l.n),' '+l.q),h('p',{class:'sk-freq'},l.fr),
     h('dl',{class:'id-res sk-res'},h('div',{},h('dt',{},tr('Odpowiada za','Responsible for')),h('dd',{},l.dec)),h('div',{},h('dt',{},tr('Nie wie','Doesn’t know')),h('dd',{},l.blind))),
     l.fact?h('p',{class:'sk-fact'},l.fact):null].filter(Boolean));
   fig.replaceChildren(diagram(g));fig.className='id-d sk-d'+(dir?' sk-'+dir:'');
-  detail.replaceChildren(h('p',{class:'sk-step'},tr('Krok ','Step ')+(step+1)+tr(' z ',' of ')+ST.length),h('p',{},h('b',{},name+'. '),free?text:ST[step][2]));
-  const last=step===ST.length-1;
-  acts.replaceChildren(...[step?h('button',{type:'button',class:'btn ghost',onclick:()=>{to(step-1);($('.btn.ghost',acts)||lastBtn()).focus();}},tr('Wstecz','Back')):null,
-    h('button',{type:'button',class:'btn',onclick:()=>{to(last?0:step+1);lastBtn().focus();}},last?tr('Od początku','Start again'):tr('Następny krok','Next step'))].filter(Boolean));
+  detail.replaceChildren(h('p',{},h('b',{},name+'. '),free?text:ST[step][2]));
   req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
-draw();}
+const pl=player($('#skPlayer'),{steps:ST.length-1,interval:6000,render:k=>{const[l,b]=ST[k],dir=l>cur?'in':l<cur?'out':null;step=k;cur=l;sel=b;free=false;draw(dir);}});PLAYERS.push(pl);}
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,

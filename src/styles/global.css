@@ -1037,10 +1037,5 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 .sk-li.s{border-top:2px dotted var(--muted)}
 .sk-rl{margin-top:14px;font-size:.8rem;color:var(--muted)}
 .sk-req{margin:4px 0 0;padding:10px 12px;border-radius:8px;background:var(--sunken);font:400 .8rem/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
-.sk-step{font-size:.8rem;color:var(--muted);margin-bottom:2px}
-.sk-actions{display:flex;gap:8px;margin-top:10px}
-.sk-actions .btn{min-height:44px;flex:0 1 auto}
-.sk-actions .btn:last-child:not(:first-child){flex:1}
 @media (max-width:600px){.id-res.sk-res{grid-template-columns:1fr}}
-@media (min-width:860px){.sk-nav small{display:block}.sk-main{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;align-items:start}.sk-main>:last-child{position:sticky;top:76px}.sk-main .sk-actions{flex-wrap:wrap}.sk-d{margin-top:12px}}
-/* end stos */
+@media (min-width:860px){.sk-nav small{display:block}.sk-main{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;align-items:start}.sk-main>:last-child{position:sticky;top:76px;margin-top:12px}}
