@@ -48,7 +48,7 @@
   <h3 class="sub">Tożsamość agenta i użytkownika</h3>
   <ul class="notes">
     <li>SPIFFE ID wskazuje agenta, ale nie użytkownika, dla którego agent pracuje. Bez tej informacji grozi problem confused deputy: użytkownik bez prawa do danych dostaje je przez agenta, który to prawo ma. Decyzja o dostępie musi więc uwzględniać obie tożsamości, a dozwolone jest tylko to, co wolno i agentowi, i użytkownikowi.</li>
-    <li>RFC 8693 rozróżnia impersonację i delegację. Przy impersonacji A występuje jako B i w logach nie widać A. Przy delegacji A zachowuje własną tożsamość, zapisaną w polu <code>act</code> tokena. Agentom potrzebna jest delegacja, żeby audyt odróżniał kliknięcie człowieka od decyzji modelu. W pokazanym przepływie z kodem autoryzacji agenta wskazuje <code>client_id</code>, a <code>act</code> pojawia się zwykle przy wymianie tokena.</li>
+    <li>RFC 8693 rozróżnia impersonację i delegację. Przy impersonacji odbiorca tokena traktuje A jak B. Przy delegacji A zachowuje własną tożsamość, zapisaną w polu <code>act</code> tokena. Agentom potrzebna jest delegacja, żeby audyt odróżniał kliknięcie człowieka od decyzji modelu. W pokazanym przepływie z kodem autoryzacji agenta wskazuje <code>client_id</code>, a <code>act</code> pojawia się zwykle przy wymianie tokena.</li>
     <li>Agent nie powinien znać hasła użytkownika ani mieć jego długotrwałego tokena. Dostaje token dla jednego serwera i zakresu, a wobec serwera autoryzacji uwierzytelnia się swoim SVID.</li>
     <li>Narzędzie, które wywołuje kolejną usługę, wymienia token na nowy, węższy. MCP zabrania przekazywania tokena dalej (token passthrough).</li>
   </ul>
