@@ -3,7 +3,7 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
-    date: '2026-10-30',
+    date: '2026-11-01',
     added: ['tozsamosc'],
     updated: ['mcp'],
     en: 'New topic: Agent identity. One widget compares an OAuth token, a JWT-SVID and mTLS in six scenarios, including a shell in the agent’s container, where SPIFFE doesn’t help. Another follows a SPIRE entry through node and workload attestation and certificate signing to the MCP server’s decision. The diagram highlights the participants at each step. “MCP” links to the topic from its authorization section.',
