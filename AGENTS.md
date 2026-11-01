@@ -23,7 +23,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 1. Polish station `src/stations/<id>.html`: `<h2>` title, `<p class="lede">`, widget(s) in `<div class="lab">`, then 2–4 sections as `<h3 class="sub">` + `<ul class="notes">`.
 2. English station `src/stations/en/<id>.html` with identical markup (same ids and classes); translate, don't transliterate.
 3. Data: `ST.<id>` and `X.<id>` in `src/data.js`, `ST_EN.<id>` and `X_EN.<id>` in `src/data.en.js`; `ht` in `X`/`X_EN` is the search title (what people type into Google, ≤ ~60 chars). For a new topic add the id to a chapter in `GROUPS` and an English slug to `SLUG_EN`. Never change a published slug.
-4. Widget: an `init…` function in `src/scripts/app.js` added to `inits`; every visible string through `tr()`; colours only via CSS variables so light and dark both work.
+4. Widget: an `init…` function in `src/scripts/app.js` added to `inits`; every visible string through `tr()`; colours only via CSS variables so light and dark both work. Choices are equal tiles (`.opts` and `.opt`) with labels of one or two short lines, not wrapping pill buttons; an on/off option is a `role="switch"`. A flow between parties is one SVG with the talking nodes and paths highlighted and the protocol text below it, never text art.
 5. Changelog: add an entry at the top of `src/changelog.js` (`added` for new topics, `updated` for meaningful changes, text in both languages).
 6. New or renamed topic: run `scripts/og.sh` to regenerate the preview images.
 7. Check: `bun run build`, then `scripts/qa.sh <id>` (both languages, phone and desktop). Look at the page yourself on a phone width.
@@ -31,6 +31,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 ## Content standard
 
 - Lede: the essence in 1–2 sentences. Then an analogy that genuinely helps, the widget, and sections from mechanism to nuances to what it means for building systems.
+- A topic readers have probably never met opens with the problem and how the approach solves it, in a short section before the first widget. A widget means nothing until the reader knows what it is about.
 - Every sentence teaches something concrete: a mechanism, number, trade-off, failure mode or decision rule. No filler, no marketing tone, no emoji.
 - Correct as of the date you write it. Numbers with units and context; dates for anything time-sensitive; primary sources you actually opened (2–4 per topic). Illustrative numbers in widgets are labelled as illustrative.
 - Cross-reference other topics by their exact title in quotes.

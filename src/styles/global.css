@@ -132,6 +132,14 @@ main{--gutter:clamp(18px,5vw,64px);padding:48px var(--gutter) calc(28px + env(sa
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
 .btn.ghost:hover{opacity:1;background:var(--sunken)}
 .btn.ghost[aria-pressed="true"]{background:var(--accent-t);border-color:var(--accent);color:var(--ink)}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.opts.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.opt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:48px;padding:7px 6px;border:1px solid var(--line-strong);border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:.86rem;line-height:1.25;text-align:center;cursor:pointer}
+.opt b{font-weight:500;text-wrap:balance}
+.opt small{font-size:.76rem;color:var(--muted)}
+.opt:hover{background:var(--sunken)}
+.opt[aria-pressed="true"]{background:var(--accent-t);border-color:var(--accent)}
+@media (max-width:600px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn.ghost:disabled:hover{background:transparent}
 label.ctl{display:grid;gap:4px;font-size:.88rem;color:var(--muted);flex:1 1 220px;min-width:0}
@@ -603,13 +611,6 @@ svg{display:block;max-width:100%;height:auto}
 @media (max-width:600px){#injCtx .seg{flex-basis:auto}}
 
 /* tozsamosc */
-.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
-.opts.four{grid-template-columns:repeat(4,minmax(0,1fr))}
-.opt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:48px;padding:7px 6px;border:1px solid var(--line-strong);border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:.86rem;line-height:1.25;text-align:center;cursor:pointer}
-.opt b{font-weight:500;text-wrap:balance}
-.opt small{font-size:.76rem;color:var(--muted)}
-.opt:hover{background:var(--sunken)}
-.opt[aria-pressed="true"]{background:var(--accent-t);border-color:var(--accent)}
 .id-sw{display:flex;align-items:center;gap:10px;margin-top:12px;padding:4px 0;border:0;background:none;color:var(--ink);font:inherit;font-size:.92rem;text-align:left;cursor:pointer}
 .id-sw[hidden]{display:none}
 .id-sw i{position:relative;flex:none;width:36px;height:20px;border-radius:999px;background:var(--line-strong);transition:background .15s}
@@ -638,7 +639,7 @@ svg{display:block;max-width:100%;height:auto}
 #idJson{white-space:pre;overflow-x:auto;overflow-wrap:normal}
 #tozsamosc .notes{gap:14px}
 @media (prefers-reduced-motion:reduce){.id-d .ed.on{animation:none}.id-sw i,.id-sw i::after{transition:none}}
-@media (max-width:600px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}.id-res{grid-template-columns:1fr;gap:0}.id-res>div{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:10px;padding:7px 0;align-items:baseline}.id-res dd{margin:0;font-size:.95rem}}
+@media (max-width:600px){.id-res{grid-template-columns:1fr;gap:0}.id-res>div{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:10px;padding:7px 0;align-items:baseline}.id-res dd{margin:0;font-size:.95rem}}
 /* end tozsamosc */
 
 /* design */
