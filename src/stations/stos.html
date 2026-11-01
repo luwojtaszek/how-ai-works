@@ -9,50 +9,50 @@
     <div id="skPlayer"></div>
     <p class="hint">Przykładowy stos: Kubernetes, vLLM, PyTorch i NVIDIA H100. Przykładowy model ma 70 mld parametrów i 80 warstw. Liczby przy GPU to dane H100, a model, liczba replik, identyfikatory tokenów i kształty tensorów są przykładowe i uproszczone. OpenAI i Anthropic nie publikują pełnych stosów.</p>
   </div>
-  <h3 class="sub">Poziom 1. System: kroki 1 i 23</h3>
+  <h3 class="sub">Poziom 1. System</h3>
   <ul class="notes">
-    <li><b>Historia.</b> W kroku 1 aplikacja wysyła całą historię i trzyma połączenie otwarte do zdarzenia końca. Między wiadomościami aplikacja przechowuje historię, a bezczynny czat nie rezerwuje pamięci GPU.</li>
-    <li><b>Powrót.</b> W kroku 23 tekst przychodzi fragmentami, w miarę wybierania tokenów. Wywołanie narzędzia w odpowiedzi oznacza nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
+    <li><b>Historia.</b> Aplikacja wysyła całą historię i trzyma połączenie otwarte do zdarzenia końca. Między wiadomościami aplikacja przechowuje historię, a bezczynny czat nie rezerwuje pamięci GPU.</li>
+    <li><b>Powrót.</b> Tekst przychodzi fragmentami, w miarę wybierania tokenów. Wywołanie narzędzia w odpowiedzi oznacza nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
   </ul>
-  <h3 class="sub">Poziom 2. Klaster: kroki 2 i 3</h3>
+  <h3 class="sub">Poziom 2. Klaster</h3>
   <ul class="notes">
     <li><b>Żądanie.</b> Bramka sprawdza klucz i limity, a router wybiera jedną replikę. Zwykły Service rozdziela połączenia, a nie żądania, i nie zagląda do promptu, a każda replika ma własną kolejkę, więc żądania mogą czekać w jednej, gdy inna nie ma pracy. Router znający prefiksy (llm-d, NVIDIA Dynamo) może wybrać replikę, która wciąż ma bloki tej rozmowy, uwzględniając też jej obciążenie.</li>
     <li><b>Czemu replika ma cztery GPU.</b> Przykładowy model ma 70 mld parametrów, czyli 140 GB wag, a jeden H100 ma 80 GB pamięci. Przy 16 bitach na parametr wagi zajmą dwa H100, ale prawie nic nie zostanie na KV cache. Trzy odpadają, bo tensor parallelism musi równo podzielić 8 głowic KV (poziom 7), dlatego replika ma cztery. Kwantyzacja albo GPU z większą pamięcią zmienia ten rachunek (zobacz „Kwantyzacja”). Podział jednej kopii między GPU opisuje poziom 7. Trzy repliki to trzy niezależne kopie, każda z własnym KV cache.</li>
     <li><b>Rozmieszczenie.</b> Zanim przyjdą żądania, Kubernetes umieszcza Pod na węźle z wolnymi GPU. Pod prosi o <code>nvidia.com/gpu: 4</code>, a scheduler klastra widzi tylko liczbę GPU. Na węźle NVIDIA Device Plugin preferuje dobrze połączone GPU, ale tego nie gwarantuje. Gwarancję daje budowa węzła albo przydział Dynamic Resource Allocation, który wybiera urządzenia po atrybutach.</li>
     <li><b>Kilka węzłów.</b> Model za duży na jeden węzeł działa jako grupa Podów jednej repliki. Tą grupą zarządza LeaderWorkerSet, procesy robocze może koordynować Ray, a włączony gang scheduling uruchamia Pody razem albo wcale, bo bez jednego z nich model nie policzy tokena.</li>
   </ul>
-  <h3 class="sub">Poziom 3. Serwer: kroki 4–9 i 20–22</h3>
+  <h3 class="sub">Poziom 3. Serwer</h3>
   <ul class="notes">
     <li><b>Start.</b> Zanim przyjmie pierwsze żądanie, vLLM ładuje wagi, mierzy bufory robocze i CUDA Graphs, a resztę budżetu pamięci GPU (domyślnie 92%, <code>gpu_memory_utilization</code>) przeznacza na KV cache. W przykładzie cztery H100 to 320 GB, a po wagach i buforach zostaje około 140 GB.</li>
-    <li><b>Przyjęcie.</b> Kroki 4–6 stosują szablon czatu, tokenizują wiadomości i ustawiają żądanie w kolejce repliki.</li>
-    <li><b>Przebieg modelu.</b> To jedno wykonanie wszystkich warstw dla całego batcha, czyli grupy rozmów przetwarzanych razem. Przed każdym przebiegiem (krok 7) scheduler przydziela potrzebne bloki trwającym rozmowom, a potem wpuszcza oczekujące żądania, dopóki starcza wolnych bloków i limitów (<code>max_num_seqs</code>, <code>max_num_batched_tokens</code>). Reszta czeka w kolejce. Otwartych czatów może być znacznie więcej niż rozmów liczonych naraz, bo bezczynny czat nie zajmuje bloków.</li>
+    <li><b>Przyjęcie.</b> Proces API stosuje szablon czatu, tokenizuje wiadomości i ustawia żądanie w kolejce repliki.</li>
+    <li><b>Przebieg modelu.</b> To jedno wykonanie wszystkich warstw dla całego batcha, czyli grupy rozmów przetwarzanych razem. Przed każdym przebiegiem scheduler przydziela potrzebne bloki trwającym rozmowom, a potem wpuszcza oczekujące żądania, dopóki starcza wolnych bloków i limitów (<code>max_num_seqs</code>, <code>max_num_batched_tokens</code>). Reszta czeka w kolejce. Otwartych czatów może być znacznie więcej niż rozmów liczonych naraz, bo bezczynny czat nie zajmuje bloków.</li>
     <li><b>Prefill i decode.</b> Prefill liczy KV cache promptu, czasem w kilku przebiegach, a po ostatnim przebiegu można wybrać pierwszy token odpowiedzi. Decode przetwarza ostatnio wybrany token, żeby wybrać następny. Jeden batch może łączyć decode trwających rozmów z fragmentem prefillu nowej. Taki przebieg trwa znacznie dłużej niż sam decode, więc nowy długi prompt może zaciąć wszystkie strumienie w batchu, a <code>max_num_batched_tokens</code> ogranicza wielkość fragmentu.</li>
     <li><b>Bloki.</b> Menedżer KV cache dzieli tę pamięć na bloki po 16 tokenów, w przykładzie po 5,2 MB. Daje je rozmowie w miarę wzrostu i prowadzi jej tablicę bloków, więc bloki jednej rozmowy mogą leżeć w różnych miejscach pamięci (PagedAttention). Zakończona rozmowa od razu je oddaje.</li>
     <li><b>Cache prefiksu.</b> Zwolniony pełny blok zachowuje zawartość i hash tokenów od początku promptu do swojego końca. Żądanie z tym samym początkiem dostaje go jako policzony i pomija jego prefill, a jako pierwsze nadpisywane są bloki najdłużej nieużywane. Dlatego kolejna tura czatu bywa tania (zobacz „Prompt caching”). Nic nie gwarantuje, jak długo blok przetrwa: zajęta replika go nadpisze, a bez routera znającego prefiksy kolejna tura może trafić na inną replikę i liczyć prompt od nowa.</li>
     <li><b>Zrzucanie cache.</b> Dodatki takie jak LMCache albo NVIDIA KVBM przenoszą bloki do RAM lub na dysk, zamiast je nadpisywać. Liczone rozmowy i tak potrzebują cache w pamięci GPU, więc zysk dotyczy powrotu do długiej rozmowy: jej prompt nie musi być liczony od nowa.</li>
     <li><b>Brak miejsca.</b> Gdy w trakcie generowania kończą się wolne bloki, scheduler wstrzymuje rozmowę, zwykle ostatnio wpuszczoną, i zwalnia jej bloki. Po wznowieniu vLLM V1 domyślnie liczy brakujący cache od nowa, a użytkownik widzi zacięcie strumienia.</li>
-    <li><b>Powrót.</b> Kroki 20–22 wybierają tokeny, sprawdzają warunki końca i wysyłają tekst zdarzeniami SSE. Niepełny znak UTF-8 czeka na kolejny token. Jeśli to nie koniec, pętla wraca do kroku 7.</li>
+    <li><b>Powrót.</b> Sampler wybiera tokeny, proces silnika sprawdza token końca i limit długości, a proces API wysyła tekst zdarzeniami SSE. Niepełny znak UTF-8 czeka na kolejny token. Jeśli to nie koniec, pętla wraca do schedulera.</li>
     <li><b>Rozumowanie.</b> Dla serwera to zwykłe tokeny, a parser oddziela je od odpowiedzi. Wyższy reasoning effort nie daje dodatkowego GPU: rozmowa dłużej zajmuje bloki i miejsce w batchu (zobacz „Modele rozumujące”).</li>
   </ul>
-  <h3 class="sub">Poziom 4. Model: kroki 10, 11 i 19</h3>
+  <h3 class="sub">Poziom 4. Model</h3>
   <ul class="notes">
     <li><b>Wspólne wagi.</b> W decode jeden przebieg daje każdej rozmowie w batchu jeden nowy token. Wagi są czytane raz na przebieg dla całego batcha, więc osiem rozmów kosztuje tyle odczytów wag, co jedna. Na tym polega zysk z batcha. KV cache każdej rozmowy jest jednak osobny i czytany w każdym przebiegu, więc większy batch może wydłużyć czas między tokenami w każdym strumieniu, a pamięć to tylko górny limit.</li>
     <li><b>Cache jednej rozmowy.</b> Każda warstwa trzyma klucz i wartość każdego tokena dla każdej głowicy KV. W przykładzie: 2 × 80 warstw × 8 głowic × 128 liczb × 2 bajty = 0,33 MB na token, czyli 10,5 GB dla 32 000 tokenów. Bez grouped-query attention, z 64 głowicami KV, byłoby to 84 GB, więc w cache tej repliki zmieściłaby się jedna taka rozmowa. Wzór i prawdziwe modele są w „Pętla generowania i KV cache”.</li>
     <li><b>Ile to rozmów.</b> 140 GB cache to około 430 000 tokenów. To 13 rozmów po 32 000 tokenów liczonych w tej samej chwili, jeśli nic nie współdzielą, albo około 100 po 4000. Rozmowy z tym samym początkiem promptu dzielą jego pełne bloki. Działa to jak pula połączeń do bazy, ale miejsce jest zajęte przez całą odpowiedź, sekundy zamiast milisekund, i rośnie z kontekstem: przy 100 zajętych miejscach i średnio 10 s na odpowiedź replika daje około 10 odpowiedzi na sekundę (liczby przykładowe). Użytkownik czatu wysyła kolejną wiadomość po dłuższej chwili, a agent zaraz po wykonaniu narzędzia. Nadmiarowe żądania czekają w kolejce.</li>
   </ul>
-  <h3 class="sub">Poziom 5. Biblioteki: kroki 12–14</h3>
+  <h3 class="sub">Poziom 5. Biblioteki</h3>
   <ul class="notes">
     <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia kerneli GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego kernela osobno. GPU i tak wykonuje je wszystkie.</li>
     <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć otrzymaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez ponownego przydzielania pamięci GPU.</li>
     <li><b>Inny sprzęt.</b> Poziomy 5–7 zależą od sprzętu: na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA.</li>
   </ul>
-  <h3 class="sub">Poziom 6. Sterownik: kroki 15 i 16</h3>
+  <h3 class="sub">Poziom 6. Sterownik</h3>
   <ul class="notes">
     <li><b>Zasoby.</b> Sterownik w jądrze hosta tworzy kanały GPU i mapuje pamięć do procesu przy starcie i przy przydziałach. Ponowne użycie bloku KV cache nie wymaga nowego mapowania.</li>
     <li><b>Zlecanie pracy.</b> Potem uruchomienie kernela to zapis do bufora poleceń i do doorbella, bez wywołania systemowego. Dlatego kolejne uruchomienia nie obciążają jądra Linuksa.</li>
     <li><b>Obraz i host.</b> vLLM, PyTorch, cuBLAS i CUDA runtime pochodzą z obrazu kontenera, a moduł jądra i zwykle <code>libcuda.so</code> z hosta, przez NVIDIA Container Toolkit. Sterownik hosta musi zwykle być dość nowy dla wersji CUDA z obrazu.</li>
   </ul>
-  <h3 class="sub">Poziom 7. GPU: kroki 17 i 18</h3>
+  <h3 class="sub">Poziom 7. GPU</h3>
   <ul class="notes">
     <li><b>Tensor parallelism.</b> Dzieli jedną warstwę między GPU: każda macierz wag jest pocięta na cztery części, a każde GPU trzyma 2 z 8 głowic KV. Rozmowa o długości 32 000 tokenów zajmuje więc po około 2,6 GB na każdym z czterech GPU. Żadne z nich nie ma pełnego wyniku warstwy, więc muszą go wspólnie policzyć.</li>
     <li><b>Czemu liczą się szybkie łącza.</b> W klasycznym układzie GPU sumują wyniki częściowe (all-reduce) dwa razy w każdej warstwie, czyli 160 razy na przebieg przy 80 warstwach, a wszystkie cztery czekają na każdą wymianę. W decode jedna wymiana jest mała, 8 tokenów × 8192 liczby × 2 bajty = 131 KB, więc liczy się opóźnienie. W prefillu 32 000 tokenów wymiany sumują się do około 84 GB, więc liczy się przepustowość. Liczby przykładowe.</li>

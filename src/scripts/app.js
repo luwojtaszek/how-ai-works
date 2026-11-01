@@ -2267,7 +2267,7 @@ const T=tr({lv:[
   nvl:['NVLink','900 GB/s total','The link between GPUs of one replica. With tensor parallelism, GPUs add up partial results over it in every layer.']}
 });
 // the whole chain for one answer: [level, box, what happens]; steps 7 to 22 repeat for every model pass.
-// step numbers (1-based) are quoted in the attn step and the station headings: recheck them after editing this list
+// step numbers (1-based) are quoted in the attn step: recheck them after editing this list
 const ST=tr([
 [0,'app','Aplikacja wysyła przez HTTPS całą historię i parametry: model, temperaturę, limit długości, ewentualny schemat. Połączenie zostaje otwarte na strumień odpowiedzi.'],
 [1,'gw','Bramka sprawdza klucz i limity, a potem przekazuje żądanie do wybranego modelu.'],
