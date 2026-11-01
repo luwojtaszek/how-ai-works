@@ -11,16 +11,18 @@
     <li><b>Limits.</b> SPIFFE identifies the caller but doesn’t decide whether a call is allowed. A manipulated agent has a genuine identity, and a compromised process can fetch new credentials. You need narrow permissions, isolation and human approval.</li>
   </ul>
   <div class="lab">
-    <p class="lab-title">Choose a credential and scenario. See what the attacker gains, how long it lasts and where they can use it</p>
-    <p class="hint">An SVID is a short-lived SPIFFE credential: a token or certificate. Anyone can use a copied token. Using a certificate also requires its private key.</p>
-    <p class="hint">Agent credential</p>
+    <p class="lab-title">What does an attacker gain when something goes wrong? Compare three ways an agent can authenticate</p>
+    <p class="hint">An agent handles support tickets and uses a CRM. Pick how it authenticates and what happened. The result shows what the attacker gets, how long they can use it, and where.</p>
+    <p class="hint">How the agent authenticates</p>
     <div class="opts" id="idCred" role="group" aria-label="Agent credential"></div>
-    <p class="hint" style="margin-top:14px">Scenario</p>
+    <p class="hint id-d0" id="idCredD"></p>
+    <p class="hint" style="margin-top:14px">What happened</p>
     <div class="opts four" id="idAtt" role="group" aria-label="Scenario"></div>
+    <p class="hint id-d0" id="idAttD"></p>
     <button type="button" class="id-sw" id="idBox" role="switch" aria-checked="false"><i aria-hidden="true"></i>Tools in a separate sandbox</button>
     <dl class="id-res"><div><dt>Attacker holds</dt><dd id="idGot"></dd></div><div><dt>Access time</dt><dd id="idTime"></dd></div><div><dt>Reach</dt><dd id="idReach"></dd></div></dl>
     <div id="idMsg" aria-live="polite"></div>
-    <p class="hint">SPIRE’s default TTLs are 1 h for a certificate and 5 min for a token. Both can be shortened. A bound OAuth token works only with the client certificate.</p>
+    <p class="hint">Default TTLs in SPIRE: 1 h for a certificate, 5 min for a token. Both can be shortened.</p>
   </div>
   <h3 class="sub">How SPIFFE works</h3>
   <div class="lab">
