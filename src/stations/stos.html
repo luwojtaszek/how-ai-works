@@ -18,8 +18,8 @@
   <ul class="notes">
     <li><b>Żądanie.</b> Bramka sprawdza klucz i limity, a router wybiera jedną replikę. Zwykły Service nie zagląda do promptu. Router znający prefiksy (llm-d, NVIDIA Dynamo) może wybrać replikę, która wciąż ma bloki tej rozmowy, uwzględniając też jej obciążenie.</li>
     <li><b>Czemu replika ma cztery GPU.</b> Przykładowy model ma 70 mld parametrów, czyli 140 GB wag, a jeden H100 ma 80 GB pamięci. Jedna kopia modelu musi więc zająć kilka GPU, jak opisuje poziom 7. Trzy repliki to trzy niezależne kopie, każda z własnym KV cache.</li>
-    <li><b>Rozmieszczenie.</b> Zanim przyjdą żądania, Kubernetes umieszcza pod na węźle z wolnymi GPU. Pod prosi o <code>nvidia.com/gpu: 4</code>, a NVIDIA Device Plugin zgłasza tylko liczbę GPU, bez informacji o tym, jak są połączone. Szybkie połączenie tej czwórki wynika z budowy węzła albo z przydziału Dynamic Resource Allocation, który wybiera urządzenia po atrybutach.</li>
-    <li><b>Kilka węzłów.</b> Model za duży na jeden węzeł działa jako grupa podów jednej repliki. Tą grupą zarządza LeaderWorkerSet, procesy robocze może koordynować Ray, a włączony gang scheduling uruchamia pody razem albo wcale, bo bez jednego z nich model nie policzy tokena.</li>
+    <li><b>Rozmieszczenie.</b> Zanim przyjdą żądania, Kubernetes umieszcza Pod na węźle z wolnymi GPU. Pod prosi o <code>nvidia.com/gpu: 4</code>, a NVIDIA Device Plugin zgłasza tylko liczbę GPU, bez informacji o tym, jak są połączone. Szybkie połączenie tej czwórki wynika z budowy węzła albo z przydziału Dynamic Resource Allocation, który wybiera urządzenia po atrybutach.</li>
+    <li><b>Kilka węzłów.</b> Model za duży na jeden węzeł działa jako grupa Podów jednej repliki. Tą grupą zarządza LeaderWorkerSet, procesy robocze może koordynować Ray, a włączony gang scheduling uruchamia Pody razem albo wcale, bo bez jednego z nich model nie policzy tokena.</li>
   </ul>
   <h3 class="sub">Poziom 3. Serwer: kroki 4–9 i 20–22</h3>
   <ul class="notes">

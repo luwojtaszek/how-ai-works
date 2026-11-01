@@ -36,6 +36,7 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | demon | usługa |
 | odcięcie | zablokowanie |
 | shell (in prose) | powłoka |
+| pod (Kubernetes) | Pod, Pody, Podów, so it isn't read as the Polish preposition "pod" |
 | service account | konto usługi |
 | natywna tożsamość obciążenia | name the mechanism, e.g. role IAM |
 | zdezorientowany zastępca | confused deputy |
