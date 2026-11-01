@@ -1,6 +1,7 @@
 <section class="station" id="stos" data-hue="cost">
   <h2>Od czatu do GPU</h2>
   <p class="lede">Zanim wiadomość z czatu stanie się mnożeniem macierzy, przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych.</p>
+  <p>Gdy odpowiedź przychodzi wolno albo serwerowi brakuje pamięci, samo API nie wskazuje przyczyny. Podział stosu na poziomy pokazuje, który element sprawdzić.</p>
   <div class="lab" id="skLab">
     <p class="lab-title">Śledź żądanie w dół stosu. Stuknij element, żeby poznać jego rolę</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
@@ -9,14 +10,14 @@
   </div>
   <h3 class="sub">Droga powrotna: od logitów do tekstu</h3>
   <ul class="notes">
-    <li>Po kroku obliczeń w pamięci GPU są logity, po jednym wektorze na rozmowę w batchu. Sampler zamienia je na identyfikatory tokenów, które wracają do procesu silnika. Proces silnika dopisuje tokeny do rozmów i sprawdza tokeny końca oraz limity długości.</li>
-    <li>Detokenizer w procesie API zamienia identyfikator na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE przez otwarte połączenie, a następny krok już się liczy. Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
+    <li>Po kroku obliczeń logity są w pamięci GPU, po jednym wektorze na rozmowę w batchu. Sampler zamienia je na identyfikatory tokenów, które wracają do procesu silnika. Proces silnika dopisuje tokeny do rozmów i sprawdza tokeny końca oraz limity długości.</li>
+    <li>Detokenizer w procesie API zamienia identyfikator na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE przez otwarte połączenie, nie czekając na koniec odpowiedzi. Fragment tekstu nie zawsze odpowiada jednemu tokenowi: jeśli token to tylko część znaku w UTF-8, dekoder czeka na następny.</li>
     <li>W agencie odpowiedź może być wywołaniem narzędzia. Aplikacja je uruchamia, dokleja wynik do historii i wysyła nowe żądanie, które znów przechodzi przez wszystkie poziomy (zobacz „Pętla agenta”).</li>
   </ul>
   <h3 class="sub">Rozumowanie i parametr reasoning effort</h3>
   <ul class="notes">
-    <li>Rozumowanie nie ma własnego poziomu. Dla serwera inferencji to zwykłe tokeny, a dla CUDA zwykłe mnożenia macierzy. O tym, że model dalej rozumuje, decydują wagi. W typowym modelu otwartym wagi wytrenowano tak, by model po znaczniku początku myślenia generował tokeny rozumowania aż do znacznika końca.</li>
-    <li>Effort to parametr API. W modelach otwartych może trafić do szablonu czatu i stać się kilkoma tokenami w prompcie albo limitem długości, zależnie od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
+    <li>Rozumowanie nie ma własnego poziomu. Dla serwera inferencji to zwykłe tokeny, a dla CUDA zwykłe mnożenia macierzy. O tym, że model dalej rozumuje, decydują wagi. Typowy model otwarty jest wytrenowany tak, by generować tokeny rozumowania między znacznikami początku i końca myślenia.</li>
+    <li>Effort to parametr API. W modelach otwartych może przez szablon czatu stać się kilkoma tokenami w prompcie, a serwer może też ograniczyć długość rozumowania. Zależy to od modelu. Parser po stronie serwera oddziela tokeny rozumowania od odpowiedzi. W modelach zamkniętych szczegóły nie są publiczne (zobacz „Modele rozumujące”).</li>
     <li>Wyższy effort nie przydziela modelowi dodatkowego GPU. Rozmowa dłużej zajmuje miejsce w batchu i w KV cache.</li>
   </ul>
   <h3 class="sub">Co zawiera obraz kontenera, a co jest na hoście</h3>
@@ -28,7 +29,7 @@
   </ul>
   <h3 class="sub">Co z tego wynika przy budowaniu systemu</h3>
   <ul class="notes">
-    <li>Po objawie zawęzisz poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Spadek jakości po zmianie silnika to często szablon czatu albo inne ustawienia samplera.</li>
+    <li>Objaw pomaga wskazać poziom. Długi czas do pierwszego tokena przy obciążeniu to zwykle kolejka albo prefill, czyli poziom 3. Przy braku pamięci sprawdź w logach, czego zabrakło: miejsca na wagi, bufory robocze czy CUDA Graphs. Niedobór KV cache w vLLM zwykle powoduje wstrzymywanie rozmów i ponowne liczenie, a pomaga mniej rozmów naraz. Spadek jakości po zmianie serwera inferencji to często szablon czatu albo inne ustawienia samplera.</li>
     <li>Serwer inferencji można wymienić bez zmiany wag, jeśli nowy obsługuje architekturę i format modelu: vLLM, SGLang, TensorRT-LLM albo llama.cpp. Szybkość i zużycie pamięci potrafią się mocno różnić przy tych samych wagach, więc porównuj je na własnym ruchu (zobacz „Modele open-weight”).</li>
     <li>Niższe poziomy zależą od sprzętu. Zamiast CUDA i sterownika NVIDIA na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA. Poziomy 1–4 wyglądają podobnie, a zmieniają się poziomy 5–7.</li>
   </ul>

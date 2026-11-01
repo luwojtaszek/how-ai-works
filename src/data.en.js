@@ -19,7 +19,7 @@ export const SLUG_EN = {
   kontekst: 'context-engineering', kompakcja: 'context-compaction', embeddingi: 'embeddings', agent: 'agent-loop', narzedzia: 'tool-calling',
   format: 'structured-output', harness: 'coding-agent-harness', multiagent: 'multi-agent', halucynacje: 'hallucinations',
   injection: 'prompt-injection', tozsamosc: 'agent-identity', produkcja: 'llms-in-production', batching: 'continuous-batching', spec: 'speculative-decoding',
-  injection: 'prompt-injection', produkcja: 'llms-in-production', batching: 'continuous-batching', stos: 'from-chat-to-gpu', spec: 'speculative-decoding',
+  stos: 'from-chat-to-gpu',
   kwantyzacja: 'quantization', moe: 'mixture-of-experts', wybor: 'choosing-a-model', openweight: 'open-weight-models',
   jev: 'when-not-to-use-an-llm', destylacja: 'distillation', design: 'system-design', fiszki: 'flashcards',
 };
@@ -332,10 +332,10 @@ X_EN.roofline = { ht: 'Why LLM decode is memory-bound: roofline model explained'
   r: [['How To Scale Your Model: All About Rooflines', 'https://jax-ml.github.io/scaling-book/roofline'], ['How To Scale Your Model: All About Transformer Inference', 'https://jax-ml.github.io/scaling-book/inference'], ['Databricks: LLM Inference Performance Engineering (MBU)', 'https://www.databricks.com/blog/llm-inference-performance-engineering-best-practices'], ['NVIDIA: H100 specifications', 'https://www.nvidia.com/en-us/data-center/h100/']] };
 /* end roofline */
 /* stos */
-ST_EN.stos = { t: 'From chat to GPU', q: 'What happens to a request from the application down to the GPU, and who is responsible for what?',
+ST_EN.stos = { t: 'From chat to GPU', q: 'How does a request reach the GPU, and what does each level do?',
   a: 'The application sends the whole history over HTTP. A gateway checks the key and limits, and a router picks a replica. In the inference server, the API process applies the chat template and tokenises the text, the scheduler builds a batch at every step, and a worker runs the model. The model uses its weights in matrix multiplications. PyTorch or the inference server picks ready-made GPU programs for them, compute kernels such as those in cuBLAS, and CUDA launches them. The Linux kernel sets up channels and maps memory, and then the driver writes commands to a buffer and notifies the GPU with no system call. The GPU can accelerate multiplications using Tensor Cores. On the way back the sampler picks a token from the logits, and the API process turns it into text and sends an SSE event. The loop runs until a stop condition is met. Reasoning has no separate level because it comes from the weights.' };
 X_EN.stos = { ht: 'From chat to GPU: the whole LLM stack, level by level', d: 'An interactive map from the application through vLLM, PyTorch, CUDA and the driver down to Tensor Cores. See what each level does.',
-  lay: 'A map you can zoom into. From far away you see only the application and the API, and at each zoom level the same message looks different: a request, tokens, tables of numbers, hardware commands and single multiplications. Each level has its own job and knows little about the others.',
+  lay: 'A map you can zoom into. At the top level you see the application and the API, and at each zoom level the same message looks different: a request, tokens, tables of numbers, hardware commands and single multiplications.',
   f: [['Does CUDA know the model is reasoning?', 'No. CUDA launches kernels on tensors. Whether the next tokens are reasoning comes from the weights, and separating them from the answer is the job of a server-side parser.'],
     ['A container reports a driver that is too old, although the host has the CUDA Toolkit. What do you check?', 'The Toolkit doesn’t matter here. What counts is the host driver, <code>libcuda.so</code> and the kernel module, and the version of the CUDA libraries in the image. Update the driver or use an image built for an older CUDA.'],
     ['Why doesn’t a normal kernel launch need a system call?', 'The OS kernel maps the command buffers and doorbell into the process once. After that the user-space driver writes commands to memory and notifies the GPU with a doorbell write, so the CPU doesn’t switch to kernel mode for every operation. This path is described in research, because NVIDIA doesn’t document it publicly.'],
