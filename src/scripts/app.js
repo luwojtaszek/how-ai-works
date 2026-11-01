@@ -2343,7 +2343,7 @@ const draw=dir=>{const l=T.lv[cur],g=GEO[cur],[name,,text]=T.n[sel];
   detail.replaceChildren(h('p',{class:'sk-step'},tr('Krok ','Step ')+(step+1)+tr(' z ',' of ')+ST.length),h('p',{},h('b',{},name+'. '),free?text:ST[step][2]));
   const last=step===ST.length-1;
   acts.replaceChildren(...[step?h('button',{type:'button',class:'btn ghost',onclick:()=>{to(step-1);lastBtn().focus();}},tr('Wstecz','Back')):null,
-    h('button',{type:'button',class:'btn',onclick:()=>{to(last?0:step+1);lastBtn().focus();}},last?tr('Od początku','Start again'):tr('Dalej','Next'))].filter(Boolean));
+    h('button',{type:'button',class:'btn',onclick:()=>{to(last?0:step+1);lastBtn().focus();}},last?tr('Od początku','Start again'):tr('Następny krok','Next step'))].filter(Boolean));
   req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
 draw();}
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
