@@ -9,6 +9,7 @@ function check(tag){
     if(e.scrollHeight>e.clientHeight+2&&!['INPUT','SELECT','TEXTAREA'].includes(e.tagName))out.push(tag+' clipY '+sel(e)+' '+e.scrollHeight+'>'+e.clientHeight);}
   const lab=e.closest('.lab,.gt,.say,.fups,.card,.lane');if(lab&&lab!==e){const L=lab.getBoundingClientRect();if(r.right>L.right+1||r.left<L.left-1)out.push(tag+' escapes '+sel(e)+' by '+Math.round(Math.max(r.right-L.right,L.left-r.left)));}
   if(W<=900&&(e.tagName==='BUTTON'||e.tagName==='A'&&e.closest('.lab'))&&r.height<28&&e.offsetParent)out.push(tag+' small-target '+sel(e)+' '+Math.round(r.width)+'x'+Math.round(r.height));}
+ for(const t of document.querySelectorAll('main .opt b')){if(t.getBoundingClientRect().height>2.7*parseFloat(getComputedStyle(t).lineHeight))out.push(tag+' long-tile '+t.textContent);}
  for(const t of document.querySelectorAll('main svg text')){const s=t.ownerSVGElement.getBoundingClientRect(),r=t.getBoundingClientRect();if(r.width&&(r.right>s.right+2||r.left<s.left-2||r.bottom>s.bottom+2||r.top<s.top-2))out.push(tag+' svgtext-out '+sel(t.ownerSVGElement)+' "'+t.textContent.slice(0,14)+'"');}}
 check('start');
 for(let i=0;i<60;i++){const n=[...document.querySelectorAll('main .pl-next')].find(b=>!b.disabled);if(!n)break;n.click();}
