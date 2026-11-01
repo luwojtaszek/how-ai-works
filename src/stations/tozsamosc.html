@@ -11,17 +11,14 @@
     <li><b>Czego to nie daje.</b> SPIFFE mówi, kto wysłał żądanie, ale nie, czy powinien to zrobić. Zmanipulowany agent ma prawdziwą tożsamość, a przejęty proces może pobierać nowe poświadczenia. Nadal potrzebne są wąskie uprawnienia, izolacja i zatwierdzanie przez człowieka.</li>
   </ul>
   <div class="lab">
-    <p class="lab-title">Co zyskuje atakujący, gdy coś pójdzie nie tak?</p>
-    <p class="hint">Agent obsługuje zgłoszenia i korzysta z CRM. Porównaj trzy sposoby uwierzytelniania: wybierz, czym się uwierzytelnia i co się stało. Wynik pokazuje, co atakujący przejmuje, jak długo może tego używać i gdzie.</p>
-    <p class="hint">Czym agent się uwierzytelnia</p>
-    <div class="opts" id="idCred" role="group" aria-label="Poświadczenie agenta"></div>
-    <p class="hint id-d0" id="idCredD"></p>
-    <p class="hint" style="margin-top:14px">Co się stało</p>
-    <div class="opts four" id="idAtt" role="group" aria-label="Scenariusz"></div>
-    <p class="hint id-d0" id="idAttD"></p>
-    <button type="button" class="id-sw" id="idBox" role="switch" aria-checked="false"><i aria-hidden="true"></i>Narzędzia w osobnej piaskownicy</button>
-    <dl class="id-res"><div><dt>Atakujący ma</dt><dd id="idGot"></dd></div><div><dt>Czas dostępu</dt><dd id="idTime"></dd></div><div><dt>Zasięg</dt><dd id="idReach"></dd></div></dl>
-    <div id="idMsg" aria-live="polite"></div>
+    <p class="lab-title">Trzy sposoby uwierzytelniania agenta: co zostaje atakującemu</p>
+    <p class="hint">Agent obsługuje zgłoszenia i korzysta z CRM. Wiersze to sytuacje, kolumny to sposoby uwierzytelniania, a komórki pokazują, co ma atakujący. Stuknij komórkę, a kolejne kroki wyjaśnią każdą kolumnę.</p>
+    <div id="idMx"></div>
+    <div id="idCmpPlayer"></div>
+    <p class="id-who" id="idCmpWho" aria-live="polite"></p>
+    <div class="out mcp-json" id="idCmpCode" tabindex="0" role="region" aria-label="Przykładowe żądanie"></div>
+    <dl class="id-res" id="idCmpRes" hidden><div><dt>Atakujący ma</dt><dd id="idGot"></dd></div><div><dt>Czas dostępu</dt><dd id="idTime"></dd></div><div><dt>Zasięg</dt><dd id="idReach"></dd></div></dl>
+    <div class="callout" id="idMsg" aria-live="polite"></div>
     <p class="hint">Domyślne TTL w SPIRE: 1 h dla certyfikatu, 5 min dla tokena. Można je skrócić.</p>
   </div>
   <h3 class="sub">Jak działa SPIFFE</h3>

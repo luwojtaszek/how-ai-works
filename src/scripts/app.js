@@ -191,10 +191,13 @@ function initInj(){const CAPS=[['data',tr('Ma dostęp do prywatnej skrzynki','Ha
 
 /* ---------- tożsamość agenta ---------- */
 function initIdentity(){
-  const CRED=[['key',tr('Klucz API','API key'),tr('env','env')],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
-  const ATT=[['shell',tr('Polecenie w powłoce','Shell command')],['log',tr('Wyciek do logu','Leak to a log')],['abuse',tr('Manipulacja agentem','Manipulated agent')],['cut',tr('Blokada agenta','Block agent')]];
-  const CD={key:tr('Stały klucz w zmiennej środowiskowej, wspólny dla wszystkich replik.','A long-lived key in an environment variable, shared by all replicas.'),jwt:tr('JWT-SVID to krótkotrwały token SPIFFE. Może go użyć każdy, kto go skopiuje.','A JWT-SVID is a short-lived SPIFFE token. Anyone who copies it can use it.'),mtls:tr('X.509-SVID to krótkotrwały certyfikat SPIFFE. Użycie powiązanego tokena OAuth wymaga tego certyfikatu i odpowiadającego mu klucza prywatnego.','An X.509-SVID is a short-lived SPIFFE certificate. Using the bound OAuth token requires that certificate and its corresponding private key.')};
-  const AD={shell:tr('Treść maila skłoniła model do uruchomienia polecenia w kontenerze agenta.','An email’s content got the model to run a command in the agent’s container.'),box:tr('Treść maila skłoniła model do uruchomienia polecenia, ale działa ono w osobnym kontenerze, bez socketu i bez dostępu do harnessu.','An email’s content got the model to run a command, but it runs in a separate container, with no socket or access to the harness.'),log:tr('Poświadczenie wysyłane z żądaniem trafiło do logu, który czyta atakujący.','The credential sent with a request reached a log the attacker can read.'),abuse:tr('Treść maila skłoniła agenta do szkodliwego wywołania, na które ma uprawnienia.','An email’s content got the agent to make a harmful call it’s allowed to make.'),cut:tr('Wykryto atak i trzeba odebrać agentowi dostęp. Co jeszcze działa?','An attack was detected and the agent must lose access. What still works?')};
+  const CRED=[['key',tr('Klucz API','API key')],['jwt',tr('Token','Token'),'JWT-SVID'],['mtls',tr('Certyfikat','Certificate'),tr('mTLS + token','mTLS + token')]];
+  // [wiersz, nazwa, opis, krótkie wyniki w kolumnach]
+  const ROWS=[['log',tr('Wyciek do logu','Leak to a log'),tr('Poświadczenie wysyłane z żądaniem trafiło do logu, który czyta atakujący.','The credential sent with a request reached a log the attacker can read.'),[tr('do zmiany klucza','until rotated'),tr('5 min, jedna usługa','5 min, one service'),tr('nie działa','doesn’t work')]],
+    ['shell',tr('Polecenie w powłoce','Shell command'),tr('Treść maila skłoniła model do uruchomienia polecenia w kontenerze agenta.','An email’s content got the model to run a command in the agent’s container.'),[tr('do zmiany klucza','until rotated'),tr('póki trwa atak','while the attack lasts'),tr('atak + 1 h','attack + 1 h')]],
+    ['box',tr('Powłoka w piaskownicy','Shell in a sandbox'),tr('To samo polecenie działa w osobnym kontenerze, bez socketu i bez dostępu do harnessu.','The same command runs in a separate container, with no socket or access to the harness.'),[tr('nic','nothing'),tr('nic','nothing'),tr('nic','nothing')]],
+    ['abuse',tr('Manipulacja agentem','Agent manipulation'),tr('Treść maila skłoniła agenta do szkodliwego wywołania, na które ma uprawnienia.','An email’s content got the agent to make a harmful call it’s allowed to make.'),[tr('uprawnienia, nie widać kto','permissions, unknown who'),tr('uprawnienia, widać kto','permissions, logged'),tr('uprawnienia, widać kto','permissions, logged')]],
+    ['cut',tr('Blokada agenta','Blocking the agent'),tr('Wykryto atak i trzeba odebrać agentowi dostęp. Co jeszcze działa?','An attack was detected and the agent must lose access. What still works?'),[tr('do zmiany wszędzie','until changed everywhere'),tr('5 min + sesje','5 min + sessions'),tr('1 h + połączenia','1 h + connections')]]];
   const ROT=tr('do zmiany klucza','until key rotation'),ALL=tr('API z tym kluczem','every API using the key'),NONE=tr('nigdzie','nowhere'),PERM=tr('uprawnienia agenta','the agent’s permissions'),RUN=tr('gdy agent działa','while the agent runs'),GRANT=tr('to, na co ma zgodę','permitted actions'),TRUST=tr('usługi ufające agentowi','services that trust the agent');
   // [co ma atakujący, jak długo, gdzie, wynik: 0 źle, 1 dobrze, .5 częściowo, wyjaśnienie]
   const V={shell:{
@@ -217,13 +220,37 @@ function initIdentity(){
     key:[tr('ważny klucz','a valid key'),tr('do zmiany wszędzie','until changed everywhere'),ALL,0,tr('Klucz trzeba zmienić w każdym systemie, a dostęp tracą przy tym wszyscy, którzy go współdzielą.','The key must change in every system, cutting off everyone who shares it.')],
     jwt:[tr('ostatni token','the last token'),tr('5 min + sesje','5 min + sessions'),tr('jedna usługa (aud)','one service (aud)'),.5,tr('5 min to ważność ostatniego SVID, a nie gwarancja blokady. Usunięcie wpisu wstrzymuje nowe tokeny, ale ostatni działa do wygaśnięcia. Sesja w chmurze uzyskana w ostatniej chwili doda swój czas: w AWS STS minimum 15 min.','The last SVID lasts 5 min; blocking access may take longer. Deleting the entry stops new tokens, but the last one works until expiry. A cloud session obtained just before expiry adds its lifetime: at least 15 min in AWS STS.')],
     mtls:[tr('ostatni certyfikat','the last certificate'),tr('1 h + połączenia','1 h + connections'),TRUST,.5,tr('Nowego certyfikatu nie będzie, ale obecny działa do końca TTL, a otwarte połączenia dłużej, jeśli serwer ich nie ogranicza. Żeby blokować szybciej, skróć TTL.','The current certificate works until its TTL expires, but no new one is issued. Open connections last longer unless the server caps them. Shorten TTLs to block access sooner.')]}};
-  let cred='key',att='shell',box=false;
-  const group=(mount,list,get,set)=>{const bs=list.map(([k,t,sub])=>h('button',{type:'button',class:'opt','aria-pressed':String(get()===k),onclick:e=>{set(k);pressed(bs,e.currentTarget);paint();}},h('b',{},t),sub?h('small',{},sub):''));mount.replaceChildren(...bs);};
-  function paint(){const shell=att==='shell',r=V[shell&&box?'box':att][cred];$('#idBox').hidden=!shell;$('#idCredD').textContent=CD[cred];$('#idAttD').textContent=AD[shell&&box?'box':att];
-    $('#idGot').textContent=r[0];$('#idTime').textContent=r[1];$('#idReach').textContent=r[2];
-    const m=$('#idMsg');m.className=r[3]===1?'verdict good':r[3]?'callout':'verdict bad';m.textContent=r[4];}
-  group($('#idCred'),CRED,()=>cred,k=>cred=k);group($('#idAtt'),ATT,()=>att,k=>att=k);
-  const b=$('#idBox');b.addEventListener('click',()=>{box=!box;b.setAttribute('aria-checked',String(box));paint();});paint();
+  const lvl=v=>v===1?'good':v?'mid':'bad';let col=null,cell=null;
+  $('#idMx').replaceChildren(h('table',{class:'id-m'},h('thead',{},h('tr',{},h('th',{},''),...CRED.map(([k,t,sub])=>h('th',{'data-c':k},t,sub?h('small',{},sub):'')))),
+    h('tbody',{},...ROWS.map(([r,name,,short])=>h('tr',{},h('th',{},name),...CRED.map(([k],i)=>h('td',{'data-c':k},h('button',{type:'button',class:'id-c '+lvl(V[r][k][3]),'data-k':r+'-'+k,onclick:()=>showCell(r,k)},short[i]))))))));
+  function mark(){$$('#idMx [data-c]').forEach(e=>e.classList.toggle('on',e.dataset.c===col));$$('#idMx .id-c').forEach(e=>e.classList.toggle('sel',e.dataset.k===cell));}
+  function showCell(r,k){const row=ROWS.find(x=>x[0]===r),v=V[r][k],c=CRED.find(x=>x[0]===k);cell=r+'-'+k;col=null;mark();
+    $('#idCmpWho').textContent=row[1]+', '+c[1].toLowerCase();$('#idCmpCode').hidden=true;$('#idCmpRes').hidden=false;$('#idGot').textContent=v[0];$('#idTime').textContent=v[1];$('#idReach').textContent=v[2];
+    const m=$('#idMsg');m.className=v[3]===1?'verdict good':v[3]?'callout':'verdict bad';m.textContent=row[2]+' '+v[4];}
+  const WHY=[
+   {l:tr('Macierz','The matrix'),m:tr('Każda komórka pokazuje, co zostaje atakującemu przy danym poświadczeniu. Stuknij ją, żeby zobaczyć szczegóły. Kolejne kroki wyjaśniają kolumny po kolei.','Each cell shows what the attacker is left with for that credential. Tap one for details. The next steps explain the columns in turn.')},
+   {l:tr('Klucz API','API key'),c:'key',j:`→ POST https://crm.example.com/tickets
+Authorization: Bearer crm_key_7f3a…
+
+server: key found in database ✓`,m:tr('Agent wysyła w każdym żądaniu ten sam sekret, a usługa porównuje go ze swoją kopią. Sekret nie wygasa i nie mówi, kto go użył, więc skopiowany działa jak oryginał, dopóki ktoś nie zmieni go wszędzie.','The agent sends the same secret with every request, and the service compares it with its own copy. The secret doesn’t expire or say who used it, so a copy works like the original until someone changes it everywhere.')},
+   {l:'JWT-SVID',c:'jwt',j:`→ POST https://crm.example.com/tickets
+Authorization: Bearer eyJ…
+  sub: spiffe://acme.example/agent/support
+  aud: crm.example.com
+  exp: <in 5 min>
+
+server: signature ✓  aud ✓  exp ✓`,m:tr('Agent pobiera token z Workload API. Usługa sprawdza podpis, odbiorcę i czas ważności, bez pytania serwera SPIRE. Skopiowany token nadal zadziała, ale tylko w tej usłudze i przez kilka minut.','The agent fetches the token from the Workload API. The service checks the signature, audience and expiry without asking the SPIRE server. A copied token still works, but only at this service and for a few minutes.')},
+   {l:tr('Certyfikat + token','Certificate + token'),c:'mtls',j:`TLS: client certificate (X.509-SVID)
+     signature made with private key
+
+→ POST https://crm.example.com/tickets
+Authorization: Bearer eyJ…
+  cnf: <certificate hash>
+
+server: chain ✓  key proof ✓  cnf ✓`,m:tr('Przy połączeniu agent podpisuje dane kluczem prywatnym, którego nigdy nie wysyła. Token ma w cnf skrót certyfikatu, więc z logu da się skopiować token, ale nie klucz. Proces z dostępem do socketu pobierze jednak też klucz, dlatego wiersz z powłoką zostaje czerwony.','On connecting, the agent signs data with a private key it never sends. The token carries the certificate’s hash in cnf, so a log can leak the token but not the key. A process with socket access can fetch the key too, which is why the shell row stays red.')},
+   {l:tr('Co z tego wynika','What follows'),m:tr('Lepsze poświadczenie zawęża skutki wycieku, ale nie zastąpi izolacji: wiersz z powłoką poprawia dopiero piaskownica bez socketu. Przy manipulacji agent ma prawdziwe uprawnienia, więc pomagają polityka w narzędziu i zatwierdzanie przez człowieka.','A better credential narrows the damage from a leak, but it doesn’t replace isolation: only a sandbox with no socket improves the shell row. In a manipulation the agent has genuine permissions, so policy in the tool and human approval are what help.')}];
+  function renderWhy(i){const st=WHY[i];cell=null;col=st.c||null;mark();$('#idCmpWho').textContent=st.l;$('#idCmpRes').hidden=true;const code=$('#idCmpCode');code.hidden=!st.j;code.textContent=st.j||'';const m=$('#idMsg');m.className='callout';m.textContent=st.m;}
+  PLAYERS.push(player($('#idCmpPlayer'),{steps:WHY.length-1,render:renderWhy,interval:9000,group:k=>k?1:0}));
   const ID='spiffe://acme.example/agent/support',MCP='https://crm.example.com/mcp';
   // [klucz, x, y, tytuł (linie), podpis]; schemat ma stały układ, zmienia się tylko podświetlenie
   const NW=96,NH=46,N={op:[0,0,[tr('operator','operator')],tr('zapisuje reguły','writes rules')],srv:[122,0,[tr('serwer SPIRE','SPIRE server')],tr('CA, wpisy','CA, entries')],
