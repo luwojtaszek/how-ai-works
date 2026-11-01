@@ -2271,7 +2271,7 @@ const T=tr({lv:[
 const ST=tr([
 [0,'app','Aplikacja wysyła przez HTTPS całą historię i parametry: model, temperaturę, limit długości, ewentualny schemat. Połączenie zostaje otwarte na strumień odpowiedzi.'],
 [1,'gw','Bramka sprawdza klucz i limity, a potem przekazuje żądanie do wybranego modelu.'],
-[1,'lb','Router wybiera jedną replikę. Od tej chwili całą pracą nad żądaniem zajmuje się ta replika.'],
+[1,'lb','Router wybiera jedną replikę. W tym przykładzie całą dalszą pracą nad żądaniem zajmuje się ta replika.'],
 [2,'http','Proces API przyjmuje żądanie i zostawia połączenie otwarte.'],
 [2,'tmpl','Szablon czatu łączy wiadomości w jeden tekst, a tokenizer zamienia go na identyfikatory tokenów. Przez ZMQ trafiają one do procesu silnika.'],
 [2,'wait','Żądanie czeka w kolejce repliki, aż w batchu będzie miejsce.'],
@@ -2295,7 +2295,7 @@ const ST=tr([
 ],[
 [0,'app','The application sends the whole history and parameters over HTTPS: model, temperature, length limit, perhaps a schema. The connection stays open for the response stream.'],
 [1,'gw','The gateway checks the key and limits, then passes the request to the chosen model.'],
-[1,'lb','The router picks one replica. From now on that replica does all the work on the request.'],
+[1,'lb','The router picks one replica. In this example, that replica now does all the work on the request.'],
 [2,'http','The API process accepts the request and keeps the connection open.'],
 [2,'tmpl','The chat template joins the messages into a string, and the tokeniser turns it into token IDs. They reach the engine process over ZMQ.'],
 [2,'wait','The request waits in the replica’s queue until the batch has room.'],
