@@ -2266,12 +2266,14 @@ const T=tr({lv:[
   hbm:['HBM3','80 GB, about 3.35 TB/s'],
   nvl:['NVLink','900 GB/s total']}
 });
-// the whole chain for one answer: [level, box, what happens]. Every clickable box has a step, and a click jumps to it.
-// The steps from the first sched to detok repeat for every model pass.
+// one answer, level by level: [level, box, what happens]. All steps of a level stay together, every clickable box has a step, and a click jumps to it.
+// In a real run levels 4-7 happen between run and smp, and the steps from the first sched to detok repeat for every model pass.
 const ST=tr([
 [0,'user','Pisze wiadomość w czacie, IDE albo terminalu i czyta odpowiedź na bieżąco, w miarę jak powstaje.'],
 [0,'app','Trzyma historię rozmowy, bo API modelu zwykle nie pamięta poprzednich wiadomości. Dlatego w każdym żądaniu wysyła przez HTTPS całą historię, system prompt, listę narzędzi i parametry: model, temperaturę, limit długości, ewentualny schemat.'],
-[0,'api','Przyjmuje żądanie, a połączenie zostaje otwarte na strumień odpowiedzi. Tyle widać z zewnątrz. Kolejne poziomy pokazują przykładowy własny klaster.'],
+[0,'api','Przyjmuje żądanie, a połączenie zostaje otwarte na strumień odpowiedzi. Tyle widać z zewnątrz.'],
+[0,'app','Dostaje tekst fragmentami, aż do zdarzenia końca. W agencie odpowiedź może być wywołaniem narzędzia.'],
+[0,'tools','Uruchamia je aplikacja albo, przy narzędziach serwerowych jak web search, dostawca, nigdy model. Model tylko generuje prośbę o wywołanie. Aplikacja dopisuje wynik swojego narzędzia do historii i wysyła nowe żądanie. Kolejne poziomy pokazują, co dzieje się za API, na przykładzie własnego klastra.'],
 [1,'gw','Sprawdza klucz i limity, zapisuje koszt i logi, wybiera model, a przy awarii przełącza się na zapasowy. Daje jedno API dla wielu dostawców.'],
 [1,'lb','Wybiera jedną replikę. Inteligentny router woli tę, która wciąż ma bloki KV cache dla prefiksu tego promptu, bo tej części nie trzeba liczyć od nowa. KV cache to zapisane klucze i wartości wcześniejszych tokenów.'],
 [1,'rep','Pełna kopia modelu, tu na jednym węźle. Zajmuje się całą dalszą pracą nad żądaniem. Cztery H100 to 320 GB: 140 GB na wagi, około 140 GB na KV cache, reszta na bufory i zapas.'],
@@ -2280,14 +2282,18 @@ const ST=tr([
 [2,'wait','Żądanie czeka w kolejce repliki, aż będzie mogło dołączyć do batcha, czyli grupy rozmów liczonych razem w jednym przebiegu modelu. Każda replika ma własną kolejkę.'],
 [2,'sched','Tu zaczyna się pętla przebiegów modelu. Prowadzi ją proces silnika, a przebiegi liczą procesy robocze. Przed każdym przebiegiem scheduler wybiera najpierw trwające rozmowy, potem nowe do prefillu, aż do limitu tokenów na jeden przebieg. Prefill przetwarza prompt, czasem w kilku przebiegach, a potem decode przetwarza po jednym tokenie na rozmowę.'],
 [2,'kvm','Przydziela rozmowom pamięć GPU na KV cache blokami i pamięta, które bloki zawierają wspólne prefiksy, więc prefill może je pominąć. Gdy brakuje pamięci, scheduler wstrzymuje rozmowę i zwalnia jej bloki.'],
-[2,'run','Proces roboczy dostaje polecenie przebiegu, buduje tensory wejściowe batcha i uruchamia kod modelu. Wagi i KV cache leżą w pamięci GPU, proces na CPU tylko steruje.'],
+[2,'run','Proces roboczy dostaje polecenie przebiegu, buduje tensory wejściowe batcha i uruchamia kod modelu. Wagi i KV cache leżą w pamięci GPU, proces na CPU tylko steruje. Co dzieje się w tym przebiegu, pokazują poziomy 4–7.'],
 [2,'mask','Jeśli żądanie wymusza format, podczas obliczeń modelu silnik wylicza maskę dozwolonych tokenów. Przekazuje ją procesowi roboczemu osobno, przy zlecaniu samplowania. Szczegóły w „Structured output”.'],
+[2,'smp','Przebieg modelu kończy się logitami, które oceniają każdy możliwy token. Proces roboczy nakłada na nie maskę, jeśli jest, a sampler wybiera po jednym tokenie na rozmowę. Wynik wraca do procesu silnika.'],
+[2,'sched','Silnik dopisuje token do rozmowy i sprawdza token końca oraz limit długości. Jeśli to nie koniec, pętla wraca do schedulera: następny przebieg, następny token.'],
+[2,'detok','Równolegle, w procesie API, zamienia nowy token na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE.'],
 [3,'tok','Wejściem przebiegu są identyfikatory tokenów: w prefillu prompt, potem po jednym nowym tokenie na rozmowę.'],
 [3,'wg','Kod modelu wykonuje stałą sekwencję operacji, które korzystają z wag. To 70 mld parametrów po 16 bitów, rozłożone między GPU repliki. Wagi to dane: kod warstw mówi, co z nimi zrobić.'],
 [3,'emb','Najpierw identyfikator tokena wybiera wiersz z tabeli wag. Tak powstaje wektor, np. 8192 liczby.'],
 [3,'attn','Mnoży macierze, żeby wektor tokena uwzględnił poprzednie tokeny.'],
 [3,'kv','Attention czyta z KV cache klucze i wartości wcześniejszych tokenów i dopisuje nowe, więc nie liczy kontekstu od nowa. Rozmowy mają osobne bloki, ale wspólny prefiks promptu mogą dzielić. Pamięć pozostała po załadowaniu wag i buforów ogranicza liczbę rozmów naraz.'],
-[3,'mlp','Przekształca każdy wektor osobno. Attention i MLP tworzą jedną warstwę, a wektory przechodzą przez wszystkie warstwy po kolei. Razem wykonują prawie wszystkie obliczenia przebiegu. W każdym przebiegu GPU wykonują wiele programów dla warstw i głowicy wyjściowej. Następne kroki pokazują wykonanie jednego z nich.'],
+[3,'mlp','Przekształca każdy wektor osobno. Attention i MLP tworzą jedną warstwę, a wektory przechodzą przez wszystkie warstwy po kolei. Razem wykonują prawie wszystkie obliczenia przebiegu.'],
+[3,'head','Po ostatniej warstwie głowica wyjściowa mnoży ostatni wektor przez macierz o liczbie kolumn równej rozmiarowi słownika. Wynik to logity: po jednej liczbie na każdy token słownika, osobno dla każdej rozmowy w batchu. Logity pozostają w pamięci GPU. W każdym przebiegu GPU wykonują wiele programów dla warstw i głowicy wyjściowej. Kolejne poziomy pokazują wykonanie jednego z nich.'],
 [4,'torch','Kod modelu działa w PyTorchu, który przechowuje tensory. Dispatcher w C++ wybiera implementację operacji dla backendu, np. CUDA. W vLLM torch.compile może też skompilować i połączyć operacje.'],
 [4,'blas','Mnożenie macierzy (GEMM) wykonuje gotowy program GPU, np. z cuBLAS, biblioteki NVIDIA do algebry liniowej. Taki program nazywa się kernelem, ale nie ma nic wspólnego z jądrem systemu.'],
 [4,'fa','Łączenie Q, K i V w attention wykonują wyspecjalizowane programy GPU: w vLLM na H100 domyślnie FlashAttention, a gdy jest niedostępny, FlashInfer. Działają bezpośrednio na blokach KV cache. vLLM wywołuje je sam, bez warstwy attention z PyTorcha.'],
@@ -2301,17 +2307,13 @@ const ST=tr([
 [6,'tc','Przyspieszają mnożenie i akumulację małych bloków macierzy. Ich użycie zależy od programu GPU i precyzji.'],
 [6,'fp','Wykonują arytmetykę FP32. SM ma też jednostki całkowitoliczbowe, funkcji specjalnych oraz odczytu i zapisu.'],
 [6,'hbm','Rdzenie liczą równolegle, czytając wagi i KV cache z pamięci HBM. Podczas decode przy małym batchu przepustowość HBM często ogranicza prędkość bardziej niż moc obliczeniowa. Szczegóły w „Czemu GPU się nudzi”.'],
-[6,'nvl','Łączy GPU tej samej repliki. Każda warstwa jest podzielona między cztery GPU (tensor parallelism), więc w każdej warstwie GPU sumują tym łączem wyniki częściowe.'],
-[3,'head','Tak GPU wykonuje kolejne programy wszystkich warstw. Po ostatniej warstwie głowica wyjściowa mnoży ostatni wektor przez macierz o liczbie kolumn równej rozmiarowi słownika. Wynik to logity: po jednej liczbie na każdy token słownika, osobno dla każdej rozmowy w batchu. Logity pozostają w pamięci GPU.'],
-[2,'smp','Logity oceniają każdy możliwy token. Proces roboczy nakłada na nie maskę, jeśli jest, a sampler wybiera po jednym tokenie na rozmowę. Wynik wraca do procesu silnika.'],
-[2,'sched','Silnik dopisuje token do rozmowy i sprawdza token końca oraz limit długości. Jeśli to nie koniec, pętla wraca do schedulera: następny przebieg, następny token.'],
-[2,'detok','Równolegle, w procesie API, zamienia nowy token na tekst, sprawdza sekwencje stop i wysyła zdarzenie SSE.'],
-[0,'app','Dostaje tekst fragmentami, aż do zdarzenia końca. W agencie odpowiedź może być wywołaniem narzędzia.'],
-[0,'tools','Uruchamia je aplikacja albo, przy narzędziach serwerowych jak web search, dostawca, nigdy model. Model tylko generuje prośbę o wywołanie. Aplikacja dopisuje wynik swojego narzędzia do historii i wysyła nowe żądanie.']
+[6,'nvl','Łączy GPU tej samej repliki. Każda warstwa jest podzielona między cztery GPU (tensor parallelism), więc w każdej warstwie GPU sumują tym łączem wyniki częściowe.']
 ],[
 [0,'user','Writes a message in a chat, IDE or terminal and reads the answer as it arrives.'],
 [0,'app','Keeps the conversation history, because a model API usually doesn’t remember earlier messages. So over HTTPS, every request carries the whole history, the system prompt, the tool list and parameters such as model, temperature, length limit and perhaps a schema.'],
-[0,'api','Accepts the request, and the connection stays open for the response stream. That’s all you see from outside. The next levels show an example self-hosted cluster.'],
+[0,'api','Accepts the request, and the connection stays open for the response stream. That’s all you see from outside.'],
+[0,'app','Receives text in fragments until the final event. In an agent the response can be a tool call.'],
+[0,'tools','The application runs them, or the provider for server-side tools such as web search, never the model. The model only generates a request for a tool call. The application appends its tool’s result to the history and sends a new request. The next levels show what happens behind the API, using an example self-hosted cluster.'],
 [1,'gw','Checks the key and limits, logs requests and tracks their cost, picks the model and fails over to a backup. It gives you one API for many providers.'],
 [1,'lb','Picks one replica. A smarter router prefers one that still holds KV cache blocks for this prompt’s prefix, because that part needn’t be computed again. The KV cache stores the keys and values of earlier tokens.'],
 [1,'rep','A full copy of the model, here on one node. It does all the remaining work on the request. Four H100s give 320 GB: 140 GB for weights, about 140 GB for the KV cache, the rest for buffers and headroom.'],
@@ -2320,14 +2322,18 @@ const ST=tr([
 [2,'wait','The request waits in the replica’s queue until it can join a batch, a group of conversations computed together in one model pass. Each replica has its own queue.'],
 [2,'sched','The loop of model passes starts here. The engine process runs it, and the workers compute the passes. Before each pass the scheduler picks conversations in progress, then new ones for prefill, up to the token budget for one pass. Prefill processes the prompt, sometimes across several passes, and decode then processes one token per conversation.'],
 [2,'kvm','Gives conversations GPU memory for the KV cache in blocks and tracks which blocks hold shared prefixes, so prefill can skip them. When memory runs short, the scheduler pauses a conversation and frees its blocks.'],
-[2,'run','The worker process receives the pass command, builds the batch’s input tensors and runs the model code. Weights and KV cache sit in GPU memory; the CPU process coordinates the work.'],
+[2,'run','The worker process receives the pass command, builds the batch’s input tensors and runs the model code. Weights and KV cache sit in GPU memory; the CPU process coordinates the work. Levels 4 to 7 show what happens in this pass.'],
 [2,'mask','If the request enforces a format, the engine prepares the allowed-token mask while the model computes. It sends the mask to the worker separately, when requesting sampling. See “Structured output”.'],
+[2,'smp','A model pass ends in logits, which score every possible token. The worker applies the mask to them, if there is one, and the sampler picks one token per conversation. The result goes back to the engine process.'],
+[2,'sched','The engine appends the token to its conversation and checks for an end token and the length limit. If it isn’t finished, the loop returns to the scheduler: next pass, next token.'],
+[2,'detok','Meanwhile, in the API process, it turns the new token into text, checks for stop sequences and sends an SSE event.'],
 [3,'tok','The pass takes token IDs as input: the prompt during prefill, then one new token per conversation.'],
 [3,'wg','The model code runs a fixed sequence of operations that use the weights. These are 70 billion parameters at 16 bits each, spread across the replica’s GPUs. Weights are data: the layer code says what to do with them.'],
 [3,'emb','First a token ID selects a row from a table of weights. That row is the vector, e.g. 8192 numbers.'],
 [3,'attn','Multiplies matrices so that a token’s vector takes earlier tokens into account.'],
 [3,'kv','Attention reads the keys and values of earlier tokens from the KV cache and appends new ones, so it doesn’t recompute the context. Conversations have separate blocks but can share those for a common prompt prefix. Memory left after loading weights and buffers limits how many conversations fit.'],
-[3,'mlp','Transforms each vector separately. Attention and the MLP form one layer, and the vectors pass through all the layers in turn. Together they do almost all the computing in a pass. In every pass, the GPUs run many programs for the layers and output head. The next steps show how one of them executes.'],
+[3,'mlp','Transforms each vector separately. Attention and the MLP form one layer, and the vectors pass through all the layers in turn. Together they do almost all the computing in a pass.'],
+[3,'head','After the last layer the output head multiplies the last vector by a matrix as wide as the vocabulary. The result is the logits: one number for every token in the vocabulary, separately for each conversation in the batch. The logits remain in GPU memory. In every pass, the GPUs run many programs for the layers and output head. The next levels show how one of them executes.'],
 [4,'torch','The model code runs in PyTorch, which holds the tensors. A dispatcher in C++ picks an operation’s implementation for a backend such as CUDA. In vLLM, torch.compile can also compile and fuse operations.'],
 [4,'blas','A matrix multiplication (GEMM) runs as a ready-made GPU program, for example from cuBLAS, NVIDIA’s linear algebra library. Such a program is called a compute kernel, and it has nothing to do with the operating system kernel.'],
 [4,'fa','Attention combines Q, K and V in specialised GPU programs: for vLLM on an H100, FlashAttention by default, or FlashInfer if it isn’t available. They work directly on KV cache blocks. vLLM calls them itself, without PyTorch’s attention layer.'],
@@ -2341,13 +2347,7 @@ const ST=tr([
 [6,'tc','Speed up multiplying and accumulating small matrix blocks. Their use depends on the GPU program and the precision.'],
 [6,'fp','Execute FP32 arithmetic. The SM also has integer, special-function and load/store units.'],
 [6,'hbm','The cores compute in parallel, reading weights and the KV cache from HBM. During decode with a small batch, HBM bandwidth often limits speed more than compute does. See “Why the GPU is idle”.'],
-[6,'nvl','Connects the GPUs of one replica. Each layer is split across the four GPUs (tensor parallelism), so in every layer they add up partial results over this link.'],
-[3,'head','The GPU runs the programs of all the layers this way. After the last layer the output head multiplies the last vector by a matrix as wide as the vocabulary. The result is the logits: one number for every token in the vocabulary, separately for each conversation in the batch. The logits remain in GPU memory.'],
-[2,'smp','The logits score every possible token. The worker applies the mask to them, if there is one, and the sampler picks one token per conversation. The result goes back to the engine process.'],
-[2,'sched','The engine appends the token to its conversation and checks for an end token and the length limit. If it isn’t finished, the loop returns to the scheduler: next pass, next token.'],
-[2,'detok','Meanwhile, in the API process, it turns the new token into text, checks for stop sequences and sends an SSE event.'],
-[0,'app','Receives text in fragments until the final event. In an agent the response can be a tool call.'],
-[0,'tools','The application runs them, or the provider for server-side tools such as web search, never the model. The model only generates a request for a tool call. The application appends its tool’s result to the history and sends a new request.']
+[6,'nvl','Connects the GPUs of one replica. Each layer is split across the four GPUs (tensor parallelism), so in every layer they add up partial results over this link.']
 ]);
 const MARK={q:'skQ',r:'skR',s:'skS'};
 const diagram=g=>{
