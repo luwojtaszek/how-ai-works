@@ -42,14 +42,14 @@
   </ul>
   <h3 class="sub">Level 5. Libraries</h3>
   <ul class="notes">
-    <li><b>Execution.</b> Model layers become GPU kernel launches: matrix multiplication from cuBLAS, attention from FlashAttention. Compilation can fuse operations, and a CUDA Graph replays recorded work with one call, so the CPU doesn’t submit each kernel separately. The GPU still runs them all.</li>
+    <li><b>Execution.</b> Model layers become launches of small GPU programs: matrix multiplication from cuBLAS, attention from FlashAttention. Such a program is called a compute kernel, and it has nothing to do with the operating system kernel. Compilation can fuse operations, and a CUDA Graph replays recorded work with one call, so the CPU doesn’t submit each program separately. The GPU still runs them all.</li>
     <li><b>Memory.</b> The KV cache is a PyTorch tensor prepared at start. PyTorch’s allocator keeps the memory it got from the driver, so nvidia-smi shows the reservation, not current use. The block assignments from level 3 happen inside this tensor, without reallocating GPU memory.</li>
     <li><b>Other hardware.</b> Levels 5–7 depend on the hardware: AMD GPUs use ROCm, Macs use Metal and TPUs use the XLA compiler.</li>
   </ul>
   <h3 class="sub">Level 6. Driver</h3>
   <ul class="notes">
     <li><b>Resources.</b> The driver in the host kernel creates GPU channels and maps memory into the process at start and on allocations. Reusing a KV block needs no new mapping.</li>
-    <li><b>Submitting work.</b> After that a kernel launch is a write to a command buffer and to the doorbell, with no system call. That’s why repeated launches don’t load the Linux kernel.</li>
+    <li><b>Submitting work.</b> After that launching a GPU program is a write to a command buffer and to the doorbell, with no system call. That’s why repeated launches don’t load the Linux kernel.</li>
     <li><b>Image and host.</b> vLLM, PyTorch, cuBLAS and the CUDA runtime come from the container image; the kernel module and usually <code>libcuda.so</code> come from the host through the NVIDIA Container Toolkit. The host driver usually has to be new enough for the CUDA version in the image.</li>
   </ul>
   <h3 class="sub">Level 7. GPU</h3>

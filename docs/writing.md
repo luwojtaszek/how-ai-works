@@ -8,7 +8,7 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - Show the whole mechanism in the order it really runs: what is set up first, what goes in, the loop, what stops it, and the real scale next to the toy example.
 - Keep one order. Notes under a widget follow the widget's stages, and what is decided first is explained first.
 - One fact, one place. Notes carry what the widget doesn't show.
-- Define a term at first use, with a concrete value. Keep confusable terms apart.
+- Define a term at first use, with a concrete value. Keep confusable terms apart. A term that collides with a word the reader already knows gets a plain name throughout and the jargon once, as a definition: "GPU program", and once "called a compute kernel, nothing to do with the operating system kernel".
 - Test each sentence with "which ones, of what, why". "Gives shorter sequences" fails the test.
 - Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.

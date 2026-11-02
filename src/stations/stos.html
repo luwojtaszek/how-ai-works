@@ -42,14 +42,14 @@
   </ul>
   <h3 class="sub">Poziom 5. Biblioteki</h3>
   <ul class="notes">
-    <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia kerneli GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego kernela osobno. GPU i tak wykonuje je wszystkie.</li>
+    <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia małych programów na GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Taki program nazywa się kernelem, ale nie ma nic wspólnego z jądrem systemu. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego programu osobno. GPU i tak wykonuje je wszystkie.</li>
     <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć otrzymaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez ponownego przydzielania pamięci GPU.</li>
     <li><b>Inny sprzęt.</b> Poziomy 5–7 zależą od sprzętu: na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA.</li>
   </ul>
   <h3 class="sub">Poziom 6. Sterownik</h3>
   <ul class="notes">
     <li><b>Zasoby.</b> Sterownik w jądrze hosta tworzy kanały GPU i mapuje pamięć do procesu przy starcie i przy przydziałach. Ponowne użycie bloku KV cache nie wymaga nowego mapowania.</li>
-    <li><b>Zlecanie pracy.</b> Potem uruchomienie kernela to zapis do bufora poleceń i do doorbella, bez wywołania systemowego. Dlatego kolejne uruchomienia nie obciążają jądra Linuksa.</li>
+    <li><b>Zlecanie pracy.</b> Potem uruchomienie programu GPU to zapis do bufora poleceń i do doorbella, bez wywołania systemowego. Dlatego kolejne uruchomienia nie obciążają jądra Linuksa.</li>
     <li><b>Obraz i host.</b> vLLM, PyTorch, cuBLAS i CUDA runtime pochodzą z obrazu kontenera, a moduł jądra i zwykle <code>libcuda.so</code> z hosta, przez NVIDIA Container Toolkit. Sterownik hosta musi zwykle być dość nowy dla wersji CUDA z obrazu.</li>
   </ul>
   <h3 class="sub">Poziom 7. GPU</h3>
