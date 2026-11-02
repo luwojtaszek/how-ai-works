@@ -75,7 +75,8 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
   bPrev.addEventListener('click',()=>{stop();set(i-1);});bNext.addEventListener('click',()=>{stop();set(i+1);});
   mount.classList.add('player');mount.replaceChildren(bPlay,bPrev,segs,bNext,pos);
   measure();set(0);
-  let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(measure,150);});document.fonts?.ready.then(measure);
+  // mobile browsers fire resize when the address bar hides on scroll: only a width change alters the layout
+  let rt,rw=innerWidth;addEventListener('resize',()=>{if(innerWidth===rw)return;rw=innerWidth;clearTimeout(rt);rt=setTimeout(measure,150);});document.fonts?.ready.then(measure);
   return{set,stop,halt(){stop();ui();},refresh(){measure();ui();},get step(){return i;}};}
 
 /* ---------- station data ---------- */
@@ -2137,11 +2138,248 @@ function initChoose(){
 /* end wybor */
 
 // ponytail: one bundle for every page; split per topic if it grows heavy
+function initStack(){const root=$('#skLab');if(!root)return;const nav=$('#skNav'),view=$('#skView');
+// Hand-drawn C4-style diagram per level, in a 340-wide viewBox. b: boundaries [key,x,y,w,h,kind]; n: boxes [id,x,y,w,h,ghost];
+// e: arrows [points,kind (q request, r response, s setup),label key,label x,label y,anchor,ids that light it up]; f: request block height is free.
+const GEO=[
+{h:262,b:[['app',0,66,340,74,'out'],['api',0,190,340,72,'out']],
+ n:[['user',100,0,140,42],['app',10,86,190,44],['tools',220,86,110,44],['api',70,210,200,44]],
+ e:[['140,42 140,86','q','msg',134,58,'end','user app'],['200,86 200,42','r','text',206,58,'start','user app'],['200,100 220,100','q',0,0,0,0,'app tools'],['220,116 200,116','r',0,0,0,0,'app tools'],
+  ['140,130 140,210','q','https',134,168,'end','app api'],['220,210 220,130','r','sse',226,168,'start','app api']]},
+{h:256,b:[['cluster',0,0,340,256,'out'],['node1',8,150,104,96,'proc','b'],['node2',118,150,104,96,'proc','b'],['node3',228,150,104,96,'proc','b']],
+ n:[['gw',70,22,200,42],['lb',70,86,200,42],['rep',14,160,92,64],['rep2',124,160,92,64,1],['rep3',234,160,92,64,1]],
+ e:[['130,64 130,86','q','openai',124,79,'end','gw lb'],['210,86 210,64','r','sse',216,79,'start','gw lb'],
+  ['80,128 80,140 44,140 44,160','q',0,0,0,0,'lb rep'],['170,128 170,160','q',0,0,0,0,'lb'],['260,128 260,140 280,140 280,160','q',0,0,0,0,'lb'],['96,160 96,128','r',0,0,0,0,'lb rep']]},
+{h:414,b:[['pod',0,0,340,414,'out'],['papi',8,20,324,118,'proc'],['pengine',8,182,324,114,'proc'],['pworker',8,340,324,66,'proc']],
+ n:[['http',16,38,308,40],['tmpl',16,90,150,40],['detok',174,90,150,40],['wait',16,200,150,40],['sched',174,200,150,40],['kvm',16,248,150,40],['mask',174,248,150,40],['run',16,358,150,40],['smp',174,358,150,40]],
+ e:[['91,78 91,90','q',0,0,0,0,'http tmpl'],['249,90 249,78','r',0,0,0,0,'http detok'],['91,130 91,200','q','zmq',97,164,'start','tmpl wait'],['249,182 249,130','r','newtok',255,164,'start','detok sched'],
+  ['166,220 174,220','q',0,0,0,0,'wait sched'],['120,296 120,358','q','step',126,322,'start','sched mask kvm run'],['249,358 249,296','r','picked',255,322,'start','smp sched'],['166,378 174,378','q',0,0,0,0,'run smp']]},
+{h:350,b:[['step',0,0,340,350,'out'],['layers',6,140,198,110,'proc'],['mem',214,82,120,164,'gpu']],
+ n:[['tok',10,22,190,38],['emb',10,82,190,38],['attn',14,158,182,38],['mlp',14,204,182,38],['head',10,272,190,38],['wg',222,100,104,62],['kv',222,176,104,62]],
+ e:[['105,60 105,82','q',0,0,0,0,'tok emb'],['105,120 105,158','q',0,0,0,0,'emb attn'],['105,196 105,204','q',0,0,0,0,'attn mlp'],['105,242 105,272','q',0,0,0,0,'mlp head'],['105,310 105,340','q','logits',112,330,'start','head'],
+  ['222,104 200,104','s',0,0,0,0,'wg emb'],['222,152 212,152 212,166 196,166','s',0,0,0,0,'wg attn'],['222,182 196,182','s',0,0,0,0,'kv attn']]},
+{h:292,b:[['libs',0,0,340,262,'out'],['ckern',8,96,324,76,'proc']],
+ n:[['torch',70,26,200,40],['blas',16,114,150,44],['fa',174,114,150,44],['rt',70,210,200,42]],
+ e:[['120,66 120,114','q','matmul',114,86,'end','torch blas'],['220,66 220,114','q','attnk',226,86,'start','torch fa'],['120,158 120,210','q','launch',114,192,'end','blas rt'],['220,158 220,210','q',0,0,0,0,'fa rt'],['170,252 170,288','q','todrv',176,278,'start','rt']]},
+{h:318,b:[['uspace',0,0,340,84,'proc'],['kernel',0,130,216,92,'host','r'],['gpu',0,266,340,48,'gpu']],
+ n:[['ud',10,22,150,46],['db',180,22,150,46],['ko',8,150,96,58],['uvm',112,150,96,58]],
+ e:[['160,45 180,45','q',0,0,0,0,'ud db'],['56,68 56,150','s','once',62,104,'start','ud ko'],['56,208 56,266','s','conf',62,246,'start','ko'],['270,68 270,266','q','bell',264,246,'end','db'],['310,266 310,68','r',0,0,0,0,'db']]},
+{h:316,b:[['card',0,0,340,292,'gpu'],['sm',8,88,324,110,'proc']],
+ n:[['hi',70,22,200,40],['warp',16,106,308,36],['tc',16,150,150,40],['fp',174,150,150,40],['hbm',8,240,216,42],['nvl',232,240,100,42]],
+ e:[['170,62 170,106','q','threads',176,80,'start','hi warp'],['70,240 70,198','s','read',76,223,'start','hbm tc fp'],['170,198 170,240','r','wlog',176,223,'start','hbm tc fp'],['282,198 282,240','q',0,0,0,0,'nvl'],['282,282 282,312','q','others',276,304,'end','nvl']]}];
+const T=tr({lv:[
+ {n:'System',q:'Kto z kim rozmawia?',fr:'raz na żądanie',dec:'wysłanie historii i pokazanie odpowiedzi',blind:'jak powstaje odpowiedź',rl:'Żądanie HTTP',req:'POST /v1/chat/completions\n{"model": "example-70b",\n "stream": true,\n "messages": [{"role": "user",\n   "content": "Stolica Polski?"}]}'},
+ {n:'Klaster',q:'Która replika dostanie żądanie?',fr:'raz na żądanie albo połączenie',dec:'wpuszczenie żądania i wybór repliki',blind:'jak replika liczy odpowiedź',fact:'3 repliki × 4 GPU = 12 GPU, po jednej replice na węzeł',rl:'To samo żądanie po bramce',req:'model:   example-70b -> prod\napi_key: ok\nreplica: vllm-1   # jedna z 3'},
+ {n:'Serwer',q:'Jak serwer steruje generowaniem?',fact:'4 GPU w replice = 4 procesy robocze, po jednym na GPU',fr:'przyjęcie raz na żądanie, planowanie raz na przebieg modelu',dec:'tokenizację, skład batcha, pamięć i warunki końca',blind:'co znaczy tekst: scheduler widzi tokeny i bloki pamięci',rl:'Tokeny i stan rozmowy',req:'prompt_token_ids: [151644, 872, …]\nstatus: WAITING -> RUNNING\nprefill: # prompt, 1+ przebiegów\ndecode:  # potem po 1 tokenie'},
+ {n:'Model',q:'Jak model ocenia możliwe następne tokeny?',fr:'raz na każdy przebieg modelu',dec:'obliczenie logitów z tokenów przy użyciu wag',blind:'kim są użytkownicy: rozmowy to wiersze w tensorze',rl:'Tensory: 8 rozmów, po 1 nowym tokenie',req:'tokens.shape  = [8, 1]\nhidden.shape  = [8, 1, 8192]\nlogits.shape  = [8, 151936]\nnext_ids.shape = [8]'},
+ {n:'Biblioteki',q:'Kto wybiera i uruchamia kod na GPU?',fr:'co najmniej raz na przebieg modelu',dec:'wybór programu GPU i jego uruchomienie',blind:'co znaczą tensory: tokeny rozumowania to zwykłe liczby',rl:'Jedno mnożenie macierzy z attention',req:'y = x @ W          # PyTorch\ngemm(x, W, y)      # cuBLAS\nlaunch(kernel_k)   # CUDA\n# x, W i y są już w pamięci GPU'},
+ {n:'Sterownik',q:'Jak polecenie dociera do GPU?',fr:'przy starcie, potem co najmniej raz na przebieg modelu',dec:'mapowanie pamięci i dostarczenie poleceń',blind:'co liczy program: widzi kanały, bufory i adresy',rl:'Uruchomienie programu GPU jako polecenia',req:'pushbuffer: LAUNCH kernel_k\nGPFIFO:     entry -> pushbuffer\ndoorbell:   write channel_id'},
+ {n:'GPU',q:'Co naprawdę liczy GPU?',fr:'wiele programów na przebieg modelu',dec:'mnożenia macierzy i inne obliczenia',blind:'że istnieją tokeny, rozmowy i modele',rl:'Jedna instrukcja',req:'MMA: C = A × B + C\n# pomnóż i dodaj, na małych blokach macierzy, w wielu Tensor Cores naraz'}],
+ b:{app:'Twój system',api:'Dostawca albo klaster',cluster:'Klaster Kubernetes',node1:'Węzeł GPU',node2:'Węzeł GPU',node3:'Węzeł GPU',pod:'Pod: jedna replika vLLM',papi:'Proces API',pengine:'Proces silnika',pworker:'Proces roboczy × 4',step:'Jeden przebieg modelu',layers:'Warstwy (np. 80)',mem:'Pamięć GPU',libs:'Biblioteki z obrazu kontenera, w procesie roboczym',ckern:'Programy GPU',uspace:'Proces roboczy: przestrzeń użytkownika',kernel:'Jądro Linuksa na hoście',gpu:'GPU: czyta polecenia z kanału',card:'NVIDIA H100 SXM5, jeden z 4 w replice',sm:'132 jednostki SM'},
+ e:{msg:'wiadomość',text:'tekst',https:'HTTPS: cała historia',sse:'SSE: fragmenty',openai:'format OpenAI',zmq:'ZMQ: tokeny',newtok:'nowe tokeny',step:'rozmowy i maski',picked:'wybrane tokeny',logits:'logity do samplera',matmul:'x @ W',attnk:'wywołanie z vLLM',launch:'uruchom',todrv:'polecenia do sterownika',once:'inicjalizacja: ioctl, mmap',conf:'konfiguracja',bell:'doorbell: zapis do pamięci',threads:'program w wątkach',read:'wagi, KV cache',wlog:'logity',others:'pozostałe 3 GPU'},
+ leg:['żądanie','odpowiedź','start, odczyt'],
+ n:{user:['Użytkownik','czat, IDE, terminal'],
+  app:['Aplikacja','czat albo agent'],
+  tools:['Narzędzia','pliki, wyszukiwarka'],
+  api:['API modelu','jeden adres dla aplikacji'],
+  gw:['Bramka AI','np. LiteLLM, opcjonalna'],
+  lb:['Router','Service albo router'],
+  rep:['Replika 1','vLLM, 4 GPU'],
+  rep2:['Replika 2','vLLM, 4 GPU'],rep3:['Replika 3','vLLM, 4 GPU'],
+  http:['Serwer HTTP','FastAPI'],
+  tmpl:['Szablon, tokenizer','chat template'],
+  detok:['Detokenizer','strumień SSE'],
+  wait:['Oczekujące','kolejka repliki'],
+  sched:['Scheduler','continuous batching'],
+  kvm:['Menedżer KV cache','PagedAttention'],
+  mask:['Maska gramatyki','structured output'],
+  run:['Model runner','przebieg modelu'],
+  smp:['Sampler','top-k, top-p'],
+  tok:['Identyfikatory tokenów','wejście przebiegu'],
+  emb:['Embedding','wyszukanie w tabeli'],
+  attn:['Attention','Q, K, V i KV cache'],
+  mlp:['MLP','dwa mnożenia macierzy'],
+  head:['Warstwa wyjściowa','wektor na logity'],
+  wg:['Wagi','np. 140 GB'],
+  kv:['KV cache','rośnie z rozmową'],
+  torch:['PyTorch','tensory, dispatcher'],
+  blas:['cuBLAS','mnożenie macierzy'],
+  fa:['FlashAttention','także FlashInfer'],
+  rt:['CUDA runtime','libcudart'],
+  ud:['libcuda.so','tryb użytkownika'],
+  db:['Bufory i doorbell','pushbuffer, GPFIFO'],
+  ko:['nvidia.ko','moduł jądra'],
+  uvm:['nvidia-uvm.ko','pamięć wirtualna'],
+  hi:['Odbiór poleceń','kanały, GSP'],
+  warp:['Warpy','po 32 wątki'],
+  tc:['Tensor Cores','4 na SM, 528 razem'],
+  fp:['Rdzenie CUDA','16 896 FP32'],
+  hbm:['HBM3','80 GB, ok. 3,35 TB/s'],
+  nvl:['NVLink','900 GB/s łącznie']}
+},{lv:[
+ {n:'System',q:'Who talks to whom?',fr:'once per request',dec:'sending the history and showing the answer',blind:'how the answer is produced',rl:'HTTP request',req:'POST /v1/chat/completions\n{"model": "example-70b",\n "stream": true,\n "messages": [{"role": "user",\n   "content": "Capital of Poland?"}]}'},
+ {n:'Cluster',q:'Which replica gets the request?',fr:'once per request or connection',dec:'admitting the request and picking a replica',blind:'how a replica computes the answer',fact:'3 replicas × 4 GPUs = 12 GPUs, one replica per node',rl:'The same request after the gateway',req:'model:   example-70b -> prod\napi_key: ok\nreplica: vllm-1   # one of 3'},
+ {n:'Server',q:'How does the server control generation?',fact:'4 GPUs in the replica = 4 workers, one per GPU',fr:'intake once per request, scheduling once per model pass',dec:'tokenisation, the batch, memory and stop checks',blind:'what the text means: the scheduler sees tokens and memory blocks',rl:'Tokens and conversation state',req:'prompt_token_ids: [151644, 872, …]\nstatus: WAITING -> RUNNING\nprefill: # the prompt, 1 pass or more\ndecode:  # then 1 token each'},
+ {n:'Model',q:'How does the model score possible next tokens?',fr:'once per model pass',dec:'turning tokens into logits using the weights',blind:'who the users are: conversations are rows in a tensor',rl:'Tensors: 8 conversations, 1 new token each',req:'tokens.shape  = [8, 1]\nhidden.shape  = [8, 1, 8192]\nlogits.shape  = [8, 151936]\nnext_ids.shape = [8]'},
+ {n:'Libraries',q:'What picks and launches GPU code?',fr:'at least once per model pass',dec:'choosing a GPU program and launching it',blind:'what the tensors mean: reasoning tokens are plain numbers',rl:'One matrix multiplication from attention',req:'y = x @ W          # PyTorch\ngemm(x, W, y)      # cuBLAS\nlaunch(kernel_k)   # CUDA\n# x, W and y are already in GPU memory'},
+ {n:'Driver',q:'How does a command reach the GPU?',fr:'at start, then at least once per model pass',dec:'memory mapping and delivering commands',blind:'what the program computes: it sees channels, buffers and addresses',rl:'A GPU program launch as a command',req:'pushbuffer: LAUNCH kernel_k\nGPFIFO:     entry -> pushbuffer\ndoorbell:   write channel_id'},
+ {n:'GPU',q:'What does the GPU actually compute?',fr:'many programs per model pass',dec:'matrix multiplications and other computations',blind:'that tokens, conversations and models exist',rl:'One instruction',req:'MMA: C = A × B + C\n# multiply and add, on small matrix blocks, in many Tensor Cores at once'}],
+ b:{app:'Your system',api:'Provider or your cluster',cluster:'Kubernetes cluster',node1:'GPU node',node2:'GPU node',node3:'GPU node',pod:'Pod: one vLLM replica',papi:'API process',pengine:'Engine process',pworker:'Worker × 4',step:'One model pass',layers:'Layers (e.g. 80)',mem:'GPU memory',libs:'Libraries from the container image, in the worker',ckern:'GPU programs',uspace:'Worker process: user space',kernel:'Linux kernel on the host',gpu:'GPU: reads commands from the channel',card:'NVIDIA H100 SXM5, one of 4 in the replica',sm:'132 SM units'},
+ e:{msg:'message',text:'text',https:'HTTPS: full history',sse:'SSE: fragments',openai:'OpenAI format',zmq:'ZMQ: tokens',newtok:'new tokens',step:'conversations, masks',picked:'picked tokens',logits:'logits to the sampler',matmul:'x @ W',attnk:'called by vLLM',launch:'launch',todrv:'commands to the driver',once:'initialisation: ioctl, mmap',conf:'configuration',bell:'doorbell: memory write',threads:'program in threads',read:'weights, KV cache',wlog:'logits',others:'the other 3 GPUs'},
+ leg:['request','response','setup, reads'],
+ n:{user:['User','chat, IDE, terminal'],
+  app:['Application','chat or agent'],
+  tools:['Tools','files, search'],
+  api:['Model API','one address for the app'],
+  gw:['AI gateway','e.g. LiteLLM, optional'],
+  lb:['Router','Service or smarter router'],
+  rep:['Replica 1','vLLM, 4 GPUs'],
+  rep2:['Replica 2','vLLM, 4 GPUs'],rep3:['Replica 3','vLLM, 4 GPUs'],
+  http:['HTTP server','FastAPI'],
+  tmpl:['Template, tokeniser','chat template'],
+  detok:['Detokeniser','SSE stream'],
+  wait:['Waiting','the replica’s queue'],
+  sched:['Scheduler','continuous batching'],
+  kvm:['KV cache manager','PagedAttention'],
+  mask:['Grammar mask','structured output'],
+  run:['Model runner','a model pass'],
+  smp:['Sampler','top-k, top-p'],
+  tok:['Token IDs','the pass input'],
+  emb:['Embedding','a table lookup'],
+  attn:['Attention','Q, K, V, KV cache'],
+  mlp:['MLP','two matrix products'],
+  head:['Output layer','vector to logits'],
+  wg:['Weights','e.g. 140 GB'],
+  kv:['KV cache','grows with the chat'],
+  torch:['PyTorch','tensors, dispatcher'],
+  blas:['cuBLAS','matrix multiplication'],
+  fa:['FlashAttention','also FlashInfer'],
+  rt:['CUDA runtime','libcudart'],
+  ud:['libcuda.so','user-mode driver'],
+  db:['Buffers, doorbell','pushbuffer, GPFIFO'],
+  ko:['nvidia.ko','kernel module'],
+  uvm:['nvidia-uvm.ko','virtual memory'],
+  hi:['Command intake','channels, GSP'],
+  warp:['Warps','32 threads each'],
+  tc:['Tensor Cores','4 per SM, 528 total'],
+  fp:['CUDA cores','16,896 FP32'],
+  hbm:['HBM3','80 GB, about 3.35 TB/s'],
+  nvl:['NVLink','900 GB/s total']}
+});
+// one answer, level by level: [level, box, what happens]. All steps of a level stay together, every clickable box has a step, and a click jumps to it.
+// In a real run levels 4-7 happen between run and smp, and the steps from the first sched to detok repeat for every model pass.
+const ST=tr([
+[0,'user','Pisze wiadomość w czacie, IDE albo terminalu i czyta odpowiedź na bieżąco, w miarę jak powstaje.'],
+[0,'app','Trzyma historię rozmowy, bo API modelu zwykle nie pamięta poprzednich wiadomości. Przy takim API w każdym żądaniu wysyła przez HTTPS całą historię, system prompt, listę narzędzi i parametry: model, temperaturę, limit długości, ewentualny schemat.'],
+[0,'api','Przyjmuje żądanie, a połączenie zostaje otwarte na strumień odpowiedzi. Tyle widać z zewnątrz.'],
+[0,'app','Dostaje tekst fragmentami, aż do zdarzenia końca. W agencie odpowiedź może być wywołaniem narzędzia.'],
+[0,'tools','Aplikacja uruchamia własne narzędzia, a dostawca serwerowe, np. web search. Model tylko zgłasza wywołanie. Aplikacja dopisuje wynik swojego narzędzia do historii i wysyła nowe żądanie. Kolejne poziomy pokazują, co dzieje się za API, na przykładzie własnego klastra.'],
+[1,'gw','Sprawdza klucz i limity, rejestruje żądania i nalicza ich koszt, wybiera model, a przy awarii przełącza się na zapasowy. Daje jedno API dla wielu dostawców.'],
+[1,'lb','Wybiera jedną replikę. Inteligentny router woli tę, która wciąż ma KV cache początku tego promptu, bo tej części nie trzeba liczyć od nowa. KV cache to zapisane w pamięci GPU klucze i wartości wcześniejszych tokenów, których potrzebuje attention.'],
+[1,'rep','Pełna kopia modelu, tu na jednym węźle. Zajmuje się całą dalszą pracą nad żądaniem. Cztery H100 to 320 GB: 140 GB na wagi, około 140 GB na KV cache, reszta na bufory i zapas.'],
+[2,'http','Działa w procesie API. Odbiera żądanie i trzyma połączenie otwarte na czas strumieniowania.'],
+[2,'tmpl','Szablon czatu łączy wiadomości w jeden tekst, a tokenizer zamienia go na identyfikatory tokenów. Przez ZMQ trafiają one do procesu silnika. Zły szablon pogarsza odpowiedzi modelu, choć aplikacja działa bez błędów.'],
+[2,'wait','Żądanie czeka w kolejce repliki, aż będzie mogło dołączyć do batcha, czyli grupy rozmów liczonych razem. Jeden przebieg modelu to jedno wykonanie wszystkich warstw dla całego batcha. Każda replika ma własną kolejkę.'],
+[2,'sched','Tu zaczyna się pętla przebiegów modelu. Prowadzi ją proces silnika, a przebiegi liczą procesy robocze. Przed każdym przebiegiem scheduler wybiera najpierw trwające rozmowy, potem nowe do prefillu, aż do limitu tokenów na jeden przebieg. Prefill przetwarza prompt, czasem w kilku przebiegach, a potem decode przetwarza po jednym tokenie na rozmowę.'],
+[2,'kvm','Przydziela rozmowom pamięć GPU na KV cache blokami i pamięta, które bloki zawierają wspólne prefiksy, więc tej części promptu nie trzeba liczyć od nowa. Gdy brakuje pamięci, scheduler wstrzymuje rozmowę i zwalnia jej bloki.'],
+[2,'run','Proces roboczy dostaje polecenie przebiegu, buduje tensory wejściowe batcha i uruchamia kod modelu. Wagi i KV cache leżą w pamięci GPU, proces na CPU tylko steruje. Poziom 4 pokazuje ten przebieg, a poziomy 5–7 uruchomienie jednego z jego programów GPU.'],
+[2,'mask','Jeśli żądanie wymusza format, podczas obliczeń modelu silnik wylicza maskę dozwolonych tokenów. Przekazuje ją procesowi roboczemu osobno, przy zlecaniu samplowania. Szczegóły w „Structured output”.'],
+[2,'smp','Przebieg modelu kończy się logitami, które oceniają każdy możliwy token. GPU na polecenie procesu roboczego nakłada na nie maskę, jeśli jest, i wybiera po jednym tokenie dla każdej rozmowy, która skończyła prefill. Wynik wraca do procesu silnika.'],
+[2,'sched','Silnik dopisuje token do rozmowy i sprawdza token końca oraz limit długości. Jeśli to nie koniec, rozmowa zostaje w pętli, a następny przebieg da jej kolejny token.'],
+[2,'detok','Działa w procesie API, niezależnie od pętli przebiegów. Zamienia nowe tokeny na tekst i sprawdza sekwencje stop przed wysłaniem tekstu przez SSE. Gdy znajdzie sekwencję stop, każe silnikowi przerwać żądanie.'],
+[3,'tok','Poziom 4 pokazuje od środka jeden przebieg modelu z poziomu 3, między model runnerem a samplerem, a poziomy 5–7 uruchomienie jednego z jego programów GPU. Wejściem przebiegu są identyfikatory tokenów: w prefillu prompt albo jego fragment, potem po jednym nowym tokenie na rozmowę.'],
+[3,'wg','Kod modelu wykonuje stałą sekwencję operacji, które korzystają z wag. To 70 mld parametrów po 16 bitów, rozłożonych między GPU repliki. Wagi to dane: kod warstw mówi, co z nimi zrobić.'],
+[3,'emb','Najpierw identyfikator tokena wybiera wiersz z tabeli wag. Tak powstaje wektor, np. 8192 liczby.'],
+[3,'attn','Dla każdego tokena liczy zapytanie (Q), klucz (K) i wartość (V). Q tokena porównuje się z K jego samego i wcześniejszych tokenów, a odpowiadające im wektory V łączy się według wyników tych porównań. Tak wektor uwzględnia poprzednie tokeny. Szczegóły w „Attention”.'],
+[3,'kv','Attention czyta z KV cache klucze i wartości wcześniejszych tokenów i dopisuje nowe, więc nie wylicza ponownie kluczy i wartości wcześniejszych tokenów. Rozmowy mają osobne bloki, ale wspólny prefiks promptu mogą dzielić. Pamięć pozostała po załadowaniu wag i buforów ogranicza liczbę rozmów naraz.'],
+[3,'mlp','Przekształca każdy wektor osobno. Attention i MLP tworzą jedną warstwę, a wektory przechodzą przez wszystkie warstwy po kolei. Razem wykonują prawie wszystkie obliczenia przebiegu.'],
+[3,'head','Działa po wszystkich 80 warstwach attention i MLP: mnoży ostatni wektor przez macierz o liczbie kolumn równej rozmiarowi słownika. Wynik to logity: po jednej liczbie na każdy token słownika, osobno dla każdej rozmowy w batchu. Logity pozostają w pamięci GPU. W każdym przebiegu GPU wykonują wiele programów. Kolejne poziomy pokazują wykonanie jednego z nich.'],
+[4,'torch','Kod modelu działa w PyTorchu, który przechowuje tensory. Dispatcher w C++ wybiera implementację operacji dla backendu, np. CUDA. W vLLM torch.compile może też skompilować i połączyć operacje.'],
+[4,'blas','Mnożenie macierzy (GEMM) wykonuje gotowy program GPU, np. z cuBLAS, biblioteki NVIDIA do algebry liniowej. Taki program nazywa się kernelem, ale nie ma nic wspólnego z jądrem systemu.'],
+[4,'fa','Łączenie Q, K i V w attention wykonują wyspecjalizowane programy GPU: w vLLM na H100 domyślnie FlashAttention, a gdy jest niedostępny, FlashInfer. Działają bezpośrednio na blokach KV cache. vLLM wywołuje je sam, bez warstwy attention z PyTorcha.'],
+[4,'rt','Zarządza pamięcią GPU i strumieniami, czyli kolejkami pracy. Zleca uruchomienie programu GPU na strumieniu i nie czeka na wynik. Dane już leżą w pamięci GPU, przesyłane jest tylko polecenie. vLLM domyślnie nagrywa przebieg modelu lub jego fragmenty jako CUDA Graph i odtwarza je z mniejszym narzutem.'],
+[5,'ud','Zamienia uruchomienie programu GPU na polecenia sprzętowe i kieruje je do kanałów GPU, czyli sprzętowych kolejek poleceń. Kilka strumieni CUDA, czyli kolejek pracy, może współdzielić kanał. Ta biblioteka należy do sterownika, dlatego zwykle pochodzi z hosta.'],
+[5,'db','libcuda.so zapisuje polecenia w buforze (pushbuffer), w pamięci współdzielonej z GPU, i powiadamia GPU przez zapis do rejestru doorbell. Rejestr jest widoczny w pamięci procesu, więc wystarcza zwykły zapis do pamięci, bez wywołania systemowego.'],
+[5,'ko','Uruchomienie programu GPU nie przechodzi przez jądro Linuksa. Moduł jądra nvidia.ko przygotował wcześniej GPU, kanały i pamięć z jej mapowaniami. Działa przy starcie procesu i przydziałach pamięci.'],
+[5,'uvm','Ten moduł jądra daje CPU i GPU wspólną przestrzeń adresową. Gdy program używa pamięci zarządzanej CUDA, moduł przenosi jej strony między CPU a GPU. Wagi i KV cache w tym przykładzie pozostają w pamięci GPU.'],
+[6,'hi','Po zapisie do doorbella GPU czyta z kanału kolejkę GPFIFO, która wskazuje polecenia w pushbufferze, i dzieli program na bloki wątków. Osobny procesor GSP z własnym oprogramowaniem układowym przejmuje od sterownika część inicjalizacji i zarządzania GPU.'],
+[6,'warp','Bloki wątków trafiają do jednostek SM. SM, czyli multiprocesor strumieniowy, to blok rdzeni. Program działa tam w wielu wątkach, pogrupowanych w warpy po 32 wątki wykonujące ten sam kod na różnych danych.'],
+[6,'tc','Przyspieszają mnożenie i akumulację małych bloków macierzy. Ich użycie zależy od programu GPU i precyzji.'],
+[6,'fp','Wykonują arytmetykę FP32. SM ma też jednostki całkowitoliczbowe, funkcji specjalnych oraz odczytu i zapisu.'],
+[6,'hbm','Rdzenie liczą równolegle, czytając wagi i KV cache z pamięci HBM. Podczas decode przy małym batchu przepustowość HBM często ogranicza prędkość bardziej niż moc obliczeniowa. Szczegóły w „Czemu GPU się nudzi”.'],
+[6,'nvl','Łączy GPU tej samej repliki. Każda warstwa jest podzielona między cztery GPU (tensor parallelism), więc w każdej warstwie GPU sumują tym łączem wyniki częściowe.']
+],[
+[0,'user','Writes a message in a chat, IDE or terminal and reads the answer as it arrives.'],
+[0,'app','Keeps the conversation history, because a model API usually doesn’t remember earlier messages. With such an API, every HTTPS request carries the whole history, the system prompt, the tool list and parameters such as model, temperature, length limit and perhaps a schema.'],
+[0,'api','Accepts the request, and the connection stays open for the response stream. That’s all you see from outside.'],
+[0,'app','Receives text in fragments until the final event. In an agent the response can be a tool call.'],
+[0,'tools','The application runs its tools; the provider runs server-side tools such as web search. The model only requests the call. The application appends its tool’s result to the history and sends a new request. The next levels show what happens behind the API, using an example self-hosted cluster.'],
+[1,'gw','Checks the key and limits, logs requests and tracks their cost, picks the model and fails over to a backup. It gives you one API for many providers.'],
+[1,'lb','Picks one replica. A smarter router prefers one that still holds the KV cache for the start of this prompt, because that part needn’t be computed again. The KV cache is the keys and values of earlier tokens, stored in GPU memory for attention to use.'],
+[1,'rep','A full copy of the model, here on one node. It does all the remaining work on the request. Four H100s give 320 GB: 140 GB for weights, about 140 GB for the KV cache, the rest for buffers and headroom.'],
+[2,'http','Runs in the API process. It receives the request and keeps the connection open while streaming.'],
+[2,'tmpl','The chat template joins the messages into a string, and the tokeniser turns it into token IDs. They reach the engine process over ZMQ. A wrong template degrades the model’s answers while the application runs without errors.'],
+[2,'wait','The request waits in the replica’s queue until it can join a batch, a group of conversations computed together. A model pass is one run of all the layers for the whole batch. Each replica has its own queue.'],
+[2,'sched','The loop of model passes starts here. The engine process runs it, and the workers compute the passes. Before each pass the scheduler picks conversations in progress, then new ones for prefill, up to the token budget for one pass. Prefill processes the prompt, sometimes across several passes, and decode then processes one token per conversation.'],
+[2,'kvm','Gives conversations GPU memory for the KV cache in blocks and tracks which blocks hold shared prefixes, so that part of the prompt needn’t be computed again. When memory runs short, the scheduler pauses a conversation and frees its blocks.'],
+[2,'run','The worker process receives the pass command, builds the batch’s input tensors and runs the model code. Weights and KV cache sit in GPU memory; the CPU process coordinates the work. Level 4 shows this pass, and levels 5 to 7 show the launch of one of its GPU programs.'],
+[2,'mask','If the request enforces a format, the engine prepares the allowed-token mask while the model computes. It sends the mask to the worker separately, when requesting sampling. See “Structured output”.'],
+[2,'smp','A model pass ends in logits, which score every possible token. At the worker’s command the GPU applies the mask to them, if there is one, and picks one token for each conversation that has finished prefill. The result goes back to the engine process.'],
+[2,'sched','The engine appends the token to its conversation and checks for an end token and the length limit. If it isn’t finished, the conversation stays in the loop and the next pass gives it the next token.'],
+[2,'detok','Runs in the API process, independently of the loop of model passes. It turns new tokens into text and checks for stop sequences before streaming the text over SSE. If it finds a stop sequence, it tells the engine to abort the request.'],
+[3,'tok','Level 4 looks inside one model pass from level 3, between the model runner and the sampler, and levels 5 to 7 show the launch of one of its GPU programs. The pass takes token IDs as input: during prefill the prompt or a chunk of it, then one new token per conversation.'],
+[3,'wg','The model code runs a fixed sequence of operations that use the weights. These are 70 billion parameters at 16 bits each, spread across the replica’s GPUs. Weights are data: the layer code says what to do with them.'],
+[3,'emb','First a token ID selects a row from a table of weights. That row is the vector, e.g. 8192 numbers.'],
+[3,'attn','Computes a query (Q), key (K) and value (V) for each token. The token’s Q is compared with its own K and the K of earlier tokens, and the corresponding V vectors are combined according to the results of those comparisons. That is how the vector takes earlier tokens into account. See “Attention”.'],
+[3,'kv','Attention reads the keys and values of earlier tokens from the KV cache and appends new ones, so it doesn’t recompute the keys and values of earlier tokens. Conversations have separate blocks but can share those for a common prompt prefix. Memory left after loading weights and buffers limits how many conversations fit.'],
+[3,'mlp','Transforms each vector separately. Attention and the MLP form one layer, and the vectors pass through all the layers in turn. Together they do almost all the computing in a pass.'],
+[3,'head','Runs after all 80 attention and MLP layers: it multiplies the last vector by a matrix as wide as the vocabulary. The result is the logits: one number for every token in the vocabulary, separately for each conversation in the batch. The logits remain in GPU memory. In every pass, the GPUs run many programs. The next levels show how one of them executes.'],
+[4,'torch','The model code runs in PyTorch, which holds the tensors. A dispatcher in C++ picks an operation’s implementation for a backend such as CUDA. In vLLM, torch.compile can also compile and fuse operations.'],
+[4,'blas','A matrix multiplication (GEMM) runs as a ready-made GPU program, for example from cuBLAS, NVIDIA’s linear algebra library. Such a program is called a compute kernel, and it has nothing to do with the operating system kernel.'],
+[4,'fa','Attention combines Q, K and V in specialised GPU programs: for vLLM on an H100, FlashAttention by default, or FlashInfer if it isn’t available. They work directly on KV cache blocks. vLLM calls them itself, without PyTorch’s attention layer.'],
+[4,'rt','Manages GPU memory and streams, which are queues of work. It queues the GPU program launch on a stream and doesn’t wait for the result. The data is already in GPU memory, so only a command travels. By default vLLM records the model pass or parts of it as a CUDA Graph and replays it with less overhead.'],
+[5,'ud','Turns a GPU program launch into hardware commands and submits them to GPU channels, which are hardware command queues. Several CUDA streams, which are work queues, can share a channel. This library belongs to the driver, which is why it usually comes from the host.'],
+[5,'db','libcuda.so writes the commands to a buffer (the pushbuffer) in memory shared with the GPU and notifies the GPU by writing to the doorbell register. That register is visible in the process’s memory, so a plain memory write is enough, with no system call.'],
+[5,'ko','A GPU program launch doesn’t go through the Linux kernel. The kernel module nvidia.ko set up the GPU, the channels, the memory and its mappings earlier. It runs at process start and on memory allocations.'],
+[5,'uvm','This kernel module gives the CPU and GPU a shared address space. When a program uses CUDA managed memory, the module moves its pages between CPU and GPU. In this example the weights and KV cache stay in GPU memory.'],
+[6,'hi','After the doorbell write the GPU reads the channel’s GPFIFO queue, which points to the commands in the pushbuffer, and splits the program into thread blocks. The separate GSP processor, with its own firmware, takes over part of GPU initialisation and management from the driver.'],
+[6,'warp','Thread blocks go to SMs. An SM, a streaming multiprocessor, is a block of cores. There the program runs in many threads, which form warps of 32 and run the same code on different data.'],
+[6,'tc','Speed up multiplying and accumulating small matrix blocks. Their use depends on the GPU program and the precision.'],
+[6,'fp','Execute FP32 arithmetic. The SM also has integer, special-function and load/store units.'],
+[6,'hbm','The cores compute in parallel, reading weights and the KV cache from HBM. During decode with a small batch, HBM bandwidth often limits speed more than compute does. See “Why the GPU is idle”.'],
+[6,'nvl','Connects the GPUs of one replica. Each layer is split across the four GPUs (tensor parallelism), so in every layer they add up partial results over this link.']
+]);
+const MARK={q:'skQ',r:'skR',s:'skS'};
+const diagram=g=>{
+  const mk=(id,c)=>S('marker',{id,viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:5,markerHeight:5,orient:'auto'},S('path',{d:'M0,0L10,5L0,10z',class:c}));
+  const bs=g.b.flatMap(([k,x,y,w,hh,kind,at])=>[S('rect',{class:'sk-bd '+kind,x:x+.5,y:y+.5,width:w-1,height:hh-1,rx:9}),S('text',{class:'sk-bl',x:at==='r'?x+w-8:x+8,y:at==='b'?y+hh-6:y+13,'text-anchor':at==='r'?'end':'start'},T.b[k])]);
+  const es=g.e.flatMap(([pts,k,lab,lx,ly,anchor,ids])=>{const on=ids.split(' ').includes(sel),cls=' '+k+(on?' on':'');
+    return [S('polyline',{class:'sk-e'+cls,points:pts,'marker-end':`url(#${MARK[k]})`}),lab?S('text',{class:'sk-el'+cls,x:lx,y:ly,'text-anchor':anchor},T.e[lab]):null];});
+  const ns=g.n.map(([id,x,y,w,hh,ghost])=>{const[name,tech]=T.n[id],on=id===sel,cx=x+w/2,my=y+hh/2;
+    const a=ghost?{class:'nd ghost'}:{class:'nd'+(on?' on':''),role:'button',tabindex:0,'aria-pressed':on?'true':'false','aria-label':name+', '+tech,'data-id':id};
+    return S('g',a,S('rect',{x,y,width:w,height:hh,rx:7}),S('text',{x:cx,y:my-2},name),S('text',{class:'s',x:cx,y:my+12},tech));});
+  const svg=S('svg',{viewBox:`0 0 340 ${g.h}`,role:'group','aria-label':T.lv[cur].n},S('defs',{},mk('skQ','q'),mk('skR','r'),mk('skS','s')),bs,es,ns);
+  const pick=e=>{const n=e.target.closest('.nd[data-id]');if(!n)return;const id=n.dataset.id,at=k=>ST[k][0]===cur&&ST[k][1]===id,all=ST.map((_,k)=>k).filter(at);pl.halt();pl.set(all.includes(step)?all.find(k=>k>step)??all[0]:all.reduce((a,k)=>Math.abs(k-step)<Math.abs(a-step)?k:a));$(`.nd[data-id="${id}"]`,main).focus();};
+  svg.addEventListener('click',pick);svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e);}});
+  return svg;};
+let cur=0,sel='user',step=0;
+const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'sk-detail','aria-live':'polite'}),req=h('div',{class:'sk-reqbox'}),main=h('div',{class:'sk-main'},fig,legend,h('div',{class:'sk-card'},detail,req));
+view.append(head,main);
+const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{pl.halt();if(i!==cur)pl.set(ST.findIndex(s=>s[0]===i));}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
+const draw=()=>{const l=T.lv[cur],g=GEO[cur],[name]=T.n[sel];
+  lvBtns.forEach((e,i)=>e.setAttribute('aria-pressed',i===cur?'true':'false'));
+  head.replaceChildren(...[h('p',{class:'sk-head'},h('b',{},tr('Poziom ','Level ')+(cur+1)+'. '+l.n),' '+l.q),
+    h('dl',{class:'id-res sk-res'},h('div',{},h('dt',{},tr('Odpowiada za','Responsible for')),h('dd',{},l.dec)),h('div',{},h('dt',{},tr('Nie wie','Doesn’t know')),h('dd',{},l.blind)),h('div',{},h('dt',{},tr('Jak często','How often')),h('dd',{},l.fr))),
+    l.fact?h('p',{class:'sk-fact'},l.fact):null].filter(Boolean));
+  fig.replaceChildren(diagram(g));
+  detail.replaceChildren(h('p',{},h('b',{},name+'. '),ST[step][2]));
+  req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
+const pl=player($('#skPlayer'),{steps:ST.length-1,interval:9000,render:k=>{[cur,sel]=ST[k];step=k;draw();}});PLAYERS.push(pl);}
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
-  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill};
+  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
 $$('.lab').forEach(typoLive);

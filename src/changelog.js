@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-11-02',
+    added: ['stos'],
+    updated: ['context'],
+    en: 'New topic: The inference stack. A diagram and walkthrough of seven levels trace a request from the API through the server, model, libraries and driver to the GPU and the answer back, including the loop of model passes. Notes under the diagram follow the levels and cover how memory is shared between conversations and how a large model is split across GPUs and nodes. The topic “The context window and agents” now says that in vLLM a conversation holds no KV cache blocks while a tool runs, although the GPU memory stays allocated for the cache.',
+    pl: 'Nowy temat: Stos inferencji. Diagram i opis siedmiu poziomów pokazują drogę żądania od API przez serwer, model, biblioteki i sterownik do GPU oraz powrót odpowiedzi, razem z pętlą przebiegów modelu. Notatki pod diagramem odpowiadają kolejnym poziomom i opisują, jak rozmowy dzielą pamięć oraz jak duży model dzieli się na wiele GPU i węzłów. W temacie „Okno kontekstowe i agent” poprawiono opis: w vLLM rozmowa nie zajmuje bloków KV cache podczas pracy narzędzia, choć pamięć GPU pozostaje przydzielona na cache.',
+  },
+  {
     date: '2026-11-01',
     added: ['tozsamosc'],
     updated: ['mcp'],

@@ -5,13 +5,17 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 ## Every language
 
 - Assume an engineer who is new to the topic. If they probably have not met the idea, start with the problem and how the approach solves it, before any widget.
-- Show the whole mechanism in the order it really runs: what is set up first, what goes in, the loop, what stops it, and the real scale next to the toy example.
+- Show the whole mechanism in the order it really runs: what is set up first, what goes in, the loop, what stops it, and the real scale next to the toy example. A diagram walked level by level is the one exception: its title says so, and the first step of a level that really runs inside another says where it fits.
 - Keep one order. Notes under a widget follow the widget's stages, and what is decided first is explained first.
 - One fact, one place. Notes carry what the widget doesn't show.
-- Define a term at first use, with a concrete value. Keep confusable terms apart.
+- Define a term at first use, with a concrete value. Keep confusable terms apart. A term that collides with a word the reader already knows gets a plain name throughout and the jargon once, as a definition: "GPU program", and once "called a compute kernel, nothing to do with the operating system kernel".
+- A multiplier or number in a diagram says what it counts and why it is that value, in the diagram or right next to it. "× 4" alone leaves the reader guessing.
 - Test each sentence with "which ones, of what, why". "Gives shorter sequences" fails the test.
+- Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
-- Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each.
+- Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each. A widget's "step" is not the mechanism's step: the inference page keeps "step" for the player and says "model pass" for the computation.
+- A frequency names its unit in words the reader already has: "once per request", "many times per model pass". "At every step, many times" says nothing, and neither do player step numbers such as "steps 12–14". The unit holds in every phase: "per token" is wrong for prefill, which can take several passes before a token exists. On a group, say which parts it covers: "then for every token" left open whether a whole level repeats or one process.
+- A widget step stands alone, because a reader can land on it by clicking: no "this launch" that points at the previous step, and no term defined only earlier in the walk. It follows the element's bold name, so it doesn't repeat the name: "Router. Router picks" and "HTTP server. The HTTP server" were both written by reviewers' fixes.
 - Vary the sentence. Don't repeat one shape down a list ("X stops, X won't stop"), and don't end a paragraph on a slogan or punchline.
 - Don't build the text on contrast ("not X but Y") or on groups of three unless the content has that shape.
 - Say who does the thing. "SPIFFE keeps them out of the context" was wrong: the harness does.
@@ -36,6 +40,7 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | demon | usługa |
 | odcięcie | zablokowanie |
 | shell (in prose) | powłoka |
+| pod (Kubernetes) | Pod, Pody, Podów, so it isn't read as the Polish preposition "pod" |
 | service account | konto usługi |
 | natywna tożsamość obciążenia | name the mechanism, e.g. role IAM |
 | zdezorientowany zastępca | confused deputy |
@@ -62,9 +67,41 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 Every new topic and every heavy rewrite passes this, per language, before the preview:
 
 1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
-2. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
-3. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
-4. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
-5. Write the scores, reviewers and reviewed revision in the handover.
+2. Run the two reader reviews below, the learner and the sceptic, as read-only agents. Verify each finding, fix it, and repeat the sceptical read on what changed. Accuracy review doesn't replace them: a claim can be true and still leave the wrong picture.
+3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
+4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
+5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
+6. Write the scores, reviewers and reviewed revision in the handover.
 
-Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
+### Learner
+
+An engineer new to the topic reads the page and widget and reports where they got lost, terms used before they are defined, jumps that don't connect, what they still can't explain afterwards, and what needs a picture. They also use the widget: press next to the end, click out of order, and report what next skips, clicks that don't move the widget, and steps that make no sense without the one before.
+
+### Sceptic
+
+A senior engineer who uses these products daily and doesn't accept a claim because it is true. They go through every number and strong claim, including widget text, steps, self-check answers and follow-ups, and for each one that fails they report the quote, the wrong conclusion or the unanswered "but what about X?", and a short fix.
+
+They look for:
+
+- Numbers without their conditions: a worst case read as typical, an example read as a limit. "A replica fits 13 conversations" was true and read as "a replica serves 13 users".
+- Claims that don't square with the real world the reader knows, such as how large services actually run.
+- Arithmetic a reader will redo. "140 GB over 80 GB per GPU, so four GPUs" invites "why not two?".
+- Mechanisms a reader expects and can't find, such as swapping out memory.
+- Contradictions between levels, or between the widget and the notes.
+- Conclusions that hold only for this example, and "must" where it is a choice.
+- Comparisons that break down. Say where the analogy stops.
+
+They also ask the owner's questions, the ones that found what accuracy review missed:
+
+- Scale it up. Multiply a number to real traffic, or to the reader's own use, and compare with what exists. "13 conversations per replica" against millions of chats; "500,000 tokens × millions of sessions" against the GPU memory on Earth. If the result is absurd, the page is missing a mechanism.
+- Push past the limit. What happens to user 25 when 13 fit: wait, fail, swap?
+- Follow the state through time. For anything stored, say where it lives, who owns it, how long it lasts and what happens next: after the answer, at the next message, when idle, when memory runs out. Stopping at the happy path is the usual gap.
+- Start from the reader's own experience. They use these products daily and have seen a cache lasting an hour, a long session, a model that gets slower. Reconcile the page with what they have seen, and don't make them bring it up.
+- Name the scope. "In vLLM by default" is not "at large providers". Say which system a claim covers, and keep what is documented apart from what is inferred. Where a provider publishes nothing, say so.
+- Distrust absence. "There is no X", "not by Y" and "only Z" need a search for the counterexample first. "Routing uses tokens, not a thread ID" came from three systems checked; session-key routing exists in all of them.
+- Look for the familiar comparison. A connection pool explained more than the numbers did, once its limit was stated.
+- Ask whether it can be simpler. A precise label a reader can't parse is worse than a plain one with the nuance in the notes: "many times per model pass" beat "steps 12–14".
+
+Answer the question on the page or cut the number. Prefer the one fix that removes the wrong conclusion over a caveat on every sentence. Run it on new text too: the sceptic's own fixes can be wrong, as "two 84 GB conversations fill 140 GB" was.
+
+Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length, and read the result on screen afterwards: two fixes that are each right can clash once applied. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
