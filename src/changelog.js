@@ -6,8 +6,8 @@ export const CHANGELOG = [
     date: '2026-11-02',
     added: ['stos'],
     updated: ['context'],
-    en: 'New topic: The inference stack. A seven-level diagram and a 23-step walkthrough trace one answer from the API through the server, model, libraries and driver to the GPU and back, including the control loop that repeats for every token. Notes under the diagram follow the levels and cover how memory is shared between conversations and how a large model is split across GPUs and nodes. The context window and agents: a correction, vLLM reserves no GPU memory for the KV cache while a tool runs.',
-    pl: 'Nowy temat: Stos inferencji. Diagram siedmiu poziomów i opis 23 kroków pokazują drogę jednej odpowiedzi od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą kontrolną, która powtarza się dla każdego tokena. Notki pod diagramem idą za poziomami i opisują, jak rozmowy dzielą pamięć oraz jak duży model dzieli się na wiele GPU i węzłów. Okno kontekstowe i agent: poprawka, gdy narzędzie pracuje, vLLM nie rezerwuje pamięci GPU na KV cache.',
+    en: 'New topic: The inference stack. A seven-level diagram and a step-by-step walkthrough trace one answer from the API through the server, model, libraries and driver to the GPU and back, including the loop of model passes. Notes under the diagram follow the levels and cover how memory is shared between conversations and how a large model is split across GPUs and nodes. The context window and agents: a correction, vLLM reserves no GPU memory for the KV cache while a tool runs.',
+    pl: 'Nowy temat: Stos inferencji. Diagram siedmiu poziomów i opis krok po kroku pokazują drogę jednej odpowiedzi od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą przebiegów modelu. Notki pod diagramem idą za poziomami i opisują, jak rozmowy dzielą pamięć oraz jak duży model dzieli się na wiele GPU i węzłów. Okno kontekstowe i agent: poprawka, gdy narzędzie pracuje, vLLM nie rezerwuje pamięci GPU na KV cache.',
   },
   {
     date: '2026-11-01',
