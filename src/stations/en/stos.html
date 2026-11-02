@@ -3,7 +3,7 @@
   <p class="lede">Before the model answers a chat message, the request passes through a gateway, an inference server, the model, libraries, a driver and the GPU. Each level has its own job and knows little about the others.</p>
   <p>When an answer arrives slowly or the server runs out of memory, the API alone doesn’t reveal the cause. Dividing the stack into levels shows which component to inspect.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Step through generating an answer. Tap an element for details</p>
+    <p class="lab-title">Step through generating an answer. Tap an element to jump to its step</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Stack levels"></div>
     <div id="skView"></div>
     <div id="skPlayer"></div>
@@ -42,7 +42,7 @@
   </ul>
   <h3 class="sub">Level 5. Libraries</h3>
   <ul class="notes">
-    <li><b>Execution.</b> Model layers become launches of small GPU programs: matrix multiplication from cuBLAS, attention from FlashAttention. Such a program is called a compute kernel, and it has nothing to do with the operating system kernel. Compilation can fuse operations, and a CUDA Graph replays recorded work with one call, so the CPU doesn’t submit each program separately. The GPU still runs them all.</li>
+    <li><b>Execution.</b> Model layers become launches of small GPU programs: matrix multiplication from cuBLAS, attention from FlashAttention. Compilation can fuse operations, and a CUDA Graph replays recorded work with one call, so the CPU doesn’t submit each program separately. The GPU still runs them all.</li>
     <li><b>Memory.</b> The KV cache is a PyTorch tensor prepared at start. PyTorch’s allocator keeps the memory it got from the driver, so nvidia-smi shows the reservation, not current use. The block assignments from level 3 happen inside this tensor, without reallocating GPU memory.</li>
     <li><b>Other hardware.</b> Levels 5–7 depend on the hardware: AMD GPUs use ROCm, Macs use Metal and TPUs use the XLA compiler.</li>
   </ul>

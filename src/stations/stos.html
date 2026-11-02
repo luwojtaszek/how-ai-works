@@ -3,7 +3,7 @@
   <p class="lede">Zanim model odpowie na wiadomość z czatu, żądanie przechodzi przez bramkę, serwer inferencji, model, biblioteki, sterownik i procesor graficzny. Każdy z tych poziomów odpowiada za co innego i wie niewiele o pozostałych.</p>
   <p>Gdy odpowiedź przychodzi wolno albo serwerowi brakuje pamięci, samo API nie wskazuje przyczyny. Podział stosu na poziomy pokazuje, który element sprawdzić.</p>
   <div class="lab" id="skLab">
-    <p class="lab-title">Prześledź generowanie. Stuknij element, by zobaczyć szczegóły</p>
+    <p class="lab-title">Prześledź generowanie. Stuknij element, by przejść do jego kroku</p>
     <div class="opts sk-nav" id="skNav" role="group" aria-label="Poziomy stosu"></div>
     <div id="skView"></div>
     <div id="skPlayer"></div>
@@ -42,7 +42,7 @@
   </ul>
   <h3 class="sub">Poziom 5. Biblioteki</h3>
   <ul class="notes">
-    <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia małych programów na GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Taki program nazywa się kernelem, ale nie ma nic wspólnego z jądrem systemu. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego programu osobno. GPU i tak wykonuje je wszystkie.</li>
+    <li><b>Wykonanie.</b> Warstwy modelu zamieniają się w uruchomienia małych programów na GPU: mnożenie macierzy z cuBLAS, attention z FlashAttention. Kompilacja może łączyć operacje, a CUDA Graph odtwarza nagraną pracę jednym wywołaniem, więc CPU nie zleca każdego programu osobno. GPU i tak wykonuje je wszystkie.</li>
     <li><b>Pamięć.</b> KV cache to tensor PyTorcha przygotowany przy starcie. Alokator PyTorcha zatrzymuje pamięć otrzymaną od sterownika, dlatego nvidia-smi pokazuje rezerwację, a nie bieżące użycie. Przydziały bloków z poziomu 3 odbywają się wewnątrz tego tensora, bez ponownego przydzielania pamięci GPU.</li>
     <li><b>Inny sprzęt.</b> Poziomy 5–7 zależą od sprzętu: na GPU AMD działa ROCm, na Macu Metal, a na TPU kompilator XLA.</li>
   </ul>
