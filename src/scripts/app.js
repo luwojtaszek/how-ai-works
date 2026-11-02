@@ -2270,11 +2270,11 @@ const T=tr({lv:[
 // In a real run levels 4-7 happen between run and smp, and the steps from the first sched to detok repeat for every model pass.
 const ST=tr([
 [0,'user','Pisze wiadomość w czacie, IDE albo terminalu i czyta odpowiedź na bieżąco, w miarę jak powstaje.'],
-[0,'app','Trzyma historię rozmowy, bo API modelu zwykle nie pamięta poprzednich wiadomości. Dlatego w każdym żądaniu wysyła przez HTTPS całą historię, system prompt, listę narzędzi i parametry: model, temperaturę, limit długości, ewentualny schemat.'],
+[0,'app','Trzyma historię rozmowy, bo API modelu zwykle nie pamięta poprzednich wiadomości. Przy takim API w każdym żądaniu wysyła przez HTTPS całą historię, system prompt, listę narzędzi i parametry: model, temperaturę, limit długości, ewentualny schemat.'],
 [0,'api','Przyjmuje żądanie, a połączenie zostaje otwarte na strumień odpowiedzi. Tyle widać z zewnątrz.'],
 [0,'app','Dostaje tekst fragmentami, aż do zdarzenia końca. W agencie odpowiedź może być wywołaniem narzędzia.'],
 [0,'tools','Aplikacja uruchamia własne narzędzia, a dostawca serwerowe, np. web search. Model tylko zgłasza wywołanie. Aplikacja dopisuje wynik swojego narzędzia do historii i wysyła nowe żądanie. Kolejne poziomy pokazują, co dzieje się za API, na przykładzie własnego klastra.'],
-[1,'gw','Sprawdza klucz i limity, zapisuje koszt i logi, wybiera model, a przy awarii przełącza się na zapasowy. Daje jedno API dla wielu dostawców.'],
+[1,'gw','Sprawdza klucz i limity, rejestruje żądania i nalicza ich koszt, wybiera model, a przy awarii przełącza się na zapasowy. Daje jedno API dla wielu dostawców.'],
 [1,'lb','Wybiera jedną replikę. Inteligentny router woli tę, która wciąż ma KV cache początku tego promptu, bo tej części nie trzeba liczyć od nowa. KV cache to zapisane w pamięci GPU klucze i wartości wcześniejszych tokenów, których potrzebuje attention.'],
 [1,'rep','Pełna kopia modelu, tu na jednym węźle. Zajmuje się całą dalszą pracą nad żądaniem. Cztery H100 to 320 GB: 140 GB na wagi, około 140 GB na KV cache, reszta na bufory i zapas.'],
 [2,'http','Działa w procesie API. Odbiera żądanie i trzyma połączenie otwarte na czas strumieniowania.'],
@@ -2291,7 +2291,7 @@ const ST=tr([
 [3,'wg','Kod modelu wykonuje stałą sekwencję operacji, które korzystają z wag. To 70 mld parametrów po 16 bitów, rozłożone między GPU repliki. Wagi to dane: kod warstw mówi, co z nimi zrobić.'],
 [3,'emb','Najpierw identyfikator tokena wybiera wiersz z tabeli wag. Tak powstaje wektor, np. 8192 liczby.'],
 [3,'attn','Dla każdego tokena liczy zapytanie (Q), klucz (K) i wartość (V). Q tokena porównuje się z K jego samego i wcześniejszych tokenów, a odpowiadające im wektory V łączy się według wyników tych porównań. Tak wektor uwzględnia poprzednie tokeny. Szczegóły w „Attention”.'],
-[3,'kv','Attention czyta z KV cache klucze i wartości wcześniejszych tokenów i dopisuje nowe, więc nie liczy kontekstu od nowa. Rozmowy mają osobne bloki, ale wspólny prefiks promptu mogą dzielić. Pamięć pozostała po załadowaniu wag i buforów ogranicza liczbę rozmów naraz.'],
+[3,'kv','Attention czyta z KV cache klucze i wartości wcześniejszych tokenów i dopisuje nowe, więc nie wylicza ponownie kluczy i wartości wcześniejszych tokenów. Rozmowy mają osobne bloki, ale wspólny prefiks promptu mogą dzielić. Pamięć pozostała po załadowaniu wag i buforów ogranicza liczbę rozmów naraz.'],
 [3,'mlp','Przekształca każdy wektor osobno. Attention i MLP tworzą jedną warstwę, a wektory przechodzą przez wszystkie warstwy po kolei. Razem wykonują prawie wszystkie obliczenia przebiegu.'],
 [3,'head','Działa po wszystkich 80 warstwach attention i MLP: mnoży ostatni wektor przez macierz o liczbie kolumn równej rozmiarowi słownika. Wynik to logity: po jednej liczbie na każdy token słownika, osobno dla każdej rozmowy w batchu. Logity pozostają w pamięci GPU. W każdym przebiegu GPU wykonują wiele programów. Kolejne poziomy pokazują wykonanie jednego z nich.'],
 [4,'torch','Kod modelu działa w PyTorchu, który przechowuje tensory. Dispatcher w C++ wybiera implementację operacji dla backendu, np. CUDA. W vLLM torch.compile może też skompilować i połączyć operacje.'],
@@ -2310,7 +2310,7 @@ const ST=tr([
 [6,'nvl','Łączy GPU tej samej repliki. Każda warstwa jest podzielona między cztery GPU (tensor parallelism), więc w każdej warstwie GPU sumują tym łączem wyniki częściowe.']
 ],[
 [0,'user','Writes a message in a chat, IDE or terminal and reads the answer as it arrives.'],
-[0,'app','Keeps the conversation history, because a model API usually doesn’t remember earlier messages. So over HTTPS, every request carries the whole history, the system prompt, the tool list and parameters such as model, temperature, length limit and perhaps a schema.'],
+[0,'app','Keeps the conversation history, because a model API usually doesn’t remember earlier messages. With such an API, every HTTPS request carries the whole history, the system prompt, the tool list and parameters such as model, temperature, length limit and perhaps a schema.'],
 [0,'api','Accepts the request, and the connection stays open for the response stream. That’s all you see from outside.'],
 [0,'app','Receives text in fragments until the final event. In an agent the response can be a tool call.'],
 [0,'tools','The application runs its tools; the provider runs server-side tools such as web search. The model only requests the call. The application appends its tool’s result to the history and sends a new request. The next levels show what happens behind the API, using an example self-hosted cluster.'],
@@ -2331,7 +2331,7 @@ const ST=tr([
 [3,'wg','The model code runs a fixed sequence of operations that use the weights. These are 70 billion parameters at 16 bits each, spread across the replica’s GPUs. Weights are data: the layer code says what to do with them.'],
 [3,'emb','First a token ID selects a row from a table of weights. That row is the vector, e.g. 8192 numbers.'],
 [3,'attn','Computes a query (Q), key (K) and value (V) for each token. The token’s Q is compared with its own K and the K of earlier tokens, and the corresponding V vectors are combined according to the results of those comparisons. That is how the vector takes earlier tokens into account. See “Attention”.'],
-[3,'kv','Attention reads the keys and values of earlier tokens from the KV cache and appends new ones, so it doesn’t recompute the context. Conversations have separate blocks but can share those for a common prompt prefix. Memory left after loading weights and buffers limits how many conversations fit.'],
+[3,'kv','Attention reads the keys and values of earlier tokens from the KV cache and appends new ones, so it doesn’t recompute the keys and values of earlier tokens. Conversations have separate blocks but can share those for a common prompt prefix. Memory left after loading weights and buffers limits how many conversations fit.'],
 [3,'mlp','Transforms each vector separately. Attention and the MLP form one layer, and the vectors pass through all the layers in turn. Together they do almost all the computing in a pass.'],
 [3,'head','Runs after all 80 attention and MLP layers: it multiplies the last vector by a matrix as wide as the vocabulary. The result is the logits: one number for every token in the vocabulary, separately for each conversation in the batch. The logits remain in GPU memory. In every pass, the GPUs run many programs. The next levels show how one of them executes.'],
 [4,'torch','The model code runs in PyTorch, which holds the tensors. A dispatcher in C++ picks an operation’s implementation for a backend such as CUDA. In vLLM, torch.compile can also compile and fuse operations.'],
