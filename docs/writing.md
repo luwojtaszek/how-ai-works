@@ -14,7 +14,8 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - Challenge what a reader will conclude, not only whether a claim is true. For each number ask which conditions it depends on, whether it is a worst case, and what "but what about X" follows, and answer that on the page. "A replica fits 13 conversations" was true and still misleading.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
 - Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each. A widget's "step" is not the mechanism's step: the inference page keeps "step" for the player and says "model pass" for the computation.
-- A frequency names its unit in words the reader already has: "once per request", "many times per token". "At every step, many times" says nothing, and neither do player step numbers such as "steps 12–14".
+- A frequency names its unit in words the reader already has: "once per request", "many times per model pass". "At every step, many times" says nothing, and neither do player step numbers such as "steps 12–14". The unit holds in every phase: "per token" is wrong for prefill, which can take several passes before a token exists. On a group, say which parts it covers: "then for every token" left open whether a whole level repeats or one process.
+- A widget step stands alone, because a reader can land on it by clicking: no "this launch" that points at the previous step, and no term defined only earlier in the walk. It follows the element's bold name, so it doesn't repeat the name: "Router. Router picks" and "HTTP server. The HTTP server" were both written by reviewers' fixes.
 - Vary the sentence. Don't repeat one shape down a list ("X stops, X won't stop"), and don't end a paragraph on a slogan or punchline.
 - Don't build the text on contrast ("not X but Y") or on groups of three unless the content has that shape.
 - Say who does the thing. "SPIFFE keeps them out of the context" was wrong: the harness does.
@@ -74,7 +75,7 @@ Every new topic and every heavy rewrite passes this, per language, before the pr
 
 ### Learner
 
-An engineer new to the topic reads the page and widget and reports where they got lost, terms used before they are defined, jumps that don't connect, what they still can't explain afterwards, and what needs a picture.
+An engineer new to the topic reads the page and widget and reports where they got lost, terms used before they are defined, jumps that don't connect, what they still can't explain afterwards, and what needs a picture. They also use the widget: press next to the end, click out of order, and report what next skips, clicks that don't move the widget, and steps that make no sense without the one before.
 
 ### Sceptic
 
@@ -99,8 +100,8 @@ They also ask the owner's questions, the ones that found what accuracy review mi
 - Name the scope. "In vLLM by default" is not "at large providers". Say which system a claim covers, and keep what is documented apart from what is inferred. Where a provider publishes nothing, say so.
 - Distrust absence. "There is no X", "not by Y" and "only Z" need a search for the counterexample first. "Routing uses tokens, not a thread ID" came from three systems checked; session-key routing exists in all of them.
 - Look for the familiar comparison. A connection pool explained more than the numbers did, once its limit was stated.
-- Ask whether it can be simpler. A precise label a reader can't parse is worse than a plain one with the nuance in the notes: "many times per token" beat "steps 12–14".
+- Ask whether it can be simpler. A precise label a reader can't parse is worse than a plain one with the nuance in the notes: "many times per model pass" beat "steps 12–14".
 
 Answer the question on the page or cut the number. Prefer the one fix that removes the wrong conclusion over a caveat on every sentence. Run it on new text too: the sceptic's own fixes can be wrong, as "two 84 GB conversations fill 140 GB" was.
 
-Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
+Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length, and read the result on screen afterwards: two fixes that are each right can clash once applied. Details belong lower on the page, and the opening stays simple if every claim in it is still true.

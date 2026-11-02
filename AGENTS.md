@@ -28,7 +28,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 5. Changelog: add an entry at the top of `src/changelog.js` (`added` for new topics, `updated` for meaningful changes, text in both languages).
 6. Review: write according to `docs/writing.md`, then pass all of its "Review before anyone reads it" steps before the preview, for every new topic and every heavy rewrite. That includes the sceptical read, which runs without being asked. The author fixes what it finds; the owner should not be the one to find it.
 7. New or renamed topic: run `scripts/og.sh` to regenerate the preview images.
-8. Check: `bun run build`, then `scripts/qa.sh <id>` (both languages, phone and desktop). Look at the page yourself on a phone width.
+8. Check: `bun run build`, then `scripts/qa.sh <id>` (both languages, phone and desktop). Look at the page yourself on a phone width. For a stepped diagram, also script it: walk next to the end and click every element, and confirm each one is reached and lit. After a scripted rewrite, read the whole diff for matches you didn't intend.
 
 ## Content standard
 
