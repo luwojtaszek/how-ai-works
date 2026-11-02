@@ -2331,7 +2331,7 @@ const diagram=g=>{
   svg.addEventListener('click',pick);svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e);}});
   return svg;};
 let cur=0,sel='app',step=0,free=false;
-const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'callout sk-detail','aria-live':'polite'}),main=h('div',{class:'sk-main'},h('div',{},fig,legend),detail),req=h('div');
+const head=h('div'),fig=h('div',{class:'id-d sk-d'}),legend=h('div',{class:'legend sk-leg'},T.leg.map((t,i)=>h('span',{},h('i',{class:'sk-li '+'qrs'[i]}),t))),detail=h('div',{class:'callout sk-detail','aria-live':'polite'}),main=h('div',{class:'sk-main'},fig,legend,detail),req=h('div');
 view.append(head,main,req);
 const lvBtns=T.lv.map((v,i)=>h('button',{type:'button',class:'opt','aria-label':tr('Poziom ','Level ')+(i+1)+': '+v.n,onclick:()=>{pl.halt();if(i!==cur)pl.set(ST.findIndex(s=>s[0]===i));}},h('b',{},i+1),h('small',{},v.n)));nav.append(...lvBtns);
 const draw=()=>{const l=T.lv[cur],g=GEO[cur],[name,,text]=T.n[sel];
@@ -2340,7 +2340,9 @@ const draw=()=>{const l=T.lv[cur],g=GEO[cur],[name,,text]=T.n[sel];
     h('dl',{class:'id-res sk-res'},h('div',{},h('dt',{},tr('Odpowiada za','Responsible for')),h('dd',{},l.dec)),h('div',{},h('dt',{},tr('Nie wie','Doesn’t know')),h('dd',{},l.blind)),h('div',{},h('dt',{},tr('Jak często','How often')),h('dd',{},l.fr))),
     l.fact?h('p',{class:'sk-fact'},l.fact):null].filter(Boolean));
   fig.replaceChildren(diagram(g));
-  detail.replaceChildren(h('p',{},h('b',{},name+'. '),free?text:ST[step][2]));
+  const p=(n,t,o)=>h('p',o,h('b',{},n+'. '),t);
+  // on wide screens the text sits above the diagram: hidden copies of this level's texts hold its height so the diagram stays put
+  detail.replaceChildren(p(name,free?text:ST[step][2],{}),...ST.filter(s=>s[0]===cur).map(s=>p(T.n[s[1]][0],s[2],{class:'sk-sz'})),...g.n.filter(n=>!n[5]).map(n=>p(T.n[n[0]][0],T.n[n[0]][2],{class:'sk-sz'})));
   req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
 const pl=player($('#skPlayer'),{steps:ST.length-1,interval:6000,render:k=>{[cur,sel]=ST[k];step=k;free=false;draw();}});PLAYERS.push(pl);}
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
