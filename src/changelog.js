@@ -6,8 +6,8 @@ export const CHANGELOG = [
     date: '2026-11-02',
     added: ['stos'],
     updated: ['context'],
-    en: 'New topic: The inference stack. A seven-level diagram and a step-by-step walkthrough trace one answer from the API through the server, model, libraries and driver to the GPU and back, including the loop of model passes. Notes under the diagram follow the levels and cover how memory is shared between conversations and how a large model is split across GPUs and nodes. The context window and agents: a correction, vLLM reserves no GPU memory for the KV cache while a tool runs.',
-    pl: 'Nowy temat: Stos inferencji. Diagram siedmiu poziomów i opis krok po kroku pokazują drogę jednej odpowiedzi od API przez serwer, model, biblioteki i sterownik do GPU i z powrotem, razem z pętlą przebiegów modelu. Notki pod diagramem idą za poziomami i opisują, jak rozmowy dzielą pamięć oraz jak duży model dzieli się na wiele GPU i węzłów. Okno kontekstowe i agent: poprawka, gdy narzędzie pracuje, vLLM nie rezerwuje pamięci GPU na KV cache.',
+    en: 'New topic: The inference stack. A seven-level diagram and a level-by-level walkthrough trace one answer from the API through the server, model, libraries and driver down to the GPU, including the loop of model passes. Notes under the diagram follow the levels and cover how memory is shared between conversations and how a large model is split across GPUs and nodes. The context window and agents: a correction, while a tool runs the conversation holds no KV cache blocks, although vLLM keeps GPU memory allocated for the cache.',
+    pl: 'Nowy temat: Stos inferencji. Diagram siedmiu poziomów i opis poziom po poziomie pokazują drogę jednej odpowiedzi od API przez serwer, model, biblioteki i sterownik do GPU, razem z pętlą przebiegów modelu. Notki pod diagramem idą za poziomami i opisują, jak rozmowy dzielą pamięć oraz jak duży model dzieli się na wiele GPU i węzłów. Okno kontekstowe i agent: poprawka, podczas pracy narzędzia rozmowa nie zajmuje bloków KV cache, choć vLLM nadal ma przydzieloną pamięć GPU na cache.',
   },
   {
     date: '2026-11-01',
