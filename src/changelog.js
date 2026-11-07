@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-11-07',
+    added: [],
+    updated: ['kontekst'],
+    en: '“Context engineering and memory” now explains what to save and how to combine a profile with a larger memory store. It also covers checking entries against the session log after a session, with proposed changes requiring user consent like any other memory write.',
+    pl: 'W temacie „Context engineering i pamięć” opisano, co warto zapisywać w pamięci, jak łączyć profil z większym zbiorem wpisów i jak po sesji sprawdzać wpisy na podstawie jej logu. Proponowane zmiany wymagają zgody użytkownika, tak jak inne zapisy do pamięci.',
+  },
+  {
     date: '2026-11-02',
     added: ['stos'],
     updated: ['context'],
