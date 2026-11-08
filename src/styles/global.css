@@ -318,6 +318,7 @@ h1,h2,h3{text-wrap:balance}
 .notes li{padding-left:18px;position:relative}
 .sub{font:600 1.2rem/1.3 var(--body);letter-spacing:-.01em;margin:40px 0 0}
 .sub + .notes{margin-top:12px}
+.sub + .lab{margin-top:12px}
 .notes + .lab{margin-top:4px}
 .notes li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;height:5px;border-radius:50%;background:var(--muted)}
 .say{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:16px 18px;margin:12px 0 10px}
