@@ -2470,7 +2470,7 @@ function initMedia(){
       a:tr('kroków po kolei, jeśli model generuje ramka po ramce','sequential steps if the model generates frame by frame'),
       m:v=>tr('Minuta mowy to ok. 150 słów, czyli ok. 200 tokenów tekstu, a w kodeku DAC 46 500 kodów. Kodeki do rozmowy na żywo mają mniej ramek na sekundę, Mimi z Moshi 12,5, żeby długie rozmowy zajmowały mniej tokenów.','A minute of speech is about 150 words, about 200 text tokens, but 46,500 codes in the DAC codec. Codecs for live conversation use fewer frames per second, Mimi in Moshi 12.5, so long conversations take fewer tokens.')}};
   let k='img';const sl=$('#mdS');
-  const bs=Object.entries(K).map(([id,o])=>h('button',{class:'btn ghost',type:'button','aria-pressed':'false',onclick:e=>{k=id;sl.max=o.v.length-1;sl.value=o.d;pressed(bs,e.currentTarget);paint();}},o.l));
+  const bs=Object.entries(K).map(([id,o])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{k=id;sl.max=o.v.length-1;sl.value=o.d;pressed(bs,e.currentTarget);paint();}},h('b',{},o.l)));
   function paint(){const o=K[k],v=o.v[+sl.value],t=o.t(v);
     $('#mdL').textContent=o.lab(v);$('#mdT').textContent=nf(t);$('#mdTL').textContent=k==='aud'?tr('kodów audio (tokenów)','audio codes (tokens)'):tr('tokenów dla transformera','tokens for the transformer');
     $('#mdP').textContent=nf(t/PAGE,t/PAGE<10?1:0);
