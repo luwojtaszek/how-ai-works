@@ -1135,9 +1135,9 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .md-k{border-color:var(--tok)}
 .md-g{border-color:var(--att);background:var(--att-t)}
 .md-in{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:520px;align-items:start}
-.md-join{font-size:.76rem;color:var(--muted);margin:6px 0 6px 12px}
+.md-join{font-size:.76rem;color:var(--muted);margin:6px 0;max-width:520px;text-align:center}
 .md-in+.md-join+.md-box,.md-join+.md-flow{max-width:520px}
-@media (max-width:560px){.md-in{grid-template-columns:1fr;gap:22px}}
+@media (max-width:560px){.md-in{grid-template-columns:1fr;gap:22px}.md-in>.md-flow+.md-flow::before{content:"drugie wejście, równolegle";display:block;font-size:.72rem;color:var(--muted);margin:-14px 0 4px}}
 /* end media */
 /* wideo */
 .vd-h{font-size:.86rem;font-weight:600;margin:14px 0 6px}

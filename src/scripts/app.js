@@ -2479,7 +2479,7 @@ function initMedia(){
 /* end media */
 /* obrazy */
 // tap any picture in the chapter's figures to see it full width (they are 68 px wide in a 4-column grid on a phone)
-function initZoom(){const d=h('dialog',{class:'zoom'}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});let from=null;
+function initZoom(){const d=h('dialog',{class:'zoom','aria-label':tr('Powiększony obraz','Enlarged image')}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});let from=null;
   d.append(im,cap,h('button',{class:'btn ghost',type:'button',onclick:()=>d.close()},tr('Zamknij','Close')));
   d.addEventListener('click',e=>{if(e.target===d)d.close();});d.addEventListener('close',()=>from?.focus());document.body.append(d);
   // caption: the figure's label and text joined with a colon, else the image's alt text
