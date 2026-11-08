@@ -1129,6 +1129,13 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .md-t th{text-align:left;font-weight:500;color:var(--muted);font-size:.8rem;padding:0 8px 6px;border-bottom:1px solid var(--line)}
 .md-t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
 .md-h{font-size:.86rem;font-weight:600;margin:12px 0 6px}
+.cmp{display:grid;grid-template-columns:minmax(7rem,.8fr) repeat(3,minmax(0,1fr));gap:0;font-size:.86rem;line-height:1.4}
+.cmp>*{margin:0;padding:8px 10px;border-top:1px solid var(--line)}
+.cmp-h{font-weight:600;border-top:0;padding-top:0}
+.cmp-q{font-weight:600}
+@media (max-width:640px){.cmp{grid-template-columns:1fr}.cmp-h{display:none}.cmp>*{border-top:0;padding:2px 0}
+  .cmp-q{border-top:1px solid var(--line);padding-top:10px;margin-top:6px}.cmp-q:first-of-type{border-top:0;margin-top:0;padding-top:0}
+  .cmp p[data-k]::before{content:attr(data-k) ": ";color:var(--muted);font-weight:600}}
 .md-flow{list-style:none;margin:0;padding:0;display:grid;gap:14px;max-width:520px}
 .md-box{position:relative;background:var(--sunken);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:.86rem;line-height:1.35}
 .md-box+.md-box::before{content:"↓";position:absolute;top:-16px;left:18px;color:var(--muted);font-size:.85rem}
