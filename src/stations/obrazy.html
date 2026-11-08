@@ -34,6 +34,46 @@
     <div class="callout">W każdym kroku każdy fragment siatki sprawdza, które wektory promptu go dotyczą (cross-attention, ten sam mechanizm co w temacie „Attention”, tylko pytania zadaje obraz, a odpowiada tekst). Jaśniejsze miejsca mają większą wagę uwagi dla danego słowa: „lighthouse” i „red” trafiają w latarnię, „cliff” w skały, „sea” w wodę, „stormy” w niebo i morze. Tędy opis wpływa na to, co powstaje w którym miejscu.</div>
     <p class="hint">Każda mapa to jedna kolumna macierzy uwagi: wiersze to 256 fragmentów siatki, kolumny to 77 tokenów promptu, bez maski przyczynowej. Najwięcej uwagi, średnio 88%, dostaje znacznik początku, jak token startu w temacie „Attention” (attention sink); pięć pokazanych słów dostaje od 0,1 do 2%, a w krokach 1–4 dwa do trzech razy więcej niż później. Każda mapa ma własną skalę jasności, więc mapy różnych słów nie porównują siły. To wskazówka, gdzie model korzystał z danego słowa, a nie dowód, który piksel od niego zależy. Mapy uśrednione po wszystkich krokach i po warstwach sieci, które widzą siatkę w rozdzielczości 16×16.</p>
   </div>
+  <h3 class="sub">Guidance i seed</h3>
+  <ul class="notes">
+    <li>Siłę promptu w modelu dyfuzyjnym ustawia skala guidance. W klasycznej wersji, classifier-free guidance (CFG), użytej w Stable Diffusion 1.5, sieć przewiduje w każdym kroku dwa razy, bez promptu i z promptem, a sampler wzmacnia różnicę między nimi. Żeby sieć umiała przewidywać bez promptu, w treningu w części przykładów usuwa się opis; autorom metody najlepiej działało 10–20%. Wyższa skala daje wynik bliższy promptowi i mniej różnorodny, a za wysoka przesycone kolory albo sztywny ruch. Efekt przypomina obniżenie temperatury, ale mechanizm jest inny i kosztuje drugie przewidywanie w każdym kroku. Modele z destylowanym guidance, jak FLUX.1 dev, uczą się tego efektu bez drugiego przewidywania.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Guidance: dwa przewidywania i ich wzmocniona różnica</p>
+    <div class="ex-g3">
+      <figure><img src="/img/obrazy/ex-uncond.webp" alt="Szaro-beżowa mgła bez kształtów" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Bez promptu</b><br>szaro-beżowa mgła</figcaption></figure>
+      <figure><img src="/img/obrazy/ex-cond.webp" alt="Blady, rozmyty zarys klifu i latarni" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Z promptem</b><br>blady zarys klifu i latarni po prawej</figcaption></figure>
+      <figure><img src="/img/obrazy/ex-guided.webp" alt="Rozmyty obraz z wyraźną czerwoną latarnią" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Guidance 7,5</b><br>wyraźna czerwona latarnia</figcaption></figure>
+    </div>
+    <div class="callout">Sampler używa: przewidywanie bez promptu + 7,5 × (z promptem − bez promptu). Każdy obrazek to podgląd gotowego obrazu policzony z jednego z tych przewidywań. Sam prompt przesuwa przewidywanie tylko trochę; dopiero wzmocniona różnica daje wyraźny obraz zgodny z opisem.</div>
+    <p class="hint">Prawdziwy pierwszy krok Stable Diffusion 1.5, prompt „a red lighthouse on a rocky cliff above a stormy sea, photograph”. Cały ten przebieg jest wyżej, w siatce „Od szumu do obrazu”.</p>
+  </div>
+  <ul class="notes">
+    <li>Seed to liczba, z której losuje się szum startowy. Przy tych samych pozostałych ustawieniach decyduje o układzie wyniku, ale zmiana promptu albo guidance też go zmienia, bo układ powstaje w pierwszych krokach, w których prompt już działa. W LLM losuje się przy każdym tokenie (zobacz „Następny token”), a w pokazanym samplerze DDIM tylko raz, na starcie. Ten sam prompt, seed i te same ustawienia w tej samej wersji modelu dają zwykle ten sam wynik; po zmianie wersji już nie, więc zapisuj gotowe pliki.</li>
+  </ul>
+  <h3 class="sub">Jak model uczy się tej pętli</h3>
+  <div class="lab">
+    <p class="lab-title">Trening generatora na przykładzie FLUX.1: prawdziwy obraz i jego opis</p>
+    <div class="md-in">
+      <ol class="md-flow">
+        <li class="md-box">obraz<small>1024×1024×3 liczby</small></li>
+        <li class="md-box md-k">koder autoenkodera<small>robi z obrazu siatkę 128×128 pól po 16 liczb</small></li>
+        <li class="md-box">do siatki dodaje się losowy szum</li>
+      </ol>
+      <ol class="md-flow">
+        <li class="md-box">opis obrazu</li>
+        <li class="md-box md-k">koder tekstu<small>zamienia opis w wektory</small></li>
+      </ol>
+    </div>
+    <div class="md-join" aria-hidden="true">↓ oba wejścia ↓</div>
+    <div class="md-box md-g">generator dostaje siatkę z szumem, numer kroku, czyli poziom szumu, i wektory opisu<small>uczy się przewidzieć, jak wrócić do czystej siatki; błąd przewidywania poprawia jego wagi</small></div>
+    <p class="hint">Autoenkoder trenuje się osobno, przed generatorem, i potem zamraża. Przy generowaniu od zera koder autoenkodera nie jest potrzebny, tylko dekoder; koder wraca przy edycji gotowego obrazu.</p>
+  </div>
+  <ul class="notes">
+    <li>Trening przypomina uczenie LLM na tekście: tam model dostaje początek zdania i przewiduje następny token, a błąd poprawia wagi (zobacz „Trening”). Tu dostaje prawdziwą siatkę z dodanym szumem o losowej sile i przewiduje, jaki szum dodano. Każdy przykład uczy jednego poziomu szumu, a po milionach przykładów sieć umie odszumiać z każdego poziomu, więc przy generowaniu da się ją wywołać krok po kroku od czystego szumu.</li>
+    <li>Flow matching, którego używają SD3, FLUX i większość nowych modeli wideo, to odmiana tego samego pomysłu. W treningu siatka z szumem leży na prostej między czystym szumem a obrazem, a sieć uczy się przewidywać kierunek wzdłuż tej prostej, czyli dla każdej liczby siatki, o ile i w którą stronę ją zmienić. Przy generowaniu algorytm (solver) przesuwa siatkę o kawałek w tym kierunku i znowu pyta sieć; liczba kroków zależy od modelu i solvera, w pokazanym FLUX.1 to 20–50.</li>
+    <li>Dane to pary z opisem, a opisy coraz częściej pisze inny model: OpenAI trenował DALL·E 3 (2023) w 95% na takich opisach, bo opisy z internetu są krótkie i pomijają, co jest gdzie. Trening zwykle zaczyna się od małych obrazów i podnosi rozdzielczość: od 256 do 1024 pikseli, a w wideo od zdjęć przez krótkie klipy w niskiej rozdzielczości do dłuższych w 720p. Potem, jak w LLM, dostrajanie na wybranych przykładach i preferencjach ludzi (zobacz „Trening”).</li>
+  </ul>
   <h3 class="sub">Edycja i obrazy referencyjne</h3>
   <div class="lab">
     <p class="lab-title">Ten sam obraz, nowy prompt</p>
