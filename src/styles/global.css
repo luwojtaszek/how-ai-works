@@ -1096,7 +1096,7 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 .im-grid img,.im-grid3 img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:6px;background:var(--sunken)}
 .im-none{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:6px;border:1px dashed var(--line-strong);font-size:.78rem;line-height:1.2;color:var(--muted);text-align:center;padding:2px}
 .zoomable{cursor:zoom-in}
-dialog.zoom{max-width:min(560px,94vw);padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+dialog.zoom{width:min(560px,94vw);max-width:none;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
 dialog.zoom img{display:block;width:100%;height:auto;border-radius:6px}
 dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .im-gh{font-size:.78rem;color:var(--muted);text-align:center}
@@ -1134,6 +1134,10 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .md-box small{display:block;color:var(--muted);font-size:.76rem}
 .md-k{border-color:var(--tok)}
 .md-g{border-color:var(--att);background:var(--att-t)}
+.md-in{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:520px;align-items:start}
+.md-join{font-size:.76rem;color:var(--muted);margin:6px 0 6px 12px}
+.md-in+.md-join+.md-box,.md-join+.md-flow{max-width:520px}
+@media (max-width:560px){.md-in{grid-template-columns:1fr;gap:22px}}
 /* end media */
 /* wideo */
 .vd-h{font-size:.86rem;font-weight:600;margin:14px 0 6px}
@@ -1165,7 +1169,7 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .au-mark{position:absolute;top:-22px;bottom:18px;border-left:2px solid var(--cost);font-size:.72rem;color:var(--cost);padding-left:3px}
 .au-list{display:grid;gap:8px;margin-top:10px;max-width:600px}
 .au-row{display:grid;grid-template-columns:1fr minmax(0,240px);gap:10px;align-items:center;background:var(--sunken);border-radius:8px;padding:8px 10px}
-.au-row b{display:block;font-size:.88rem}.au-row span{font-size:.8rem;color:var(--muted)}
+.au-row b{display:block;font-size:.88rem}.au-row span{font-size:.76rem;color:var(--muted)}
 .au-row audio{width:100%;height:34px}
 @media (max-width:560px){.au-row{grid-template-columns:1fr}}
 /* end audio */

@@ -2479,9 +2479,15 @@ function initMedia(){
 /* end media */
 /* obrazy */
 // tap any picture in the chapter's figures to see it full width (they are 68 px wide in a 4-column grid on a phone)
-function initZoom(){const d=h('dialog',{class:'zoom'}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});
-  d.append(im,cap,h('button',{class:'btn ghost',type:'button',onclick:()=>d.close()},tr('Zamknij','Close')));d.addEventListener('click',e=>{if(e.target===d)d.close();});document.body.append(d);
-  document.querySelectorAll('.station .lab img').forEach(i=>{i.classList.add('zoomable');i.title=tr('Powiększ','Enlarge');i.addEventListener('click',()=>{im.src=i.src;im.alt=i.alt;cap.textContent=i.closest('figure')?.querySelector('figcaption')?.textContent||i.alt;d.showModal();});});}
+function initZoom(){const d=h('dialog',{class:'zoom'}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});let from=null;
+  d.append(im,cap,h('button',{class:'btn ghost',type:'button',onclick:()=>d.close()},tr('Zamknij','Close')));
+  d.addEventListener('click',e=>{if(e.target===d)d.close();});d.addEventListener('close',()=>from?.focus());document.body.append(d);
+  // caption: the figure's label and text joined with a colon, else the image's alt text
+  const label=i=>{const fc=i.closest('figure')?.querySelector('figcaption');return fc?[...fc.childNodes].map(n=>n.textContent.trim()).filter(Boolean).join(': '):i.alt;};
+  const open=i=>{from=i;im.src=i.src;im.alt=i.alt;cap.textContent=label(i);d.showModal();};
+  document.querySelectorAll('.station .lab img').forEach(i=>{i.classList.add('zoomable');i.tabIndex=0;i.setAttribute('role','button');
+    i.setAttribute('aria-label',tr('Powiększ: ','Enlarge: ')+(label(i)||i.alt));i.title=tr('Powiększ','Enlarge');
+    i.addEventListener('click',()=>open(i));i.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(i);}});});}
 /* end obrazy */
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
