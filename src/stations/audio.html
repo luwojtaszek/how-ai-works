@@ -3,7 +3,7 @@
   <p class="lede">Generatory mowy i muzyki tworzą krótszy zapis dźwięku: kody z neuronowego kodeka, spektrogram albo ciągłe wektory. Rodzaj zapisu i sposób generowania, po kolei albo całość naraz, decydują, czy model może mówić na żywo, jak długie nagranie utrzyma i jakie błędy popełnia.</p>
   <h3 class="sub">Po co kodek neuronowy i jak zapisuje dźwięk</h3>
   <ul class="notes">
-    <li>Zwykły kodek, jak Opus, też mocno ściska mowę. Kodek neuronowy daje w każdej ramce stałą liczbę numerów z kilku wyuczonych słowników, ułożonych od zgrubnego do drobnego, a takie numery model może przewidywać jak tokeny: każdy jest wyborem z krótkiej listy.</li>
+    <li>Zwykły kodek audio, jak Opus (standard IETF z 2012 roku, używany m.in. w rozmowach przez przeglądarkę, WebRTC; z modelem Claude Opus łączy go tylko nazwa), też mocno ściska mowę. Kodek neuronowy daje w każdej ramce stałą liczbę numerów z kilku wyuczonych słowników, ułożonych od zgrubnego do drobnego, a takie numery model może przewidywać jak tokeny: każdy jest wyborem z krótkiej listy.</li>
     <li>Koder kodeka tnie nagranie na krótkie ramki i zamienia każdą w wektor liczb. Potem koduje go warstwami ze słowników wyuczonych wektorów: pierwsza warstwa daje zgrubne przybliżenie, każda kolejna koduje błąd poprzedniej (residual vector quantization, RVQ). Słownik działa jak tabela embeddingów z tematu „Wektory i macierze”, tylko w drugą stronę: koder szuka najbliższego wektora i zapisuje jego numer, a dekoder sumuje wektory wskazane przez numery.</li>
   </ul>
   <div class="lab" id="rvqLab">
