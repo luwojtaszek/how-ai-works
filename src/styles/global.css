@@ -1094,7 +1094,11 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 /* obrazy */
 .im-grid{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:6px;align-items:center;margin-top:10px;max-width:600px}
 .im-grid img,.im-grid3 img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:6px;background:var(--sunken)}
-.im-grid img.im-empty{opacity:.12}
+.im-none{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:6px;border:1px dashed var(--line-strong);font-size:.78rem;line-height:1.2;color:var(--muted);text-align:center;padding:2px}
+.zoomable{cursor:zoom-in}
+dialog.zoom{max-width:min(560px,94vw);padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+dialog.zoom img{display:block;width:100%;height:auto;border-radius:6px}
+dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .im-gh{font-size:.78rem;color:var(--muted);text-align:center}
 .im-gr{font-size:.78rem;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center}
 .im-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start;margin-top:10px;max-width:600px}
@@ -1124,12 +1128,12 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 .md-t th{text-align:left;font-weight:500;color:var(--muted);font-size:.8rem;padding:0 8px 6px;border-bottom:1px solid var(--line)}
 .md-t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
 .md-h{font-size:.86rem;font-weight:600;margin:12px 0 6px}
-.md-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.md-box{background:var(--sunken);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:.84rem;line-height:1.3}
-.md-box small{display:block;color:var(--muted);font-size:.74rem}
+.md-flow{list-style:none;margin:0;padding:0;display:grid;gap:14px;max-width:520px}
+.md-box{position:relative;background:var(--sunken);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:.86rem;line-height:1.35}
+.md-box+.md-box::before{content:"↓";position:absolute;top:-16px;left:18px;color:var(--muted);font-size:.85rem}
+.md-box small{display:block;color:var(--muted);font-size:.76rem}
 .md-k{border-color:var(--tok)}
 .md-g{border-color:var(--att);background:var(--att-t)}
-.md-arr{color:var(--muted);font-size:.9rem}
 /* end media */
 /* wideo */
 .vd-h{font-size:.86rem;font-weight:600;margin:14px 0 6px}

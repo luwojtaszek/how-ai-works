@@ -2474,14 +2474,20 @@ function initMedia(){
   function paint(){const o=K[k],v=o.v[+sl.value],t=o.t(v);
     $('#mdL').textContent=o.lab(v);$('#mdT').textContent=nf(t);$('#mdTL').textContent=k==='aud'?tr('kodów audio (tokenów)','audio codes (tokens)'):tr('tokenów dla transformera','tokens for the transformer');
     $('#mdP').textContent=nf(t/PAGE,t/PAGE<10?1:0);
-    $('#mdA').textContent=o.ref?nf((t/o.ref)**2,(t/o.ref)**2<10?2:0)+'×':nf(86*v);$('#mdAL').textContent=o.a;$('#mdM').textContent=o.m(v);}
+    const r=o.ref?(t/o.ref)**2:0;$('#mdA').textContent=o.ref?(r<0.1?'1/'+nf(Math.round(1/r)):nf(r,r<10?1:0)+'×'):nf(86*v);$('#mdAL').textContent=o.a;$('#mdM').textContent=o.m(v);}
   $('#mdKind').replaceChildren(...bs);sl.addEventListener('input',paint);bs[0].click();}
 /* end media */
+/* obrazy */
+// tap any picture in the chapter's figures to see it full width (they are 68 px wide in a 4-column grid on a phone)
+function initZoom(){const d=h('dialog',{class:'zoom'}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});
+  d.append(im,cap,h('button',{class:'btn ghost',type:'button',onclick:()=>d.close()},tr('Zamknij','Close')));d.addEventListener('click',e=>{if(e.target===d)d.close();});document.body.append(d);
+  document.querySelectorAll('.station .lab img').forEach(i=>{i.classList.add('zoomable');i.title=tr('Powiększ','Enlarge');i.addEventListener('click',()=>{im.src=i.src;im.alt=i.alt;cap.textContent=i.closest('figure')?.querySelector('figcaption')?.textContent||i.alt;d.showModal();});});}
+/* end obrazy */
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
-  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl,media:initMedia};
+  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl,media:[initMedia,initZoom],obrazy:initZoom};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
 $$('.lab').forEach(typoLive);

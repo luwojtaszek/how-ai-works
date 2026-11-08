@@ -1,30 +1,28 @@
 <section class="station" id="media" data-hue="att">
   <h2>Jak modele generują obraz, wideo i dźwięk</h2>
-  <p class="lede">Generator obrazu, wideo czy dźwięku zwykle nie pracuje na pikselach ani na próbkach dźwięku, tylko na ich krótszym zapisie. Osobna sieć uczy się ten zapis robić i odczytywać, a generator uczy się go tworzyć: najczęściej zaczyna od szumu i poprawia cały wynik naraz w wielu krokach, zamiast dopisywać token po tokenie jak LLM.</p>
+  <p class="lede">Generator obrazu, wideo czy dźwięku zwykle nie pracuje na pikselach ani na próbkach dźwięku, tylko na ich krótszym zapisie. Osobna sieć, autoenkoder, uczy się ten zapis robić i odczytywać, a generator uczy się go tworzyć. Modele obrazu i wideo najczęściej zaczynają od szumu i w wielu krokach poprawiają cały wynik naraz, zamiast dopisywać token po tokenie jak LLM.</p>
   <div class="lab">
     <p class="lab-title">Trening i generowanie na przykładzie obrazu 1024×1024 we FLUX.1</p>
-    <p class="md-h">Trening: uczy się na prawdziwych obrazach</p>
-    <div class="md-flow">
-      <div class="md-box">prawdziwy obraz<small>1024×1024×3 liczby</small></div><span class="md-arr">→</span>
-      <div class="md-box md-k">koder<small>autoenkodera</small></div><span class="md-arr">→</span>
-      <div class="md-box">siatka<small>128×128 pól po 16 liczb</small></div><span class="md-arr">→</span>
-      <div class="md-box">+ losowy szum</div><span class="md-arr">→</span>
-      <div class="md-box md-g">generator uczy się przewidzieć, jak wrócić do czystej siatki<small>szum (dyfuzja) albo kierunek (flow matching)</small></div>
-    </div>
-    <p class="md-h">Generowanie: nie ma żadnego obrazu, jest szum</p>
-    <div class="md-flow">
-      <div class="md-box">szum w kształcie siatki<small>128×128×16</small></div><span class="md-arr">→</span>
-      <div class="md-box md-g">generator × 20–50 kroków<small>w każdym kroku dostaje prompt</small></div><span class="md-arr">→</span>
-      <div class="md-box">gotowa siatka</div><span class="md-arr">→</span>
-      <div class="md-box md-k">dekoder<small>autoenkodera</small></div><span class="md-arr">→</span>
-      <div class="md-box">obraz<small>1024×1024</small></div>
-    </div>
-    <p class="hint">Schemat jest wspólny dla dyfuzji i flow matching; różni się tylko tym, co generator przewiduje. Koder autoenkodera jest potrzebny przy treningu i przy edycji gotowego obrazu; przy generowaniu od zera używa się tylko dekodera. Wideo ma tę samą budowę z czasem jako trzecim wymiarem siatki, a dźwięk zamiast autoenkodera ma kodek audio.</p>
+    <p class="md-h">Trening generatora: prawdziwy obraz i jego opis</p>
+    <ol class="md-flow">
+      <li class="md-box">obraz z opisem<small>obraz: 1024×1024×3 liczby</small></li>
+      <li class="md-box md-k">koder autoenkodera<small>robi z obrazu siatkę 128×128 pól po 16 liczb</small></li>
+      <li class="md-box">do siatki dodaje się losowy szum</li>
+      <li class="md-box md-g">generator dostaje siatkę z szumem i wektory opisu<small>uczy się przewidzieć, jak wrócić do czystej siatki</small></li>
+    </ol>
+    <p class="md-h">Generowanie: nie ma żadnego obrazu, jest szum i prompt</p>
+    <ol class="md-flow">
+      <li class="md-box md-k">koder tekstu<small>raz zamienia prompt w wektory</small></li>
+      <li class="md-box">losowy szum w kształcie siatki<small>128×128×16</small></li>
+      <li class="md-box md-g">generator, 20–50 kroków<small>w każdym kroku dostaje siatkę i te same wektory promptu</small></li>
+      <li class="md-box md-k">dekoder autoenkodera<small>robi z gotowej siatki obraz 1024×1024</small></li>
+    </ol>
+    <p class="hint">Schemat pasuje do dyfuzji i do flow matching; różnią się tym, co generator przewiduje (opisane niżej). Koder autoenkodera jest potrzebny przy treningu i przy edycji gotowego obrazu; przy generowaniu od zera używa się tylko dekodera. Wideo ma tę samą budowę z czasem jako trzecim wymiarem siatki.</p>
   </div>
   <h3 class="sub">Trzy części i ich role</h3>
   <ul class="notes">
-    <li>Autoenkoder albo kodek trenuje się osobno, przed generatorem, i potem zamraża. Jest stratny, w przeciwieństwie do tokenizera tekstu (zobacz „Tokeny”), więc wyznacza sufit jakości: czego nie umie odtworzyć, tego generator nie wygeneruje. Najszybciej giną drobny tekst, małe twarze, szybki ruch i ostre spółgłoski w mowie.</li>
-    <li>Generatorem jest dziś najczęściej transformer, ten sam blok co w LLM; w starszym Stable Diffusion 1.5 była to sieć U-Net. Prompt czyta osobny model, koder tekstu, i podaje generatorowi jako wektory. W Stable Diffusion 1.5 każdy fragment siatki w każdym kroku „pyta” te wektory, które słowa go dotyczą (cross-attention, mechanizm z tematu „Attention”). W SD3 i FLUX tokeny tekstu i obrazu stoją w jednym ciągu i patrzą na siebie nawzajem. Od kodera tekstu zależy, ile z promptu model zrozumie, dlatego nowsze modele używają w tej roli modeli językowych.</li>
+    <li>W publikacjach siatka nazywa się latent, a autoenkoder VAE; stąd „latent diffusion” w nazwach modeli. Autoenkoder trenuje się osobno, przed generatorem, i potem zamraża. Jest stratny, w przeciwieństwie do tokenizera tekstu (zobacz „Tokeny”): dekoder może dodać wiarygodnie wyglądające szczegóły, ale nie odtworzy wiernie tych, których zapis nie zachował. Najłatwiej giną drobny tekst, małe twarze i szybki ruch. W dźwięku tę rolę pełni zwykle kodek audio, ale są też modele na ciągłym zapisie albo spektrogramie (zobacz „Głos, mowa i muzyka”).</li>
+    <li>Generatorem jest dziś najczęściej transformer, ten sam blok co w LLM; w starszym Stable Diffusion 1.5 była to sieć U-Net. Prompt czyta osobny model, koder tekstu, i podaje generatorowi jako wektory. W Stable Diffusion 1.5 każdy fragment siatki w każdym kroku sprawdza, które z tych wektorów go dotyczą (cross-attention, mechanizm z tematu „Attention”). W SD3 i FLUX tokeny tekstu i obrazu stoją w jednym ciągu i patrzą na siebie nawzajem. Od kodera tekstu zależy, ile z promptu model zrozumie, dlatego nowsze modele używają w tej roli modeli językowych.</li>
     <li>Wiele usług przed generowaniem przepisuje twój prompt modelem językowym, bo generatory trenowano na długich opisach pisanych przez model: w Movie Gen (Meta, 2024) średnio ok. 100 słów. Krótki prompt jest dla nich nietypowy, więc go rozwijają, a ty dostajesz wynik do promptu, którego nie napisałeś.</li>
   </ul>
   <h3 class="sub">Co zastępuje tokeny</h3>
@@ -32,7 +30,7 @@
     <li>Obraz: autoenkoder FLUX.1 zmniejsza obraz 8 razy w każdym wymiarze, więc z 1024×1024 robi siatkę 128×128 pól po 16 liczb. Transformer łączy pola w kwadraty 2×2 i każdy kwadrat, 64 liczby, to jeden token. Wychodzi 64×64 = 4096 tokenów, a jeden token odpowiada kwadratowi 16×16 pikseli. Token to wektor liczb, a nie numer ze słownika, więc model nie wybiera tokena, tylko zwraca dla każdego tokena liczby, które mówią, jak zmienić siatkę.</li>
     <li>Wideo: siatka ma jeszcze wymiar czasu. Autoenkoder Wan 2.1 zostawia pierwszą klatkę osobno, a kolejne ściska po 4 w jedną, więc klip 720p z 81 klatek (ok. 5 s) to 21 klatek siatki po 80×45 = 3600 tokenów, razem 75 600, średnio ok. 15 tys. na sekundę. Token to kostka kilku klatek i kawałka kadru.</li>
     <li>Dźwięk: tu token jest zwykle numerem ze słownika. Kodek dzieli nagranie na ramki, kilkadziesiąt na sekundę, i każdą ramkę zapisuje kilkoma numerami, od zgrubnego do najdrobniejszej poprawki. Sekunda mowy to setki numerów; jak to działa i jak brzmi, jest w temacie „Głos, mowa i muzyka”.</li>
-    <li>Liczba tokenów zależy od rozmiaru i czasu trwania, a nie od treści: pusta ściana i tłum na placu w tej samej rozdzielczości to tyle samo tokenów. „Tokeny obrazu” w cennikach to osobna jednostka rozliczeniowa, która nie odpowiada siatce modelu.</li>
+    <li>W tych przykładach, przy ustalonym rozmiarze i czasie trwania, liczba tokenów nie zależy od treści: pusta ściana i tłum na placu w tej samej rozdzielczości to tyle samo tokenów. W tekście liczba tokenów zależy od treści. „Tokeny obrazu” w cennikach to osobna jednostka rozliczeniowa, która nie odpowiada siatce modelu.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Ile tokenów to obraz, klip albo nagranie mowy</p>
@@ -48,30 +46,30 @@
   </div>
   <h3 class="sub">Jak powstaje wynik</h3>
   <ul class="notes">
-    <li>Autoregresja, jak w LLM: model przewiduje kolejny numer ze słownika i dopisuje go do ciągu, z KV cache, temperaturą i top-k (zobacz „Następny token”). Tak działają Parti (Google, 2022) dla obrazów oraz MusicGen i Moshi dla dźwięku. Obraz to jednak tysiące kroków po kolei, więc autoregresja przyjęła się głównie w dźwięku, gdzie pierwsze ramki można odtwarzać, zanim powstanie reszta.</li>
-    <li>Dyfuzja: w treningu do prawdziwej siatki dodaje się szum o losowej sile, a sieć uczy się przewidzieć, jaki szum dodano. Generowanie zaczyna od czystego szumu. W każdym kroku sieć przewiduje szum dla całej siatki naraz, a sampler, czyli prosty algorytm, odejmuje jego część według harmonogramu, który mówi, ile szumu ma zostać po danym kroku. Gdyby odjąć od razu cały przewidziany szum, dostałbyś podgląd gotowego obrazu, ale w pierwszych krokach jest on rozmytą średnią wielu możliwych obrazów, bo z samego szumu nie da się jeszcze przewidzieć szczegółów. Dlatego szum ubywa po trochu: w każdym kroku sieć patrzy na czystszą siatkę i doprecyzowuje to, co ustaliła wcześniej. Te podglądy widać w temacie „Generowanie obrazów”.</li>
-    <li>Flow matching, którego używają SD3, FLUX i większość nowych modeli wideo, to odmiana tego samego pomysłu: sieć przewiduje nie szum, tylko kierunek od szumu do danych wzdłuż prostej ścieżki. Prostsza ścieżka pozwala dojść do wyniku w mniejszej liczbie kroków. Pętla wygląda tak samo.</li>
-    <li>Coraz częściej obie drogi łączy jeden model: tekst powstaje token po tokenie, a obraz dyfuzją w tym samym ciągu (Transfusion, BAGEL), albo model językowy ustala treść i rytm mowy, a mała sieć dyfuzyjna dorysowuje brzmienie (CosyVoice 2). OpenAI napisał o generowaniu obrazów w GPT-4o (2025), że jest autoregresyjne, a Google o Veo, że to dyfuzja na skompresowanym obrazie i dźwięku. Szczegółów obecnych modeli żadna z tych firm nie publikuje (stan na październik 2026). „Natywnie multimodalny” to opis produktu, nie architektury.</li>
-    <li>Czy to ta sama klasa co LLM? Model autoregresyjny to dosłownie LLM z innym słownikiem. Model dyfuzyjny ma ten sam blok transformera, a Movie Gen wprost wziął go z Llamy 3, i podobnie poprawia się z większą mocą obliczeniową. Różni się tym, że widzi cały wynik naraz, w obie strony, uczy się przewidywać liczby, a nie token, i powtarza pętlę po poziomach szumu, a nie po pozycjach.</li>
+    <li>Autoregresja: model przewiduje kolejne numery ze słownika i dopisuje je do ciągu, tym samym mechanizmem co LLM, z KV cache i temperaturą (zobacz „Następny token”), tylko numery oznaczają kawałki obrazu albo dźwięku. W dźwięku jedna ramka ma kilka numerów, więc modele układają je różnie: MusicGen przewiduje cztery numery w jednym kroku, a Moshi ma do tego osobną małą sieć. Obraz to tysiące numerów, więc w otwartych modelach obrazu autoregresja, np. Parti (Google, 2022), ustąpiła dyfuzji. W dźwięku się przyjęła, bo pierwsze ramki można odtwarzać, zanim powstanie reszta.</li>
+    <li>Dyfuzja: w treningu do prawdziwej siatki dodaje się szum o losowej sile, a sieć uczy się przewidzieć, jaki szum dodano. Generowanie zaczyna od losowego szumu. W każdym kroku sieć przewiduje szum dla całej siatki naraz, a sampler, czyli prosty algorytm, liczy z tego przewidywania i bieżącej siatki mniej zaszumiony stan, według harmonogramu, który mówi, ile szumu ma zostać po danym kroku. Gdyby od razu usunąć cały przewidziany szum, dostałbyś podgląd gotowego obrazu, ale w pierwszych krokach jest on rozmytą średnią wielu możliwych obrazów, bo z samego szumu nie da się jeszcze przewidzieć szczegółów. Dlatego szum ubywa po trochu: w każdym kroku sieć patrzy na czystszą siatkę i doprecyzowuje to, co ustaliła wcześniej. Te podglądy widać w temacie „Generowanie obrazów”.</li>
+    <li>Flow matching, którego używają SD3, FLUX i większość nowych modeli wideo, to odmiana tego samego pomysłu. W treningu siatka z szumem leży na prostej między czystym szumem a obrazem, a sieć uczy się przewidywać kierunek wzdłuż tej prostej, czyli dla każdej liczby siatki, o ile i w którą stronę ją zmienić. Przy generowaniu algorytm (solver) robi kilka kroków w tym kierunku. Liczba kroków zależy od modelu i solvera.</li>
+    <li>Coraz częściej obie drogi łączy jeden model: tekst powstaje token po tokenie, a obraz dyfuzją w tym samym ciągu (Transfusion, BAGEL), albo model językowy ustala treść i rytm mowy, a mała sieć dyfuzyjna tworzy brzmienie (CosyVoice 2). OpenAI napisał o generowaniu obrazów w GPT-4o (2025), że jest autoregresyjne, a Google o Veo, że to dyfuzja na skompresowanym obrazie i dźwięku. Szczegółów obecnych modeli żadna z tych firm nie publikuje (stan na październik 2026). „Natywnie multimodalny” to opis produktu, nie architektury.</li>
+    <li>Czy to ta sama klasa co LLM? Model autoregresyjny przewiduje kolejne numery tak jak LLM, tylko z innego słownika. Model dyfuzyjny ma ten sam blok transformera, a Movie Gen wprost wziął go z Llamy 3, i podobnie poprawia się z większą mocą obliczeniową. Różni się tym, że widzi cały wynik naraz, w obie strony, uczy się przewidywać liczby, a nie token, i powtarza pętlę po poziomach szumu, a nie po pozycjach.</li>
   </ul>
   <h3 class="sub">Sterowanie, trening i koszt</h3>
   <ul class="notes">
-    <li>Siłę promptu w modelu dyfuzyjnym ustawia skala guidance (classifier-free guidance, CFG). Sieć przewiduje w każdym kroku dwa razy, bez promptu i z promptem, a sampler wzmacnia różnicę między nimi. Żeby sieć umiała przewidywać bez promptu, w treningu w części przykładów usuwa się opis; autorom metody najlepiej działało 10–20%. Wyższa skala daje wynik bliższy promptowi i mniej różnorodny, a za wysoka przesycone kolory albo sztywny ruch. Efekt przypomina obniżenie temperatury, ale mechanizm jest inny i kosztuje drugie przewidywanie w każdym kroku.</li>
+    <li>Siłę promptu w modelu dyfuzyjnym ustawia skala guidance. W klasycznej wersji, classifier-free guidance (CFG), użytej w Stable Diffusion 1.5, sieć przewiduje w każdym kroku dwa razy, bez promptu i z promptem, a sampler wzmacnia różnicę między nimi. Żeby sieć umiała przewidywać bez promptu, w treningu w części przykładów usuwa się opis; autorom metody najlepiej działało 10–20%. Wyższa skala daje wynik bliższy promptowi i mniej różnorodny, a za wysoka przesycone kolory albo sztywny ruch. Efekt przypomina obniżenie temperatury, ale mechanizm jest inny i kosztuje drugie przewidywanie w każdym kroku. Modele z destylowanym guidance, jak FLUX.1 dev, uczą się tego efektu bez drugiego przewidywania.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">Guidance w pierwszym kroku: trzy przewidywania z tego samego szumu</p>
     <div class="ex-g3">
-      <figure><img src="/img/obrazy/ex-uncond.webp" alt="" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Bez promptu</b><br>szaro-beżowa mgła</figcaption></figure>
-      <figure><img src="/img/obrazy/ex-cond.webp" alt="" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Z promptem</b><br>blady zarys klifu i latarni po prawej</figcaption></figure>
-      <figure><img src="/img/obrazy/ex-guided.webp" alt="" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Guidance 7,5</b><br>wyraźna czerwona latarnia</figcaption></figure>
+      <figure><img src="/img/obrazy/ex-uncond.webp" alt="Szaro-beżowa mgła bez kształtów" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Bez promptu</b><br>szaro-beżowa mgła</figcaption></figure>
+      <figure><img src="/img/obrazy/ex-cond.webp" alt="Blady, rozmyty zarys klifu i latarni" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Z promptem</b><br>blady zarys klifu i latarni po prawej</figcaption></figure>
+      <figure><img src="/img/obrazy/ex-guided.webp" alt="Rozmyty obraz z wyraźną czerwoną latarnią" class="ex-th" width="256" height="256" loading="lazy"><figcaption><b>Guidance 7,5</b><br>wyraźna czerwona latarnia</figcaption></figure>
     </div>
     <div class="callout">Sampler używa: przewidywanie bez promptu + 7,5 × (z promptem − bez promptu). Każdy obrazek to podgląd gotowego obrazu policzony z jednego z tych przewidywań. Sam prompt przesuwa przewidywanie tylko trochę; dopiero wzmocniona różnica daje wyraźny obraz zgodny z opisem.</div>
     <p class="hint">Prawdziwy pierwszy krok Stable Diffusion 1.5, prompt „a red lighthouse on a rocky cliff above a stormy sea, photograph”. Cały ten przebieg jest w temacie „Generowanie obrazów”.</p>
   </div>
   <ul class="notes">
-    <li>Seed to liczba, z której losuje się szum startowy, więc decyduje o układzie wyniku. Te same prompt, seed i ustawienia w tej samej wersji modelu dają zwykle ten sam wynik; po zmianie wersji już nie, więc zapisuj gotowe pliki.</li>
-    <li>Dane to pary z opisem, a opisy coraz częściej pisze inny model: OpenAI trenował DALL·E 3 (2023) w 95% na takich opisach, bo opisy z internetu są krótkie i pomijają, co jest gdzie. Zamiast wydłużać kontekst jak w LLM, w treningu podnosi się rozdzielczość: obrazy od 256 do 1024 pikseli, wideo od zdjęć przez krótkie klipy w niskiej rozdzielczości do dłuższych w 720p. Potem, jak w LLM, dostrajanie na wybranych przykładach i preferencjach ludzi (zobacz „Trening”).</li>
-    <li>Destylacja w modelach dyfuzyjnych najczęściej skraca pętlę (zobacz „Destylacja”): FLUX.1 schnell potrzebuje 1–4 kroków zamiast kilkudziesięciu. Szybkie warianty to osobne checkpointy; samo ucięcie kroków w zwykłym modelu pogarsza wynik.</li>
-    <li>Koszt to liczba kroków razy koszt jednego kroku, a koszt kroku rośnie z liczbą tokenów, w pełnej atencji z ich kwadratem. Krok przetwarza naraz cały obraz albo klip, więc karta liczy pełną parą, jak przy prefillu, a nie czeka na pamięć jak przy dekodowaniu tekstu (zobacz „Czemu GPU się nudzi”). Dlatego cena rośnie z rozdzielczością, długością i liczbą kroków, a prawie nie zależy od długości promptu. Autoregresyjne modele dźwięku liczą się jak LLM: każda ramka to krok.</li>
+    <li>Seed to liczba, z której losuje się szum startowy, więc decyduje o układzie wyniku. Ten sam prompt, seed i te same ustawienia w tej samej wersji modelu dają zwykle ten sam wynik; po zmianie wersji już nie, więc zapisuj gotowe pliki.</li>
+    <li>Dane to pary z opisem, a opisy coraz częściej pisze inny model: OpenAI trenował DALL·E 3 (2023) w 95% na takich opisach, bo opisy z internetu są krótkie i pomijają, co jest gdzie. Trening zwykle zaczyna się od małych obrazów i podnosi rozdzielczość: od 256 do 1024 pikseli, a w wideo od zdjęć przez krótkie klipy w niskiej rozdzielczości do dłuższych w 720p. Potem, jak w LLM, dostrajanie na wybranych przykładach i preferencjach ludzi (zobacz „Trening”).</li>
+    <li>Destylacja w modelach dyfuzyjnych najczęściej skraca pętlę (zobacz „Destylacja”): FLUX.1 schnell potrzebuje 1–4 kroków zamiast kilkudziesięciu. Szybkie warianty to osobne wersje modelu; samo ucięcie kroków w zwykłym modelu pogarsza wynik.</li>
+    <li>Koszt obliczeń to liczba kroków razy koszt jednego kroku, a koszt kroku rośnie z liczbą tokenów, w pełnej atencji z ich kwadratem. Przetwarzanie wielu tokenów naraz zwykle lepiej wykorzystuje GPU niż dopisywanie jednego tokena tekstu, podobnie jak prefill (zobacz „Czemu GPU się nudzi”). W otwartym modelu czas zależy więc głównie od rozdzielczości, długości i liczby kroków; w API sprawdź osobno opłaty za tekst, obrazy referencyjne i poziom jakości. Autoregresyjne modele dźwięku liczą się jak LLM: każdy krok dopisuje kolejną ramkę albo jej część.</li>
   </ul>
 </section>
