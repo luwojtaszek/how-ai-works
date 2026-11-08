@@ -2455,11 +2455,33 @@ const draw=()=>{const l=T.lv[cur],g=GEO[cur],[name]=T.n[sel];
   detail.replaceChildren(h('p',{},h('b',{},name+'. '),ST[step][2]));
   req.replaceChildren(h('p',{class:'sk-rl'},l.rl),h('pre',{class:'sk-req'},l.req));};
 const pl=player($('#skPlayer'),{steps:ST.length-1,interval:9000,render:k=>{[cur,sel]=ST[k];step=k;draw();}});PLAYERS.push(pl);}
+/* media */
+function initMedia(){
+  // token counts from published shapes: FLUX.1 (16x16 px per token), Wan 2.1 (720p, 16 fps, 4 frames per latent frame, 80x45 tokens each), DAC 44.1 kHz (86 frames/s x 9 codes)
+  const PAGE=650,K={
+    img:{l:tr('Obraz','Image'),v:[256,384,512,768,1024,1536,2048],d:4,lab:v=>tr('Bok kwadratowego obrazu: ','Square image side: ')+v+' px',t:v=>(v/16)**2,ref:(1024/16)**2,
+      a:tr('pracy atencji w jednym kroku względem obrazu 1024×1024','attention work per step relative to a 1024×1024 image'),
+      m:v=>tr('Każdy z 20–50 kroków przetwarza wszystkie '+nf((v/16)**2)+' tokenów naraz. Dwa razy dłuższy bok to cztery razy więcej tokenów i ok. szesnaście razy więcej pracy atencji.','Each of the 20–50 steps processes all '+nf((v/16)**2)+' tokens at once. Twice the side means four times the tokens and about sixteen times the attention work.')},
+    vid:{l:tr('Wideo','Video'),v:[1,2,3,4,5,6,8,10,12,16,20],d:4,lab:v=>tr('Długość klipu 720p: ','720p clip length: ')+v+' s',t:v=>(1+4*v)*3600,ref:(1+4*5)*3600,
+      a:tr('pracy atencji w jednym kroku względem klipu 5 s','attention work per step relative to a 5 s clip'),
+      m:v=>v<=8?tr('Cały klip to jeden ciąg tokenów i każdy z ok. 50 kroków przetwarza go w całości: klatka pierwsza „widzi” ostatnią.','The whole clip is one sequence and each of about 50 steps processes all of it: the first frame “sees” the last.')
+        :tr('Tyle co długi kontekst LLM, tyle że przetwarzany od nowa w każdym z ok. 50 kroków. Stąd pojedynczy klip z API ma zwykle 4–20 s, a dłuższe filmy skleja się z kawałków.','As much as a long LLM context, but processed again in each of about 50 steps. That is why a single clip from an API is usually 4–20 s long and longer films are stitched from pieces.')},
+    aud:{l:tr('Mowa','Speech'),v:[1,5,10,30,60,120,300,600],d:3,lab:v=>tr('Długość nagrania: ','Recording length: ')+(v<60?v+' s':v/60+' min'),t:v=>775*v,ref:null,
+      a:tr('kroków po kolei, jeśli model generuje ramka po ramce','sequential steps if the model generates frame by frame'),
+      m:v=>tr('Minuta mowy to ok. 150 słów, czyli ok. 200 tokenów tekstu, a w kodeku DAC 46 500 kodów. Kodeki do rozmowy na żywo mają mniej ramek na sekundę, Mimi z Moshi 12,5, żeby długie rozmowy zajmowały mniej tokenów.','A minute of speech is about 150 words, about 200 text tokens, but 46,500 codes in the DAC codec. Codecs for live conversation use fewer frames per second, Mimi in Moshi 12.5, so long conversations take fewer tokens.')}};
+  let k='img';const sl=$('#mdS');
+  const bs=Object.entries(K).map(([id,o])=>h('button',{class:'btn ghost',type:'button','aria-pressed':'false',onclick:e=>{k=id;sl.max=o.v.length-1;sl.value=o.d;pressed(bs,e.currentTarget);paint();}},o.l));
+  function paint(){const o=K[k],v=o.v[+sl.value],t=o.t(v);
+    $('#mdL').textContent=o.lab(v);$('#mdT').textContent=nf(t);$('#mdTL').textContent=k==='aud'?tr('kodów audio (tokenów)','audio codes (tokens)'):tr('tokenów dla transformera','tokens for the transformer');
+    $('#mdP').textContent=nf(t/PAGE,t/PAGE<10?1:0);
+    $('#mdA').textContent=o.ref?nf((t/o.ref)**2,(t/o.ref)**2<10?2:0)+'×':nf(86*v);$('#mdAL').textContent=o.a;$('#mdM').textContent=o.m(v);}
+  $('#mdKind').replaceChildren(...bs);sl.addEventListener('input',paint);bs[0].click();}
+/* end media */
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
-  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl};
+  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl,media:initMedia};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
 $$('.lab').forEach(typoLive);

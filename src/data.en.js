@@ -9,6 +9,7 @@ export const GROUPS_EN = {
   'Jakość i bezpieczeństwo': ['Quality and security', 'Hallucinations, measuring quality instead of guessing, attacks through untrusted content, removing refusals from the weights, and agent identity.'],
   'Model na produkcji': ['Production and serving', 'A reliable system around the model, and what happens in the data centre.'],
   'Wybór modelu': ['Choosing a model', 'Matching a model to the task, open weights, alternatives to an LLM, and why a model sometimes seems “dumber”.'],
+  'Obraz, wideo i dźwięk': ['Images, video and audio', 'How models generate and edit images, video, speech and music, and what carries over from text models.'],
   'Ćwiczenia i powtórka': ['Practice and review', 'Design scenarios and flashcards for review.'],
 };
 
@@ -22,6 +23,7 @@ export const SLUG_EN = {
   stos: 'inference-stack',
   kwantyzacja: 'quantization', moe: 'mixture-of-experts', wybor: 'choosing-a-model', openweight: 'open-weight-models',
   jev: 'when-not-to-use-an-llm', destylacja: 'distillation', design: 'system-design', fiszki: 'flashcards',
+  media: 'image-video-audio-generation', obrazy: 'image-generation', wideo: 'video-generation', audio: 'audio-generation',
 };
 
 export const TITLES_EN = { design: 'Design a system', fiszki: 'Flashcards' };
