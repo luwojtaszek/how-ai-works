@@ -15,7 +15,7 @@ DIR = Path(__file__).resolve().parent.parent / 'public' / 'audio' / 'kodek'
 NAMES = ['original', 'dac-1', 'dac-2', 'dac-4', 'dac-9']
 SR, NFFT, HOP, MELS = 44100, 2048, 512, 96  # 86 frames per second, like the codec
 W, H = 640, 150
-FMAX = 16000
+FMAX = 8000  # the LibriSpeech source is sampled at 16 kHz, so nothing above 8 kHz is real signal
 
 
 def load(name):

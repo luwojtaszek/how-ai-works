@@ -1197,4 +1197,7 @@ i.ord-e{background:none;box-shadow:inset 0 0 0 1px var(--line-strong);opacity:.5
 .ord-bar i{display:block;height:8px;border-radius:4px;background:var(--cost);max-width:100%}
 .ord-th{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .ord-th img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:6px}
+.opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+i.ord-p{background:var(--sunken);box-shadow:inset 0 0 0 1.5px var(--line-strong)}.legend i.ord-p{background:var(--sunken);box-shadow:inset 0 0 0 2px var(--line-strong)}
+.ord-ch{font-size:.7rem;color:var(--muted);text-align:center}
 /* end kolejnosc */

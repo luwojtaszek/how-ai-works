@@ -19,10 +19,10 @@
     <p class="lab-title">Ten sam głos z 1, 2, 4 i 9 warstwami kodów: posłuchaj i porównaj spektrogram</p>
     <div class="opts five" id="cdTiles" role="group" aria-label="Liczba warstw"></div>
     <audio id="cdAudio" controls preload="metadata" src="/audio/kodek/dac-1.ogg"></audio>
-    <div class="cd-spec" id="cdSpec" role="img" aria-label="Spektrogram wybranej wersji"><span>16 kHz</span><span>0 Hz</span></div>
+    <div class="cd-spec" id="cdSpec" role="img" aria-label="Spektrogram wybranej wersji"><span>8 kHz</span><span>0 Hz</span></div>
     <p class="cd-stat" id="cdStat"></p>
     <div class="callout" id="cdMsg" aria-live="polite"></div>
-    <p class="hint">Nagranie z LibriSpeech (CC BY 4.0, czytane książki z LibriVox), zakodowane otwartym kodekiem DAC (Descript, 2023, licencja MIT) w wersji 44,1 kHz i odtworzone z pierwszych 1, 2, 4 albo wszystkich 9 warstw kodów. Przepływności dotyczą zapisu w kodach, a nie plików na stronie, które zapisano z dużym zapasem jakości, żeby słychać było kodek, a nie kompresję strony. Spektrogram: czas w poziomie, wysokość dźwięku w pionie do 16 kHz, ciemniej znaczy głośniej; wszystkie wersje mają tę samą skalę.</p>
+    <p class="hint">Nagranie z LibriSpeech (CC BY 4.0, czytane książki z LibriVox), zakodowane otwartym kodekiem DAC (Descript, 2023, licencja MIT) w wersji 44,1 kHz i odtworzone z pierwszych 1, 2, 4 albo wszystkich 9 warstw kodów. Przepływności dotyczą zapisu w kodach, a nie plików na stronie, które zapisano z dużym zapasem jakości, żeby słychać było kodek, a nie kompresję strony. Spektrogram: czas w poziomie, częstotliwość w pionie do 8 kHz, bo tyle obejmuje nagranie źródłowe; wyraźniejsze pasma to większa energia, a wszystkie wersje mają tę samą skalę.</p>
   </div>
   <h3 class="sub">Ile kodów na sekundę dźwięku</h3>
   <ul class="notes">
@@ -33,9 +33,9 @@
   </ul>
   <h3 class="sub">Mowa z tekstu: trzy rodziny i ich błędy</h3>
   <div class="lab" data-ord="audio">
-    <p class="lab-title">W którym przebiegu sieci powstaje każdy kod i kiedy pierwsza ramka może zagrać</p>
+    <p class="lab-title">Co sieć liczy w każdym przebiegu i kiedy wynik jest gotowy</p>
     <div class="ord"></div><div class="ord-pl"></div>
-    <p class="hint">Schemat: 6 ramek i 4 warstwy zamiast setek ramek i 4–8 warstw. Pokazuje kolejność z publikacji, nie zmierzone czasy.</p>
+    <p class="hint">Schemat: 6 ramek i 4 warstwy kodów zamiast setek ramek i 4–8 warstw, a w F5-TTS 4 pasma spektrogramu. Pokazuje kolejność z publikacji, nie zmierzone czasy.</p>
   </div>
   <ul class="notes">
     <li>Kodekowe modele językowe: VALL-E (2023) dostaje tekst jako fonemy, czyli jednostki wymowy, i 3-sekundowe nagranie głosu jako początek ciągu, a potem dopisuje kody EnCodec, jak LLM dopisuje tokeny. Najpierw generuje po kolei pierwszą warstwę kodów dla całej wypowiedzi, a pozostałe siedem z ośmiu warstw dopełnia drugi model, więc gotowa mowa powstaje dopiero na końcu. Błędy są jak w LLM (zobacz „Następny token”): nic sztywno nie wiąże tekstu z dźwiękiem, więc słowa bywają połknięte albo powtórzone, a model potrafi w kółko generować tę samą ramkę.</li>
@@ -59,7 +59,7 @@
     <p class="lab-title">Przesuwne okno MusicGen: dłuższy utwór z 30-sekundowych kawałków</p>
     <div class="au-tl" style="height:152px" role="img" aria-label="Okna po 30 s przesuwane co 18 s; refren z 10. sekundy jest poza każdym oknem od drugiego"><div class="au-axis"><span style="left:0.0%">0 s</span><span style="left:33.3%">30 s</span><span style="left:66.7%">60 s</span><span style="left:100.0%">90 s</span></div><div class="au-win" style="left:0.0%;width:33.3%;top:0px"><b>okno 1</b></div><div class="au-win" style="left:20.0%;width:33.3%;top:28px"><i style="width:40.0%"></i><b>okno 2</b></div><div class="au-win" style="left:40.0%;width:33.3%;top:56px"><i style="width:40.0%"></i><b>okno 3</b></div><div class="au-win" style="left:60.0%;width:33.3%;top:84px"><i style="width:40.0%"></i><b>okno 4</b></div><div class="au-mark" style="left:11.1%">refren</div></div>
     <div class="legend"><span><i class="tl-in"></i>wejście wywołania, część poprzedniego kawałka</span><span><i class="tl-new"></i>nowy fragment</span><span><i class="tl-mark"></i>refren z 10. sekundy</span></div>
-    <p class="hint">Każde okno dostaje jako prompt ostatnie 12 s poprzedniego i dopisuje 18 s. Już drugie okno, od 18. sekundy, nie zawiera refrenu z 10. sekundy, więc model nie ma do niego bezpośredniego dostępu; podobna melodia może wrócić tylko przez ślady w nowszym fragmencie, bez gwarancji. Ten sam mechanizm co przedłużanie wideo w temacie „Generowanie wideo” i okno przesuwne w LLM. Wartości domyślne z kodu MusicGen: okno 30 s, przesunięcie 18 s.</p>
+    <p class="hint">Każde okno dostaje jako prompt ostatnie 12 s poprzedniego i dopisuje 18 s. Już drugie okno, od 18. sekundy, nie zawiera refrenu z 10. sekundy, więc model nie ma do niego bezpośredniego dostępu; podobna melodia może wrócić tylko przez ślady w nowszym fragmencie, bez gwarancji. Ten sam mechanizm co przedłużanie wideo w temacie „Generowanie wideo” i ucinanie najstarszej historii rozmowy z LLM (zobacz „Okno kontekstowe i agent”). Wartości domyślne z kodu MusicGen: okno 30 s, przesunięcie 18 s.</p>
   </div>
   <ul class="notes">
     <li>MusicGen (Meta, 2023) to kodekowy model językowy: 50 ramek na sekundę po 4 kody, z warstwami przesuniętymi o ramkę jak w widżecie wyżej. Trenowano go na 30-sekundowych fragmentach, więc dłuższy utwór powstaje przesuwnym oknem: program zachowuje ostatnie 12 sekund jako prompt i generuje kolejne 18. Tonacja, tempo i aranżacja mogą przez to odpływać od początku utworu, a na łączeniach urywa się pogłos.</li>

@@ -8,7 +8,7 @@
     <div class="legend"><span><i class="tl-in"></i>wejście wywołania, część poprzedniego kawałka</span><span><i class="tl-new"></i>nowy fragment</span><span><i class="tl-mark"></i>postać widoczna tylko w 3. sekundzie</span></div>
     <ul class="vd-notes">
       <li><b>Dryf:</b> błędy kawałka są wejściem następnego, więc kolory i tekstury mogą się stopniowo zmieniać.</li>
-      <li><b>Zapominanie:</b> postać z 3. sekundy nie ma w wejściu żadnego przedłużenia; jeśli wróci do kadru, model odtworzy ją z promptu i może wyglądać inaczej. To samo robi okno przesuwne w LLM, które trzyma tylko ostatnie tokeny (zobacz „Pętla generowania i KV cache”).</li>
+      <li><b>Zapominanie:</b> postaci z 3. sekundy nie ma w wejściu żadnego przedłużenia; jeśli wróci do kadru, model odtworzy ją z promptu i może wyglądać inaczej. Podobnie działa ucinanie najstarszej historii rozmowy z LLM (zobacz „Okno kontekstowe i agent”).</li>
       <li><b>Szwy:</b> na łączeniach skacze ruch, światło albo tempo kamery.</li>
     </ul>
     <p class="vd-h">Ujęcia: każde generowane osobno, z tym samym obrazem referencyjnym</p>
