@@ -4,12 +4,25 @@
   <h3 class="sub">Po co kodek neuronowy i jak zapisuje dźwięk</h3>
   <ul class="notes">
     <li>Zwykły kodek, jak Opus, też mocno ściska mowę. Kodek neuronowy daje w każdej ramce stałą liczbę numerów z kilku wyuczonych słowników, ułożonych od zgrubnego do drobnego, a takie numery model może przewidywać jak tokeny: każdy jest wyborem z krótkiej listy.</li>
-    <li>Koder kodeka tnie nagranie na krótkie ramki i zamienia każdą w wektor liczb. Pierwszy słownik zawiera wyuczone wektory, w kodeku DAC 1024; wybiera się ten najbliższy wektorowi ramki i zapisuje jego numer. To zgrubne przybliżenie. Drugi słownik tak samo przybliża to, co zostało, czyli błąd pierwszego przybliżenia, trzeci błąd drugiego i tak dalej (residual vector quantization, RVQ). Dekoder sumuje wektory wskazane przez numery i odtwarza z nich falę dźwiękową. Każdy słownik daje jedną warstwę kodów.</li>
+    <li>Koder kodeka tnie nagranie na krótkie ramki i zamienia każdą w wektor liczb. Potem koduje go warstwami ze słowników wyuczonych wektorów: pierwsza warstwa daje zgrubne przybliżenie, każda kolejna koduje błąd poprzedniej (residual vector quantization, RVQ). Słownik działa jak tabela embeddingów z tematu „Wektory i macierze”, tylko w drugą stronę: koder szuka najbliższego wektora i zapisuje jego numer, a dekoder sumuje wektory wskazane przez numery.</li>
   </ul>
-  <div class="lab">
-    <p class="lab-title">Ten sam głos z 1, 2, 4 i 9 warstwami kodów</p>
-    <div class="au-list"><div class="au-row"><div><b>Oryginał</b><span>nieskompresowany zapis mono, 16 bitów, 44 100 próbek na sekundę: 705,6 kbit/s</span></div><audio controls preload="metadata" src="/audio/kodek/original.ogg"></audio></div><div class="au-row"><div><b>1 warstwa</b><span>86 kodów na sekundę · 0,86 kbit/s · ok. 820× mniej</span></div><audio controls preload="metadata" src="/audio/kodek/dac-1.ogg"></audio></div><div class="au-row"><div><b>2 warstwy</b><span>172 kody na sekundę · 1,72 kbit/s · ok. 410× mniej</span></div><audio controls preload="metadata" src="/audio/kodek/dac-2.ogg"></audio></div><div class="au-row"><div><b>4 warstwy</b><span>345 kodów na sekundę · 3,45 kbit/s · ok. 205× mniej</span></div><audio controls preload="metadata" src="/audio/kodek/dac-4.ogg"></audio></div><div class="au-row"><div><b>9 warstw</b><span>775 kodów na sekundę · 7,75 kbit/s · ok. 91× mniej</span></div><audio controls preload="metadata" src="/audio/kodek/dac-9.ogg"></audio></div></div>
-    <p class="hint">Nagranie z LibriSpeech (CC BY 4.0, czytane książki z LibriVox), zakodowane otwartym kodekiem DAC (Descript, 2023, licencja MIT) w wersji 44,1 kHz i odtworzone z pierwszych 1, 2, 4 albo wszystkich 9 warstw kodów. Przepływności dotyczą zapisu w kodach, a nie plików na stronie, które zapisano z dużym zapasem jakości, żeby słychać było kodek, a nie kompresję strony.</p>
+  <div class="lab" id="rvqLab">
+    <p class="lab-title">Jedna ramka zapisana w trzech warstwach kodów</p>
+    <div class="rvq-main"><div id="rvqSvg"></div>
+      <div class="stats"><div class="stat"><b id="rvqIds"></b><span>zapisane numery</span></div><div class="stat"><b id="rvqErr"></b><span>odległość od prawdziwego wektora</span></div></div></div>
+    <div class="legend"><span><i class="rvq-lt"></i>wektor ramki z kodera</span><span><i class="rvq-lp"></i>suma wybranych wektorów</span><span><i class="rvq-lc"></i>wpisy słowników, kolejne coraz mniejsze</span></div>
+    <div class="callout" id="rvqMsg" aria-live="polite"></div>
+    <div id="rvqPlayer"></div>
+    <p class="hint">Poglądowo: płaszczyzna i 8 wpisów na słownik zamiast wielowymiarowych wektorów i 1024 wpisów, a DAC dodatkowo przelicza wektory przed wyborem. Zasada kodowania błędu jest ta sama.</p>
+  </div>
+  <div class="lab" id="cdLab">
+    <p class="lab-title">Ten sam głos z 1, 2, 4 i 9 warstwami kodów: posłuchaj i porównaj spektrogram</p>
+    <div class="opts five" id="cdTiles" role="group" aria-label="Liczba warstw"></div>
+    <audio id="cdAudio" controls preload="metadata" src="/audio/kodek/dac-1.ogg"></audio>
+    <div class="cd-spec" id="cdSpec" role="img" aria-label="Spektrogram wybranej wersji"><span>16 kHz</span><span>0 Hz</span></div>
+    <p class="cd-stat" id="cdStat"></p>
+    <div class="callout" id="cdMsg" aria-live="polite"></div>
+    <p class="hint">Nagranie z LibriSpeech (CC BY 4.0, czytane książki z LibriVox), zakodowane otwartym kodekiem DAC (Descript, 2023, licencja MIT) w wersji 44,1 kHz i odtworzone z pierwszych 1, 2, 4 albo wszystkich 9 warstw kodów. Przepływności dotyczą zapisu w kodach, a nie plików na stronie, które zapisano z dużym zapasem jakości, żeby słychać było kodek, a nie kompresję strony. Spektrogram: czas w poziomie, wysokość dźwięku w pionie do 16 kHz, ciemniej znaczy głośniej; wszystkie wersje mają tę samą skalę.</p>
   </div>
   <h3 class="sub">Ile kodów na sekundę dźwięku</h3>
   <ul class="notes">
@@ -19,8 +32,13 @@
     <li>Kody DAC i EnCodec są akustyczne: opisują brzmienie, które zawiera też słowa. AudioLM (2022) dodał tokeny semantyczne, 25 na sekundę, wzięte z modelu rozpoznającego mowę. Są nastawione na treść i rytm, a zachowują mało informacji o głosie: w AudioLM kontynuacja nagrania z samych tokenów semantycznych prawie nigdy nie zachowała mówcy. W Mimi pierwszą warstwę kodów uczy się przenosić treść, a pozostałe siedem uzupełnia brzmienie.</li>
   </ul>
   <h3 class="sub">Mowa z tekstu: trzy rodziny i ich błędy</h3>
+  <div class="lab" data-ord="audio">
+    <p class="lab-title">W którym przebiegu sieci powstaje każdy kod i kiedy pierwsza ramka może zagrać</p>
+    <div class="ord"></div><div class="ord-pl"></div>
+    <p class="hint">Schemat: 6 ramek i 4 warstwy zamiast setek ramek i 4–8 warstw. Pokazuje kolejność z publikacji, nie zmierzone czasy.</p>
+  </div>
   <ul class="notes">
-    <li>Kodekowe modele językowe: VALL-E (2023) dostaje tekst jako fonemy, czyli jednostki wymowy, i 3-sekundowe nagranie głosu jako początek ciągu, a potem dopisuje kody EnCodec, jak LLM dopisuje tokeny. Najpierw generuje po kolei pierwszą warstwę kodów dla całej wypowiedzi, a pozostałe siedem z ośmiu warstw dopełnia drugi model, więc gotowa mowa powstaje dopiero na końcu. Błędy są jak w LLM: nic sztywno nie wiąże tekstu z dźwiękiem, więc słowa bywają połknięte albo powtórzone, a model potrafi w kółko generować tę samą ramkę.</li>
+    <li>Kodekowe modele językowe: VALL-E (2023) dostaje tekst jako fonemy, czyli jednostki wymowy, i 3-sekundowe nagranie głosu jako początek ciągu, a potem dopisuje kody EnCodec, jak LLM dopisuje tokeny. Najpierw generuje po kolei pierwszą warstwę kodów dla całej wypowiedzi, a pozostałe siedem z ośmiu warstw dopełnia drugi model, więc gotowa mowa powstaje dopiero na końcu. Błędy są jak w LLM (zobacz „Następny token”): nic sztywno nie wiąże tekstu z dźwiękiem, więc słowa bywają połknięte albo powtórzone, a model potrafi w kółko generować tę samą ramkę.</li>
     <li>Flow matching na spektrogramie (Voicebox 2023, F5-TTS 2024). Spektrogram mel to obraz dźwięku: dla każdej setnej części sekundy energia w 80–100 pasmach od niskich do wysokich tonów. Transformer poprawia od szumu cały spektrogram wypowiedzi naraz w 16–32 krokach, jak obraz w dyfuzji, a osobna sieć, nazywana wokoderem, zamienia spektrogram w falę dźwiękową. Długość trzeba znać przed startem: F5-TTS liczy ją z liczby znaków w tekście, co zawodzi przy liczbach i skrótach. Słowa giną rzadziej, ale pierwsze słowo jest gotowe dopiero razem z ostatnim.</li>
     <li>Hybrydy, częste w otwartych modelach z lat 2025–2026: model językowy ustala treść i rytm, a druga sieć tworzy brzmienie. CosyVoice 2 (2024) generuje 25 tokenów semantycznych na sekundę modelem Qwen2.5-0.5B, a model flow zamienia je w spektrogram krótkimi kawałkami, więc dźwięk może grać, zanim powstanie reszta. VibeVoice (2025) ma tylko 7,5 ramki na sekundę, więc mieści bardzo długie nagrania w kontekście.</li>
     <li>Do rozmowy na żywo potrzebny jest model, w którym generator i dekoder działają krótkimi kawałkami: kodekowy model strumieniowy, jak Moshi, albo hybryda, jak CosyVoice 2. Gdy nagranie powstaje z góry, wybieraj po jakości. Liczby, daty i skróty zamieniaj na słowa przed syntezą, bo każda rodzina myli się na nich inaczej.</li>
@@ -39,18 +57,12 @@
   <h3 class="sub">Muzyka, efekty i długość</h3>
   <div class="lab">
     <p class="lab-title">Przesuwne okno MusicGen: dłuższy utwór z 30-sekundowych kawałków</p>
-    <div class="au-tl" role="img" aria-label="Okna po 30 s przesuwane co 18 s; refren z 10. sekundy jest poza każdym oknem od drugiego">
-      <div class="au-axis"><span style="left:0">0 s</span><span style="left:33.3%">30 s</span><span style="left:66.6%">60 s</span><span style="left:100%">90 s</span></div>
-      <div class="au-win" style="left:0;width:33.3%"><b>okno 1</b></div>
-      <div class="au-win" style="left:20%;width:33.3%"><i style="width:40%"></i><b>okno 2</b></div>
-      <div class="au-win" style="left:40%;width:33.3%"><i style="width:40%"></i><b>okno 3</b></div>
-      <div class="au-win" style="left:60%;width:33.3%"><i style="width:40%"></i><b>okno 4</b></div>
-      <div class="au-mark" style="left:11.1%">refren</div>
-    </div>
-    <p class="hint">Zakreskowany początek każdego okna to ostatnie 12 s poprzedniego, podane jako prompt; nowe jest tylko 18 s. Już drugie okno, od 18. sekundy, nie zawiera refrenu z 10. sekundy, więc model nie może go na tej podstawie odtworzyć; podobna melodia może wrócić tylko przypadkiem. Wartości domyślne z kodu MusicGen: okno 30 s, przesunięcie 18 s.</p>
+    <div class="au-tl" style="height:152px" role="img" aria-label="Okna po 30 s przesuwane co 18 s; refren z 10. sekundy jest poza każdym oknem od drugiego"><div class="au-axis"><span style="left:0.0%">0 s</span><span style="left:33.3%">30 s</span><span style="left:66.7%">60 s</span><span style="left:100.0%">90 s</span></div><div class="au-win" style="left:0.0%;width:33.3%;top:0px"><b>okno 1</b></div><div class="au-win" style="left:20.0%;width:33.3%;top:28px"><i style="width:40.0%"></i><b>okno 2</b></div><div class="au-win" style="left:40.0%;width:33.3%;top:56px"><i style="width:40.0%"></i><b>okno 3</b></div><div class="au-win" style="left:60.0%;width:33.3%;top:84px"><i style="width:40.0%"></i><b>okno 4</b></div><div class="au-mark" style="left:11.1%">refren</div></div>
+    <div class="legend"><span><i class="tl-in"></i>wejście wywołania, część poprzedniego kawałka</span><span><i class="tl-new"></i>nowy fragment</span><span><i class="tl-mark"></i>refren z 10. sekundy</span></div>
+    <p class="hint">Każde okno dostaje jako prompt ostatnie 12 s poprzedniego i dopisuje 18 s. Już drugie okno, od 18. sekundy, nie zawiera refrenu z 10. sekundy, więc model nie ma do niego bezpośredniego dostępu; podobna melodia może wrócić tylko przez ślady w nowszym fragmencie, bez gwarancji. Ten sam mechanizm co przedłużanie wideo w temacie „Generowanie wideo” i okno przesuwne w LLM. Wartości domyślne z kodu MusicGen: okno 30 s, przesunięcie 18 s.</p>
   </div>
   <ul class="notes">
-    <li>MusicGen (Meta, 2023) to kodekowy model językowy: 50 ramek na sekundę po 4 kody. Trenowano go na 30-sekundowych fragmentach, więc dłuższy utwór powstaje przesuwnym oknem: program zachowuje ostatnie 12 sekund jako prompt i generuje kolejne 18. Tonacja, tempo i aranżacja mogą przez to odpływać od początku utworu, a na łączeniach urywa się pogłos.</li>
+    <li>MusicGen (Meta, 2023) to kodekowy model językowy: 50 ramek na sekundę po 4 kody, z warstwami przesuniętymi o ramkę jak w widżecie wyżej. Trenowano go na 30-sekundowych fragmentach, więc dłuższy utwór powstaje przesuwnym oknem: program zachowuje ostatnie 12 sekund jako prompt i generuje kolejne 18. Tonacja, tempo i aranżacja mogą przez to odpływać od początku utworu, a na łączeniach urywa się pogłos.</li>
     <li>Stable Audio generuje dyfuzją ciągłe wektory zamiast kodów ze słownika, z czasem trwania podanym jako warunek. Model badawczy z 2024 roku tworzył do 4 min 45 s naraz, bo mocno kompresuje dźwięk i trenowano go na całych utworach, a Stable Audio 3 (maj 2026) w większych wersjach do 6 min 20 s. Sklejanie nie jest więc koniecznością, tylko kompromisem kosztowym; długi kontekst też nie gwarantuje dobrej struktury utworu.</li>
     <li>Strukturę podaje się z zewnątrz, zamiast liczyć, że model ją zapamięta: tagi w tekście, takie jak <code>[Verse]</code> i <code>[Chorus]</code> (Suno, Lyria), albo plan sekcji w ElevenLabs Music, gdzie da się wygenerować od nowa jedną sekcję. Poprawiaj wtedy pojedyncze sekcje, a nie cały utwór.</li>
     <li>Limity produktów (stan na październik 2026): ElevenLabs Music API od 3 s do 10 min, efekty dźwiękowe do 30 s z opcją zapętlenia, Suno v6 do 8 min w jednej generacji. Zapętlenie wydłuża odtwarzanie, nie ilość nowej muzyki.</li>

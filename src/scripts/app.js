@@ -2460,14 +2460,14 @@ function initMedia(){
   // token counts from published shapes: FLUX.1 (16x16 px per token), Wan 2.1 (720p, 16 fps, 4 frames per latent frame, 80x45 tokens each), DAC 44.1 kHz (86 frames/s x 9 codes)
   const PAGE=650,K={
     img:{l:tr('Obraz','Image'),v:[256,384,512,768,1024,1536,2048],d:4,lab:v=>tr('Bok kwadratowego obrazu: ','Square image side: ')+v+' px',t:v=>(v/16)**2,ref:(1024/16)**2,
-      a:tr('pracy atencji w jednym kroku względem obrazu 1024×1024','attention work per step relative to a 1024×1024 image'),
-      m:v=>tr('Każdy z 20–50 kroków przetwarza wszystkie '+nf((v/16)**2)+' tokenów naraz. Dwa razy dłuższy bok to cztery razy więcej tokenów i ok. szesnaście razy więcej pracy atencji.','Each of the 20–50 steps processes all '+nf((v/16)**2)+' tokens at once. Twice the side means four times the tokens and about sixteen times the attention work.')},
+      a:tr('tyle par tokenów porównuje pełna atencja w jednym kroku, względem obrazu 1024×1024','pairs of tokens full attention compares per step, relative to a 1024×1024 image'),
+      m:v=>tr('Każdy z 20–50 kroków przetwarza wszystkie '+nf((v/16)**2)+' tokenów naraz. Dwa razy dłuższy bok to cztery razy więcej tokenów i szesnaście razy więcej par w atencji, ale cały krok rośnie wolniej, ok. pięć razy we FLUX.1, bo większość pracy to warstwy liczone osobno dla każdego tokena (zobacz „Attention”).','Each of the 20–50 steps processes all '+nf((v/16)**2)+' tokens at once. Twice the side means four times the tokens and sixteen times the pairs in attention, but the whole step grows more slowly, about five times in FLUX.1, because most of the work is in layers computed separately for each token (see “Attention”).')},
     vid:{l:tr('Wideo','Video'),v:[1,2,3,4,5,6,8,10,12,16,20],d:4,lab:v=>tr('Długość klipu 720p: ','720p clip length: ')+v+' s',t:v=>(1+4*v)*3600,ref:(1+4*5)*3600,
-      a:tr('pracy atencji w jednym kroku względem klipu 5 s','attention work per step relative to a 5 s clip'),
+      a:tr('tyle par tokenów porównuje pełna atencja w jednym kroku, względem klipu 5 s','pairs of tokens full attention compares per step, relative to a 5 s clip'),
       m:v=>v<=8?tr('Cały klip to jeden ciąg tokenów i każdy z ok. 50 kroków przetwarza go w całości: klatka pierwsza „widzi” ostatnią.','The whole clip is one sequence and each of about 50 steps processes all of it: the first frame “sees” the last.')
         :tr('Tyle co długi kontekst LLM, tyle że przetwarzany od nowa w każdym z ok. 50 kroków. Stąd pojedynczy klip z API ma zwykle 4–20 s, a dłuższe filmy skleja się z kawałków.','As much as a long LLM context, but processed again in each of about 50 steps. That is why a single clip from an API is usually 4–20 s long and longer films are stitched from pieces.')},
     aud:{l:tr('Mowa','Speech'),v:[1,5,10,30,60,120,300,600],d:3,lab:v=>tr('Długość nagrania: ','Recording length: ')+(v<60?v+' s':v/60+' min'),t:v=>775*v,ref:null,
-      a:tr('kroków po kolei, jeśli model generuje ramka po ramce','sequential steps if the model generates frame by frame'),
+      a:tr('ramek audio, każda po 9 kodów; ile przebiegów sieci to wymaga, zależy od generatora','audio frames of 9 codes each; how many network passes they need depends on the generator'),
       m:v=>tr('Minuta mowy to ok. 150 słów, czyli ok. 200 tokenów tekstu, a w kodeku DAC 46 500 kodów. Kodeki do rozmowy na żywo mają mniej ramek na sekundę, Mimi z Moshi 12,5, żeby długie rozmowy zajmowały mniej tokenów.','A minute of speech is about 150 words, about 200 text tokens, but 46,500 codes in the DAC codec. Codecs for live conversation use fewer frames per second, Mimi in Moshi 12.5, so long conversations take fewer tokens.')}};
   let k='img';const sl=$('#mdS');
   const bs=Object.entries(K).map(([id,o])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{k=id;sl.max=o.v.length-1;sl.value=o.d;pressed(bs,e.currentTarget);paint();}},h('b',{},o.l)));
@@ -2489,11 +2489,134 @@ function initZoom(){const d=h('dialog',{class:'zoom','aria-label':tr('Powiększo
     i.setAttribute('aria-label',tr('Powiększ: ','Enlarge: ')+(label(i)||i.alt));i.title=tr('Powiększ','Enlarge');
     i.addEventListener('click',()=>open(i));i.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(i);}});});}
 /* end obrazy */
+/* kolejnosc */
+// "Kolejność generowania": which positions a network pass computes, which are ready (or in the KV cache) and which don't exist yet.
+// One component, mounted on the overview (LLM vs diffusion), video (whole clip vs chunks) and audio (VALL-E, MusicGen, Moshi, F5-TTS) pages.
+// Schematic: a few cells stand for thousands of tokens or frames. The only real numbers are the SD 1.5 noise schedule below.
+function initOrder(){
+  // SD 1.5 DDIM, 20 steps: scaled_linear betas 0.00085..0.012 over 1000 steps, "leading" spacing with offset 1 -> timesteps 951, 901, ..., 1
+  const AC=(()=>{const a=[];let p=1;const b0=Math.sqrt(.00085),b1=Math.sqrt(.012);for(let i=0;i<1000;i++){const b=(b0+(b1-b0)*i/999)**2;p*=1-b;a.push(p);}return a;})();
+  const noise=k=>1-AC[951-50*(k-1)];// share of noise in the grid's variance entering step k
+  const pc=x=>nf(x*100,x<.01?1:0)+'%';
+  const IMG='/img/obrazy/';
+  // cell states: n = computed in this pass, r = ready (kept, e.g. in the KV cache), w = exists but still noisy, '' = not yet
+  const grid=(rows,cols,f)=>Array.from({length:rows},(_,r)=>Array.from({length:cols},(_,c)=>f(r,c)));
+  const M={
+    llm:{t:tr('LLM','LLM'),s:tr('token po tokenie','token by token'),rows:1,cols:8,mask:'causal',rl:()=>tr('tokeny','tokens'),
+      steps:[0,1,2,3,4,5].map(p=>({cells:grid(1,8,(r,c)=>p===0?(c<3?'r':''):c<3+p-1?(p===1?'n':c===3+p-2?'n':'r'):c===3+p-1?'new':''),
+        now:p===0?0:p===1?3:1,first:p>=1?tr('po przebiegu 1','after pass 1'):tr('jeszcze nie','not yet'),
+        x:p===0?tr('Start: prompt ma 3 tokeny. Długość odpowiedzi nie jest ustalona z góry: model dopisuje, aż wygeneruje token końca.','Start: the prompt has 3 tokens. The answer length is not fixed in advance: the model appends until it produces the end token.')
+          :p===1?tr('Przebieg 1, prefill: sieć liczy 3 tokeny promptu naraz i przewiduje 4. token. Jest gotowy od razu i można go pokazać.','Pass 1, prefill: the network computes the 3 prompt tokens at once and predicts the 4th. It is final at once and can be shown.')
+          :tr('Przebieg '+p+': sieć liczy tylko ostatni token, a klucze i wartości wcześniejszych bierze z KV cache, bo te tokeny już się nie zmienią. Maska przyczynowa: token widzi tylko wcześniejsze. Nowy token jest od razu gotowy.','Pass '+p+': the network computes only the last token and takes the keys and values of earlier ones from the KV cache, because those tokens will not change. Causal mask: a token sees only earlier ones. The new token is final at once.')}))},
+    dif:{t:tr('Dyfuzja obrazu','Image diffusion'),s:tr('cała siatka w każdym kroku','the whole grid every step'),rows:1,cols:8,mask:'full',rl:()=>tr('siatka','grid'),
+      steps:[0,1,4,8,12,16,20].map(k=>{const nz=k?noise(k):1;return{cells:grid(1,8,()=>k?'n':'w'),nz,now:k?8:0,first:k===20?tr('po kroku 20','after step 20'):tr('jeszcze nie','not yet'),
+        img:k===1||k===4||k===20?[IMG+'xt-'+String(k).padStart(2,'0')+'.webp',IMG+'x0-'+String(k).padStart(2,'0')+'.webp']:null,
+        x:k===0?tr('Start: siatka od początku ma stały rozmiar, tu 8 pól zamiast 4096 tokenów obrazu 1024×1024, i jest czystym losowym szumem. Długość wyniku ustala się przed pierwszym krokiem.','Start: the grid has a fixed size from the beginning, here 8 cells instead of the 4096 tokens of a 1024×1024 image, and it is pure random noise. The output size is fixed before the first step.')
+          :tr('Krok '+k+' z 20: siatka wejściowa to jeszcze w '+pc(nz)+' szum. Sieć dostaje całą siatkę, numer kroku i te same wektory promptu i liczy wszystkie pola od nowa, bo w poprzednim kroku zmieniło się każde. KV cache nie ma tu czego trzymać.'+(k===4?' Choć szumu jest prawie tyle co na starcie, przewidywanie ma już latarnię.':k===20?' Dopiero po tym kroku dekoder robi z siatki obraz: pierwszy gotowy piksel pojawia się na samym końcu.':''),
+            'Step '+k+' of 20: the input grid is still '+pc(nz)+' noise. The network gets the whole grid, the step number and the same prompt vectors, and recomputes every cell, because the previous step changed all of them. The KV cache has nothing to keep here.'+(k===4?' Although there is almost as much noise as at the start, the prediction already has the lighthouse.':k===20?' Only after this step does the decoder turn the grid into an image: the first final pixel appears at the very end.':''))};})},
+    clip:{t:tr('Cały klip naraz','Whole clip at once'),s:tr('typowy model wideo','a typical video model'),rows:1,cols:6,mask:'full',rl:()=>tr('klatki siatki','latent frames'),
+      steps:[0,1,2,3].map(k=>({cells:grid(1,6,()=>k?'n':'w'),nz:[1,.85,.45,.05][k],now:k?6:0,first:k===3?tr('po ostatnim kroku','after the last step'):tr('jeszcze nie','not yet'),
+        x:k===0?tr('Start: szum w kształcie całego klipu. Liczba klatek jest ustalona przed startem i potem się nie zmienia.','Start: noise shaped like the whole clip. The number of frames is fixed before the start and does not change.')
+          :k<3?tr('Krok w środku pętli: sieć liczy wszystkie klatki naraz, bez maski przyczynowej, więc pierwsza klatka widzi ostatnią. Dlatego krótkie ujęcie jest spójne, ale żadna klatka nie jest gotowa przed końcem.','A step in the middle of the loop: the network computes all frames at once, without a causal mask, so the first frame sees the last. That is why a short shot is consistent, but no frame is final before the end.')
+          :tr('Ostatni z ok. 50 kroków: dopiero teraz cały klip jest gotowy naraz. Dłuższy klip to więcej klatek w każdym kroku, a koszt atencji rośnie z kwadratem ich liczby.','The last of about 50 steps: only now is the whole clip final, all at once. A longer clip means more frames in every step, and the attention cost grows with the square of their number.')}))},
+    chunk:{t:tr('Wideo kawałkami','Video in chunks'),s:tr('model przyczynowy, np. Self Forcing','a causal model, e.g. Self Forcing'),rows:1,cols:6,mask:'block',rl:()=>tr('klatki siatki','latent frames'),
+      steps:[0,1,2,3,4,5,6].map(p=>{const ch=Math.ceil(p/2),fin=p>0&&p%2===0;return{cells:grid(1,6,(r,c)=>{const cc=Math.floor(c/2)+1;return p===0?'':cc<ch||(cc===ch&&fin)?(cc===ch&&fin?'n':'r'):cc===ch?'n':'';}),nz:fin?.05:.6,now:p?2:0,
+        first:p>=2?tr('po kawałku 1','after chunk 1'):tr('jeszcze nie','not yet'),
+        x:p===0?tr('Start: model generuje klip kawałkami po kilka klatek; tu kawałek to 2 klatki siatki. Długość nie musi być znana z góry.','Start: the model generates the clip in chunks of a few frames; here a chunk is 2 latent frames. The length need not be known in advance.')
+          :fin?tr('Kawałek '+ch+' gotowy po kilku krokach odszumiania. Jego klucze i wartości trafiają do KV cache, jak tokeny w LLM, a klatki można już wyświetlić. Maska przyczynowa: kawałek widzi tylko wcześniejsze kawałki.','Chunk '+ch+' is final after a few denoising steps. Its keys and values go into the KV cache, like tokens in an LLM, and the frames can already be shown. Causal mask: a chunk sees only earlier chunks.')
+          :tr('Kawałek '+ch+' w trakcie: sieć odszumia tylko jego 2 klatki w kilku krokach, patrząc na gotowe wcześniejsze z KV cache.','Chunk '+ch+' in progress: the network denoises only its 2 frames over a few steps, looking at the earlier final ones in the KV cache.')};})},
+    valle:{t:tr('VALL-E','VALL-E'),s:tr('warstwa 1 po kolei, reszta naraz','layer 1 in order, the rest at once'),rows:4,cols:6,rl:r=>tr('warstwa ','layer ')+(r+1),
+      steps:Array.from({length:10},(_,p)=>({cells:grid(4,6,(r,c)=>p===0?'':p<=6?(r===0&&c<p?(c===p-1?'n':'r'):''):(r===0||r<p-6?'r':r===p-6?'n':'')),now:p===0?0:p<=6?1:6,
+        first:p===9?tr('po przebiegu 9','after pass 9'):tr('jeszcze nie','not yet'),
+        x:p===0?tr('Start: VALL-E dostaje fonemy tekstu i kody próbki głosu. Schemat: 6 ramek i 4 warstwy zamiast setek ramek i 8 warstw.','Start: VALL-E gets the phonemes of the text and the codes of the voice sample. Schematic: 6 frames and 4 layers instead of hundreds of frames and 8 layers.')
+          :p<=6?tr('Przebieg '+p+': model autoregresyjny dopisuje pierwszą warstwę kodów, ramka po ramce, jak LLM token po tokenie. Pozostałych warstw jeszcze nie ma, więc żadna ramka nie zabrzmi.','Pass '+p+': the autoregressive model appends the first layer of codes, frame by frame, like an LLM token by token. The other layers don’t exist yet, so no frame can be played.')
+          :tr('Przebieg '+p+': drugi model dopisuje całą warstwę '+(p-5)+' dla wszystkich ramek naraz.'+(p===9?' Dopiero teraz każda ramka ma wszystkie warstwy i dekoder może zrobić dźwięk: autoregresja sama nie wystarcza do grania na bieżąco.':''),'Pass '+p+': a second model fills the whole layer '+(p-5)+' for all frames at once.'+(p===9?' Only now does every frame have all layers and the decoder can make sound: autoregression alone is not enough for live playback.':''))}))},
+    mg:{t:tr('MusicGen','MusicGen'),s:tr('warstwy przesunięte o ramkę','layers shifted by a frame'),rows:4,cols:6,rl:r=>tr('warstwa ','layer ')+(r+1),
+      steps:Array.from({length:10},(_,p)=>({cells:grid(4,6,(r,c)=>{const q=c+r+1;return p===0||q>p?'':q===p?'n':'r';}),now:p===0?0:[...Array(4)].filter((_,r)=>p-r-1>=0&&p-r-1<6).length,
+        first:p>=4?tr('po przebiegu 4','after pass 4'):tr('jeszcze nie','not yet'),
+        x:p===0?tr('Start: MusicGen ma 4 warstwy kodów na ramkę. Każda kolejna warstwa jest przesunięta o jedną ramkę.','Start: MusicGen has 4 layers of codes per frame. Each next layer is shifted by one frame.')
+          :tr('Przebieg '+p+': jeden przebieg dużej sieci przewiduje do czterech kodów naraz, ale każdy dla innej ramki: warstwę 1 ramki '+p+', warstwę 2 ramki '+(p-1)+' i tak dalej.'+(p===4?' Ramka 1 ma już wszystkie warstwy i może zagrać; potem co przebieg gotowa jest kolejna.':p<4?' Żadna ramka nie ma jeszcze wszystkich warstw.':''),
+            'Pass '+p+': one pass of the large network predicts up to four codes at once, but each for a different frame: layer 1 of frame '+p+', layer 2 of frame '+(p-1)+' and so on.'+(p===4?' Frame 1 now has all layers and can play; after that one more frame is ready each pass.':p<4?' No frame has all layers yet.':''))}))},
+    moshi:{t:tr('Moshi','Moshi'),s:tr('duża sieć raz na ramkę','the large network once per frame'),rows:4,cols:6,rl:r=>tr('warstwa ','layer ')+(r+1),
+      steps:Array.from({length:7},(_,p)=>({cells:grid(4,6,(r,c)=>p===0?'':c<p-1?'r':c===p-1?'n':''),now:p?4:0,first:p>=1?tr('po przebiegu 1','after pass 1'):tr('jeszcze nie','not yet'),
+        x:p===0?tr('Start: Moshi mówi na żywo, ramka co 80 ms. Schemat: 4 warstwy zamiast 8, bez tokenu tekstu i bez małego opóźnienia warstw akustycznych.','Start: Moshi speaks live, one frame every 80 ms. Schematic: 4 layers instead of 8, without the text token and the small delay of the acoustic layers.')
+          :tr('Przebieg '+p+': duża sieć robi jeden przebieg na ramkę '+p+', a mała sieć dopisuje po kolei wszystkie warstwy tej ramki. Ramka jest od razu gotowa do zagrania, a jej stan trafia do KV cache dużej sieci.','Pass '+p+': the large network makes one pass for frame '+p+', and a small network appends all layers of that frame in turn. The frame can be played at once, and its state goes into the large network’s KV cache.')}))},
+    f5:{t:tr('F5-TTS','F5-TTS'),s:tr('cały spektrogram naraz','the whole spectrogram at once'),rows:4,cols:6,rl:r=>tr('pasmo ','band ')+(r+1),
+      steps:[0,1,2,3].map(k=>({cells:grid(4,6,()=>k?'n':'w'),nz:[1,.7,.3,.03][k],now:k?24:0,first:k===3?tr('po ostatnim kroku','after the last step'):tr('jeszcze nie','not yet'),
+        x:k===0?tr('Start: F5-TTS nie używa kodów, tylko spektrogramu: wiersze to pasma częstotliwości, kolumny to krótkie chwile. Długość trzeba ustalić przed startem, z liczby znaków tekstu.','Start: F5-TTS uses no codes but a spectrogram: rows are frequency bands, columns are short moments. The length has to be set before the start, from the number of characters in the text.')
+          :k<3?tr('Krok w środku pętli: jak w dyfuzji obrazu, sieć poprawia cały spektrogram wypowiedzi naraz. Żaden fragment nie jest gotowy przed końcem.','A step in the middle of the loop: as in image diffusion, the network refines the whole spectrogram of the utterance at once. No part is final before the end.')
+          :tr('Ostatni z 16–32 kroków: spektrogram jest gotowy i wokoder robi z niego falę. Pierwsze słowo jest gotowe dopiero razem z ostatnim.','The last of 16–32 steps: the spectrogram is final and the vocoder turns it into a wave. The first word is ready only together with the last.')}))}};
+  const SETS={media:['llm','dif'],wideo:['clip','chunk'],audio:['valle','mg','moshi','f5']};
+  document.querySelectorAll('[data-ord]').forEach(lab=>{
+    const keys=SETS[lab.dataset.ord];let m=M[keys[0]];
+    const box=lab.querySelector('.ord'),tiles=h('div',{class:'opts'+(keys.length>3?' four':''),role:'group','aria-label':tr('Sposób generowania','Generation order')});
+    const g=h('div',{class:'ord-grid'}),side=h('div',{class:'ord-side'}),sNow=h('b'),sFirst=h('b'),msg=h('div',{class:'callout','aria-live':'polite'});
+    const legend=h('div',{class:'legend'},h('span',{},h('i',{class:'ord-n'}),tr('liczone w tym przebiegu','computed in this pass')),h('span',{},h('i',{class:'ord-r'}),tr('gotowe, w KV cache albo do zagrania','final, in the KV cache or ready to play')),h('span',{class:'ord-lnew'},h('i',{class:'ord-new'}),tr('nowy token, wylosowany w tym przebiegu','new token, sampled in this pass')),h('span',{class:'ord-lw'},h('i',{class:'ord-w'}),tr('jest, ale to jeszcze szum','exists but is still noise')),h('span',{},h('i',{class:'ord-e'}),tr('jeszcze nie ma','not there yet')));
+    box.append(tiles,h('div',{class:'ord-main'},g,side),legend,h('div',{class:'stats'},h('div',{class:'stat'},sNow,h('span',{},tr('pozycji liczonych w tym przebiegu','positions computed in this pass'))),h('div',{class:'stat'},sFirst,h('span',{},tr('pierwszy gotowy fragment','first final part')))),msg);
+    function maskEl(kind,n=6){const el=h('div',{class:'att-mx ord-mx',style:'grid-template-columns:repeat('+n+',14px)'});for(let r=0;r<n;r++)for(let c=0;c<n;c++){const masked=kind==='causal'?c>r:kind==='block'?Math.floor(c/2)>Math.floor(r/2):false;el.append(h('i',{class:masked?'mask':''}));}
+      return h('figure',{},el,h('figcaption',{},kind==='full'?tr('maska atencji: brak, każdy widzi każdego','attention mask: none, everyone sees everyone'):kind==='causal'?tr('maska przyczynowa: tylko wcześniejsze','causal mask: earlier ones only'):tr('maska po kawałkach: tylko wcześniejsze kawałki','chunk mask: earlier chunks only')));}
+    function render(i){const st=m.steps[i];
+      g.style.gridTemplateColumns='auto repeat('+m.cols+',minmax(0,1fr))';
+      g.replaceChildren(...st.cells.flatMap((row,r)=>[h('span',{class:'ord-rl'},m.rl(r)),...row.map(s=>h('i',{class:'ord-'+(s||'e')+(s==='new'?' ord-r':''),style:st.nz!=null&&(s==='n'||s==='w')?'--nz:'+st.nz:''}))]));
+      side.replaceChildren(...[m.mask?maskEl(m.mask):null,st.nz!=null&&m===M.dif?h('div',{class:'ord-bar'},h('span',{},tr('szum w siatce: ','noise in the grid: ')+pc(st.nz)),h('i',{style:'width:'+(st.nz*100)+'%'})):null,
+        st.img?h('div',{class:'ord-th'},h('figure',{},h('img',{src:st.img[0],alt:tr('siatka po kroku','grid after the step')}),h('figcaption',{},tr('siatka po kroku','grid after the step'))),h('figure',{},h('img',{src:st.img[1],alt:tr('przewidywany gotowy obraz','predicted final image')}),h('figcaption',{},tr('przewidywanie w kroku','prediction in the step')))):null].filter(Boolean));
+      legend.querySelector('.ord-lnew').hidden=m!==M.llm;legend.querySelector('.ord-lw').hidden=!m.steps.some(x=>x.nz!=null);sNow.textContent=st.now;sFirst.textContent=st.first;msg.textContent=st.x;}
+    const mount=h('div');lab.querySelector('.ord-pl').append(mount);
+    const pl=player(mount,{steps:()=>m.steps.length-1,render,interval:1600});PLAYERS.push(pl);
+    const bs=keys.map(k=>h('button',{class:'opt',type:'button','aria-pressed':String(k===keys[0]),onclick:e=>{m=M[k];pressed(bs,e.currentTarget);pl.halt();pl.set(0);pl.refresh();}},h('b',{},M[k].t),h('small',{},M[k].s)));
+    tiles.append(...bs);render(0);});}
+/* end kolejnosc */
+/* audio */
+// Codec samples (one player, spectrogram as a CSS mask) and a 2D toy of residual vector quantization.
+function initCodec(){
+  const D='/audio/kodek/';
+  const V=[['original',tr('Oryginał','Original'),tr('44 100 próbek/s','44,100 samples/s'),tr('nieskompresowany zapis mono, 16 bitów: 705,6 kbit/s','uncompressed mono, 16 bits: 705.6 kbit/s'),
+      tr('Oryginał. Na dole spektrogramu widać poziome prążki: to harmoniczne głosu, które wyznaczają wysokość i barwę.','The original. The horizontal stripes at the bottom of the spectrogram are the harmonics of the voice, which set pitch and timbre.')],
+    ['dac-1',tr('1 warstwa','1 layer'),tr('86 kodów/s','86 codes/s'),tr('86 kodów na sekundę · 0,86 kbit/s · ok. 820× mniej','86 codes per second · 0.86 kbit/s · about 820× less'),
+      tr('Jedna warstwa: mowa jest zrozumiała (Whisper pomylił jedno słowo z siedemnastu), ale prążki harmonicznych są rozmyte, a wysokie pasma szumią.','One layer: the speech is intelligible (Whisper got one word of seventeen wrong), but the harmonic stripes are smeared and the high bands are noisy.')],
+    ['dac-2',tr('2 warstwy','2 layers'),tr('172 kody/s','172 codes/s'),tr('172 kody na sekundę · 1,72 kbit/s · ok. 410× mniej','172 codes per second · 1.72 kbit/s · about 410× less'),
+      tr('Dwie warstwy: druga warstwa koduje błąd pierwszej, więc prążki harmonicznych wracają, choć wciąż są słabsze niż w oryginale.','Two layers: the second layer encodes the error of the first, so the harmonic stripes come back, though still weaker than in the original.')],
+    ['dac-4',tr('4 warstwy','4 layers'),tr('345 kodów/s','345 codes/s'),tr('345 kodów na sekundę · 3,45 kbit/s · ok. 205× mniej','345 codes per second · 3.45 kbit/s · about 205× less'),
+      tr('Cztery warstwy: spektrogram jest już bardzo podobny do oryginału; różnice zostają w drobnych szczegółach wysokich pasm.','Four layers: the spectrogram is already very close to the original; the differences remain in fine detail of the high bands.')],
+    ['dac-9',tr('9 warstw','9 layers'),tr('775 kodów/s','775 codes/s'),tr('775 kodów na sekundę · 7,75 kbit/s · ok. 91× mniej','775 codes per second · 7.75 kbit/s · about 91× less'),
+      tr('Dziewięć warstw, pełny kodek DAC: na spektrogramie trudno odróżnić wynik od oryginału, przy 91 razy mniejszej ilości danych.','Nine layers, the full DAC codec: the spectrogram is hard to tell from the original, with 91 times less data.')]];
+  const lab=$('#cdLab');if(lab){const au=$('#cdAudio'),sp=$('#cdSpec'),st=$('#cdStat'),msg=$('#cdMsg');
+    const bs=V.map(([f,l,s,line,m])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{pressed(bs,e.currentTarget);const t=au.currentTime,play=!au.paused;au.src=D+f+'.ogg';
+      au.addEventListener('loadedmetadata',()=>{au.currentTime=Math.min(t,au.duration||t);if(play)au.play();},{once:true});sp.style.setProperty('--spec','url('+D+f+'.webp)');st.textContent=line;msg.textContent=m;}},h('b',{},l),h('small',{},s)));
+    $('#cdTiles').replaceChildren(...bs);bs[1].click();}
+  // toy RVQ: one frame vector, three codebooks of 8 entries, each smaller than the last
+  const box=$('#rvqLab');if(!box)return;
+  const NS='http://www.w3.org/2000/svg',sv=(t,a={},...k)=>{const e=document.createElementNS(NS,t);for(const n in a)e.setAttribute(n,a[n]);e.append(...k);return e;};
+  const T=[132,58],C1=[[40,40],[100,30],[160,40],[170,100],[150,160],[90,170],[30,140],[60,100]],
+    C2=[[-30,0],[-15,20],[0,30],[20,15],[25,-10],[5,-25],[-20,-20],[-30,25]],C3=[[0,-8],[6,-4],[6,5],[0,8],[-6,5],[-6,-4],[3,0],[-3,0]];
+  const near=(p,set,o)=>set.map((v,i)=>[Math.hypot(o[0]+v[0]-p[0],o[1]+v[1]-p[1]),i]).sort((a,b)=>a[0]-b[0])[0][1];
+  const i1=near(T,C1,[0,0]),p1=C1[i1],i2=near(T,C2,p1),p2=[p1[0]+C2[i2][0],p1[1]+C2[i2][1]],i3=near(T,C3,p2),p3=[p2[0]+C3[i3][0],p2[1]+C3[i3][1]];
+  const err=p=>Math.round(Math.hypot(p[0]-T[0],p[1]-T[1]));
+  const svg=sv('svg',{viewBox:'0 0 200 200',class:'rvq-svg',role:'img','aria-label':tr('Szkic: wektor ramki i trzy słowniki','Sketch: a frame vector and three codebooks')});
+  const S=[
+    {x:tr('Koder kodeka zamienił jedną ramkę dźwięku w wektor, tu punkt na płaszczyźnie. Pierwszy słownik to 8 wyuczonych wektorów rozrzuconych po całej przestrzeni.','The codec’s encoder turned one frame of sound into a vector, here a point on the plane. The first codebook is 8 learned vectors spread over the whole space.'),ids:[],e:null},
+    {x:tr('Słownik 1: wybiera się wpis najbliższy wektorowi ramki i zapisuje tylko jego numer, '+(i1+1)+'. To zgrubne przybliżenie; zostaje błąd, czyli różnica do prawdziwego wektora.','Codebook 1: the entry nearest the frame vector is chosen and only its number is stored, '+(i1+1)+'. That is a coarse approximation; an error remains, the difference to the real vector.'),ids:[i1],e:err(p1)},
+    {x:tr('Słownik 2 ma mniejsze wektory i koduje sam błąd pierwszego przybliżenia: wybiera wpis najbliższy temu, co zostało, numer '+(i2+1)+'. Suma dwóch wektorów jest już dużo bliżej celu.','Codebook 2 has smaller vectors and encodes only the error of the first approximation: it picks the entry nearest to what is left, number '+(i2+1)+'. The sum of two vectors is already much closer to the target.'),ids:[i1,i2],e:err(p2)},
+    {x:tr('Słownik 3 koduje błąd, który został po drugim, numer '+(i3+1)+'. Każda kolejna warstwa to drobniejsza poprawka; DAC ma ich 9, każda po 1024 wpisy.','Codebook 3 encodes the error left after the second, number '+(i3+1)+'. Each further layer is a finer correction; DAC has 9 of them, each with 1,024 entries.'),ids:[i1,i2,i3],e:err(p3)},
+    {x:tr('Kodek zapisuje tylko numery: '+(i1+1)+', '+(i2+1)+', '+(i3+1)+'. Dekoder bierze wektory o tych numerach z tych samych słowników, sumuje je i odtwarza z sumy dźwięk. Generator mowy przewiduje właśnie takie numery, jak LLM przewiduje tokeny.','The codec stores only the numbers: '+(i1+1)+', '+(i2+1)+', '+(i3+1)+'. The decoder takes the vectors with these numbers from the same codebooks, adds them up and turns the sum back into sound. A speech generator predicts exactly such numbers, as an LLM predicts tokens.'),ids:[i1,i2,i3],e:err(p3),sum:true}];
+  const dot=(p,r,cls)=>sv('circle',{cx:p[0],cy:p[1],r,class:cls});
+  const arrow=(a,b,cls)=>sv('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:cls});
+  function render(i){const s=S[i];svg.replaceChildren();
+    C1.forEach((v,j)=>svg.append(dot(v,i>=1&&j===i1?6:4,'rvq-c1'+(i>=1&&j===i1?' on':''))));
+    if(i>=2)C2.forEach((v,j)=>svg.append(dot([p1[0]+v[0],p1[1]+v[1]],j===i2?4:2.6,'rvq-c2'+(j===i2?' on':''))));
+    if(i>=3)C3.forEach((v,j)=>svg.append(dot([p2[0]+v[0],p2[1]+v[1]],j===i3?3:1.8,'rvq-c3'+(j===i3?' on':''))));
+    if(i>=1)svg.append(arrow([100,100],p1,'rvq-a'));if(i>=2)svg.append(arrow(p1,p2,'rvq-a'));if(i>=3)svg.append(arrow(p2,p3,'rvq-a'));
+    const cur=i===0?null:i===1?p1:i===2?p2:p3;if(cur&&!s.sum)svg.append(arrow(cur,T,'rvq-e'));
+    svg.append(dot([100,100],2.5,'rvq-o'),dot(T,5,'rvq-t'));if(cur)svg.append(dot(cur,3.5,'rvq-p'));
+    $('#rvqIds').textContent=s.ids.length?s.ids.map(j=>j+1).join(' · '):'–';$('#rvqErr').textContent=s.e==null?'–':s.e;$('#rvqMsg').textContent=s.x;}
+  $('#rvqSvg').append(svg);
+  const pl=player($('#rvqPlayer'),{steps:S.length-1,render,interval:2200});PLAYERS.push(pl);render(0);}
+/* end audio */
 const inits={home:initHome,tokeny:[initTok,initBpe],macierze:[initMM,initEmb,initTokPath],attention:initAtt,sampling:initSmp,kvcache:initKV,promptcache:initPC,context:initCx,
   trening:initTr,format:[initCD,initGramPath],jev:initRace,openweight:initOW,kwantyzacja:initQ,compute:initCp,rag:initRag,injection:initInj,tozsamosc:initIdentity,evals:initEv,
   roofline:initRoof,batching:initBatch,spec:initSpec,moe:initMoe,design:initDesign,fiszki:initFC,
   czat:initChat,reasoning:initReason,agent:initAgent,narzedzia:initTools,halucynacje:initHalu,
-  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl,media:[initMedia,initZoom],obrazy:initZoom};
+  embeddingi:initEmbSearch,kontekst:initCtxEng,kompakcja:initCompact,mcp:initMcp,multiagent:initMulti,finetuning:initFt,produkcja:initProd,harness:initHarness,wybor:initChoose,destylacja:initDistill,stos:initStack,abliteracja:initAbl,media:[initMedia,initZoom,initOrder],obrazy:initZoom,wideo:initOrder,audio:[initOrder,initCodec]};
 const run=f=>{try{f();}catch(e){console.error(f.name,e);}};
 [initSearch].forEach(run);
 $$('.lab').forEach(typoLive);
