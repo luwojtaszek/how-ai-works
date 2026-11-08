@@ -8,32 +8,32 @@
       <p class="cmp-q">Czym jest token</p>
       <p data-k="LLM">Numer kawałka tekstu ze słownika.</p>
       <p data-k="Obraz i wideo">Wektor liczb dla kawałka obrazu, np. kwadratu 16×16 pikseli, a w wideo dla kostki kilku klatek. Nie ma słownika: model nie wybiera tokena z listy, tylko liczy jego wartości.</p>
-      <p data-k="Dźwięk">Zwykle kilka numerów na każdą krótką ramkę nagrania, ze słowników kodeka neuronowego, wyuczonego odpowiednika MP3.</p>
+      <p data-k="Dźwięk">Zwykle numer ze słownika kodeka neuronowego, wyuczonego odpowiednika MP3. Jedną krótką ramkę nagrania opisuje kilka takich numerów.</p>
       <p class="cmp-q">Jak powstaje wynik</p>
       <p data-k="LLM">Token po tokenie; każdy jest od razu gotowy.</p>
       <p data-k="Obraz i wideo">Cały naraz, od szumu, w kilkudziesięciu krokach, a w szybkich wersjach w kilku; gotowy dopiero po ostatnim.</p>
       <p data-k="Dźwięk">Często po kolei jak w LLM, czasem cały naraz jak obraz.</p>
       <p class="cmp-q">Co ogranicza jedno wywołanie</p>
       <p data-k="LLM">Okno kontekstu: limit tokenów na prompt i odpowiedź.</p>
-      <p data-k="Obraz i wideo">Rozmiar wyniku: rozdzielczość i długość klipu, ustalone przed startem.</p>
-      <p data-k="Dźwięk">Zależnie od modelu okno tokenów jak w LLM albo długość ustalona przed startem; dłuższe nagrania powstają kolejnymi oknami.</p>
+      <p data-k="Obraz i wideo">Rozmiar wyniku: rozdzielczość i długość klipu, ustalone przed startem. Koder tekstu ma też własny limit promptu.</p>
+      <p data-k="Dźwięk">Zależnie od modelu okno tokenów jak w LLM albo długość ustalona przed startem. Dłuższe nagrania dzieli się na kawałki.</p>
       <p class="cmp-q">Jak działa prompt</p>
       <p data-k="LLM">To początek tekstu, który model ciągnie dalej.</p>
       <p data-k="Obraz i wideo">Osobny koder tekstu czyta go raz, a jego wektory kierują każdym krokiem. Siłę promptu ustawia osobne pokrętło, skala guidance.</p>
       <p data-k="Dźwięk">W mowie tekst do przeczytania, często z próbką głosu jako początkiem, który model ciągnie dalej jak LLM. W muzyce opis, jak w obrazie.</p>
       <p class="cmp-q">Gdzie jest losowość</p>
       <p data-k="LLM">Losowanie przy każdym tokenie, temperatura.</p>
-      <p data-k="Obraz i wideo">Szum na starcie, wyznaczony przez seed; niektóre samplery dolosowują szum też w każdym kroku.</p>
+      <p data-k="Obraz i wideo">Szum na starcie, wyznaczony przez liczbę zwaną seed; niektóre samplery dolosowują szum też w każdym kroku.</p>
       <p data-k="Dźwięk">Jak w LLM albo jak w obrazie, zależnie od modelu.</p>
     </div>
     <p class="hint">Kolumna obrazu i wideo opisuje typowe modele dyfuzyjne. We wszystkich trzech kolumnach wspólne zostają zwykle: transformer z attention, trening na ogromnych danych, a potem dostrajanie na wybranych przykładach i preferencjach ludzi (zobacz „Trening”).</p>
   </div>
   <h3 class="sub">Krótszy zapis zamiast pikseli</h3>
   <ul class="notes">
-    <li>Generator nie pracuje na pikselach, tylko na ich krótszym zapisie, siatce liczb. Robi ją i odczytuje osobna sieć, autoenkoder (w publikacjach VAE, a sam zapis to latent). Działa jak stratny kodek, np. JPEG: we FLUX.1 siatka ma 12 razy mniej liczb niż obraz. Różnica: za mocno ściśnięty JPEG pokazuje rozmyte bloki, a dekoder autoenkodera dorysowuje wiarygodne szczegóły, których w zapisie nie było. Najłatwiej giną drobny tekst, małe twarze i szybki ruch. W dźwięku tę rolę pełni zwykle kodek audio.</li>
+    <li>Generator nie pracuje na pikselach, tylko na ich krótszym zapisie, siatce liczb. Robi ją i odczytuje osobna sieć, autoenkoder (w publikacjach VAE, a sam zapis to latent). Działa jak stratny kodek, np. JPEG: we FLUX.1 siatka ma 12 razy mniej liczb niż obraz zapisany jako piksele RGB. Różnica: za mocno ściśnięty JPEG pokazuje rozmyte bloki, a dekoder autoenkodera dorysowuje wiarygodne szczegóły, których w zapisie nie było. Najłatwiej giną drobny tekst, małe twarze i szybki ruch. W dźwięku tę rolę pełni zwykle kodek neuronowy.</li>
   </ul>
   <div class="lab">
-    <p class="lab-title">Generowanie obrazu 1024×1024 we FLUX.1</p>
+    <p class="lab-title">Generowanie obrazu 1024×1024 we FLUX.1 dev</p>
     <div class="md-in">
       <ol class="md-flow">
         <li class="md-box">losowy szum w kształcie siatki<small>128×128 pól po 16 liczb, 12 razy mniej liczb niż obraz</small></li>
@@ -57,12 +57,12 @@
   <div class="lab" data-ord="media">
     <p class="lab-title">LLM dopisuje token po tokenie, dyfuzja w każdym kroku liczy całą siatkę od nowa</p>
     <div class="ord"></div><div class="ord-pl"></div>
-    <p class="hint">Schemat: 8 pól zamiast tysięcy. Procent szumu to wartości z harmonogramu 20 kroków Stable Diffusion 1.5, policzone ze wzoru, a miniatury pochodzą z prawdziwego przebiegu z tematu „Generowanie obrazów”.</p>
+    <p class="hint">Schemat: 8 pól zamiast tysięcy. Procent to udział szumu w siatce (w jej wariancji) według harmonogramu 20 kroków Stable Diffusion 1.5, a nie odsetek zaszumionych pól; miniatury pochodzą z prawdziwego przebiegu z tematu „Generowanie obrazów”.</p>
   </div>
   <ul class="notes">
-    <li>Dyfuzja: sieć dostaje zaszumioną siatkę i przewiduje, który jej składnik to szum. Uczy się tego podobnie jak LLM następnego tokena: na prawdziwych obrazach z dodanym szumem zgaduje, jaki szum dodano, a błąd poprawia wagi (zobacz „Trening”). Algorytm zwany samplerem zdejmuje część przewidzianego szumu i oddaje siatkę sieci na kolejny krok. W pierwszych krokach powstaje układ obrazu, w ostatnich szczegóły, trochę jak przy progresywnym ładowaniu JPEG, tylko że tu szczegóły nie czekają w pliku: model je dopiero wymyśla. Jak to wygląda na prawdziwym obrazie, pokazuje temat „Generowanie obrazów”.</li>
+    <li>Dyfuzja: sieć dostaje zaszumioną siatkę i przewiduje, który jej składnik to szum (nowsze modele, jak FLUX.1, od razu kierunek zmiany siatki). Potem algorytm zwany, jak w LLM, samplerem, choć tam wybiera token, zdejmuje część przewidzianego szumu i oddaje siatkę sieci na kolejny krok. W pierwszych krokach powstaje układ obrazu, w ostatnich szczegóły, trochę jak przy progresywnym ładowaniu JPEG, tylko że tu szczegóły nie czekają w pliku: model je dopiero wymyśla. Przewidywać szum sieć uczy się podobnie jak LLM następnego tokena: na prawdziwych obrazach z dodanym szumem zgaduje, jaki szum dodano, a błąd poprawia wagi (zobacz „Trening”). Jak to wygląda na prawdziwym obrazie, pokazuje temat „Generowanie obrazów”.</li>
     <li>Sieć widzi cały wynik naraz, więc pierwsza klatka klipu może dopasować się do ostatniej; LLM, piszący tylko do przodu, tego nie potrafi. Za to nie ma odpowiednika czasu do pierwszego tokena (zobacz „Pętla generowania i KV cache”): pierwszy gotowy piksel pojawia się razem z ostatnim.</li>
-    <li>Autoregresja, czyli dopisywanie po kolei jak w LLM, przyjęła się w dźwięku: model przewiduje kolejne numery ze słownika kodeka, z KV cache i temperaturą (zobacz „Następny token”). Pierwsze fragmenty mogą zagrać, zanim powstanie reszta, jeśli generator i dekoder działają krótkimi kawałkami. Obraz to tysiące numerów, a każdy wymaga osobnego przebiegu sieci, więc w większości modeli obrazu dopisywanie po kolei ustąpiło dyfuzji; OpenAI pisze jednak, że GPT-4o generuje obrazy autoregresyjnie. Szczegóły dźwięku są w temacie „Głos, mowa i muzyka”.</li>
+    <li>Autoregresja, czyli dopisywanie po kolei jak w LLM, przyjęła się w dźwięku: model przewiduje kolejne numery ze słownika kodeka, z KV cache i temperaturą (zobacz „Następny token”). Pierwsze fragmenty mogą zagrać, zanim powstanie reszta, jeśli generator i dekoder działają krótkimi kawałkami. Obraz to tysiące tokenów, a dopisywanie po kolei wymaga osobnego przebiegu sieci na każdy z nich, więc w większości modeli obrazu ustąpiło dyfuzji; OpenAI pisze jednak, że GPT-4o generuje obrazy autoregresyjnie. Szczegóły dźwięku są w temacie „Głos, mowa i muzyka”.</li>
     <li>Czy to ta sama klasa co LLM? Blok bywa ten sam: Movie Gen (Meta, 2024) oparto na bloku Llamy 3. Model dyfuzyjny różni się tym, że widzi cały wynik naraz, przewiduje liczby zamiast wybierać token i powtarza pętlę po poziomach szumu, a nie po pozycjach. Coraz częściej jeden model łączy obie drogi, np. tekst pisze token po tokenie, a obraz tworzy dyfuzją. Hasło „natywnie multimodalny” w opisie usługi nie mówi, którą z tych dróg idzie model.</li>
   </ul>
   <h3 class="sub">Ile to tokenów i co kosztuje</h3>
