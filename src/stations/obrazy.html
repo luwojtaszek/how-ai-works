@@ -40,20 +40,17 @@
   </ul>
   <div class="lab">
     <p class="lab-title">Trening generatora: prawdziwy obraz i jego opis</p>
-    <div class="md-in">
-      <ol class="md-flow">
-        <li class="md-box">obraz<small>512×512×3 liczby</small></li>
-        <li class="md-box md-k">koder autoenkodera<small>robi z obrazu siatkę 64×64 pól po 4 liczby</small></li>
-        <li class="md-box">do siatki dodaje się szum o losowej sile</li>
-      </ol>
-      <ol class="md-flow">
-        <li class="md-box">opis obrazu</li>
-        <li class="md-box md-k">koder tekstu<small>zamienia opis w wektory</small></li>
-      </ol>
+    <div class="dl-tr">
+      <figure><img src="/img/obrazy/ex-final.webp" alt="Czerwona latarnia na klifie" width="256" height="256" loading="lazy">obraz<br>512×512×3 liczby</figure>
+      <span class="dl-ar" aria-hidden="true">→</span>
+      <div class="dl-card dl-k"><span><b>koder autoenkodera</b><small>robi z obrazu siatkę 64×64 pól po 4 liczby</small></span></div>
+      <span class="dl-ar" aria-hidden="true">→</span>
+      <figure><img src="/img/obrazy/tr-noisy.webp" alt="Ten sam obraz pod gęstym szumem" width="256" height="256" loading="lazy">+ szum o losowej<br>sile</figure>
     </div>
-    <div class="md-join" aria-hidden="true">↓ oba wejścia ↓</div>
-    <div class="md-box md-g">generator dostaje siatkę z szumem, poziom szumu i wektory opisu<small>przewiduje dodany szum; błąd przewidywania poprawia jego wagi</small></div>
-    <p class="hint">Liczby jak w Stable Diffusion 1.5 z przebiegu wyżej; FLUX.1 z tematu „Jak modele generują obraz, wideo i dźwięk” ma siatkę 128×128 pól po 16 liczb. Autoenkoder trenuje się osobno, przed generatorem, i potem zamraża. Przy generowaniu od zera koder autoenkodera nie jest potrzebny, tylko dekoder; koder wraca przy edycji gotowego obrazu.</p>
+    <div class="dl-card dl-gap"><span class="dl-chip">opis obrazu</span><span class="dl-ar" aria-hidden="true">→</span><span><b>koder tekstu</b><small>zamienia opis w wektory</small></span></div>
+    <div class="dl-join one" aria-hidden="true"><span>↓ oba wejścia ↓</span></div>
+    <div class="dl-gen"><p class="dl-gh dl-solo"><b>generator dostaje siatkę z szumem, poziom szumu i wektory opisu</b><span>przewiduje dodany szum; błąd przewidywania poprawia jego wagi</span></p></div>
+    <p class="hint">Liczby i obraz jak w Stable Diffusion 1.5 z przebiegu wyżej; siatkę z szumem pokazuje dekoder. FLUX.1 z tematu „Jak modele generują obraz, wideo i dźwięk” ma siatkę 128×128 pól po 16 liczb. Autoenkoder trenuje się osobno, przed generatorem, i potem zamraża. Przy generowaniu od zera koder autoenkodera nie jest potrzebny, tylko dekoder; koder wraca przy edycji gotowego obrazu.</p>
   </div>
   <ul class="notes">
     <li>Nowsze SD3, FLUX i większość modeli wideo mają jako generator transformer i używają flow matching, odmiany tego samego pomysłu. W treningu siatka z szumem leży na prostej między czystym szumem a obrazem, a sieć uczy się przewidywać kierunek wzdłuż tej prostej, czyli dla każdej liczby siatki, o ile i w którą stronę ją zmienić. Przy generowaniu algorytm (solver) przesuwa siatkę o kawałek w tym kierunku i znowu pyta sieć, we FLUX.1 dev zwykle 20–50 razy. Pętla jest ta sama, więc przebieg Stable Diffusion 1.5 dobrze ją pokazuje.</li>

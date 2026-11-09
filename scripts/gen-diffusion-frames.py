@@ -21,7 +21,8 @@ CFGS = [1.0, 3.0, 7.5, 20.0]  # the step grid uses 7.5, the default in SD 1.5
 SEEDS = [8, 9]  # extra finals at 7.5: same prompt, different starting noise
 OUT = Path(__file__).resolve().parent.parent / 'public' / 'img' / 'obrazy'
 SIZE = 256  # the widget shows 256 px; the model runs at its native 512 px
-FRAMES = {0, 1, 4, 20}  # steps shown in the widget
+FRAMES = {0, 1, 4, 8, 12, 16, 20}  # steps shown in the widgets
+TRAIN_T = 601  # training example: the final grid with noise added at this timestep
 
 torch.set_grad_enabled(False)
 pipe = StableDiffusionPipeline.from_pretrained(MODEL, variant='fp16', torch_dtype=torch.float32, safety_checker=None)
@@ -59,6 +60,10 @@ def run(cfg, seed, frames):
 
 OUT.mkdir(parents=True, exist_ok=True)
 for cfg in CFGS:
-    save(run(cfg, SEED, frames=cfg == 7.5), f'cfg-{cfg:g}')
+    fin = run(cfg, SEED, frames=cfg == 7.5)
+    save(fin, f'cfg-{cfg:g}')
+    if cfg == 7.5:  # one training sample: clean grid plus noise of a random strength, as the generator sees it
+        noise = torch.randn(fin.shape, generator=torch.Generator().manual_seed(1))
+        save(sch.add_noise(fin, noise, torch.tensor([TRAIN_T])), 'tr-noisy')
 for seed in SEEDS:
     save(run(7.5, seed, frames=False), f'seed-{seed}')
