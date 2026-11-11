@@ -1036,3 +1036,54 @@ marker .q{fill:var(--hue)}marker .r{fill:var(--prob)}marker .s{fill:var(--muted)
 .sk-req{margin:4px 0 0;font:400 .8rem/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
 @media (min-width:860px){.sk-nav small{display:block}.sk-d svg{max-height:max(440px,calc(100vh - 150px))}}
 /* end stos */
+/* abliteracja */
+.abl-nav{margin:0 0 12px}
+#ablPlot svg{width:100%;max-width:440px;margin:0 auto}
+#ablBody .ctl,#ablBody .opts{margin-bottom:10px}
+.abl-lab{font-size:.88rem;color:var(--muted)}
+.abl-w b{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.abl-w i{width:10px;height:10px;border-radius:2px;flex:none}
+.abl-w[aria-checked="true"]{background:var(--accent-t);border-color:var(--accent)}
+.abl-w[aria-checked="false"] i{opacity:.35}
+.abl-dot{cursor:pointer}
+.abl-dot:focus-visible{outline:none}
+.abl-dot:focus-visible circle:last-child{stroke:var(--accent);stroke-width:3}
+.abl-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.84rem;color:var(--muted);margin-top:6px}
+.abl-key span{display:inline-flex;align-items:center;gap:6px}
+.abl-key i{width:10px;height:10px;border-radius:50%}
+.abl-key .bad{background:var(--cost)}
+.abl-key .ok{background:var(--prob)}
+@media (min-width:1100px){.abl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}.abl-main>:last-child .hint:first-child{margin-top:8px}}
+.abl-fig{margin:12px 0 2px}
+.abl-fig svg{display:block;width:100%;max-width:380px}
+.abl-fig figcaption{font-size:.88rem;color:var(--muted);margin-top:6px}
+.abl-fig-grid line{stroke:var(--line);stroke-width:1}
+.abl-fig-axis line{stroke:var(--line-strong);stroke-width:1.5}
+.abl-fig-tick text{font-size:11px}
+.abl-fig-comp line{stroke:var(--accent);stroke-width:6}
+.abl-fig-comp polygon{fill:var(--accent)}
+.abl-fig-perp line{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 4}
+.abl-fig-perp path{fill:none;stroke:var(--muted);stroke-width:1.2}
+.abl-fig-x line{stroke:var(--ink);stroke-width:2.5}
+.abl-fig-x polygon{fill:var(--ink)}
+.abl-fig svg text.abl-fig-lx,.abl-fig svg text.abl-fig-lr{fill:var(--ink);font-size:13px;font-weight:600}
+.abl-fig svg text.abl-fig-lc{fill:var(--accent);font-size:13px;font-weight:600}
+.abl-fig svg text.abl-fig-lp{fill:var(--ink);font-size:13px}
+.abl-fig-hl{fill:var(--accent-t)}
+.abl-fig-br{fill:none;stroke:var(--ink);stroke-width:1.2}
+.abl-fig svg text.abl-fig-n{fill:var(--ink);font:12px var(--mono)}
+.abl-fig svg text.abl-fig-op{fill:var(--ink);font-size:16px}
+.abl-fig svg text.abl-fig-nm{font-size:12px}
+.abl-fig svg text.abl-fig-st{fill:var(--ink);font-size:12.5px;font-weight:600}
+.abl-fig-band{fill:var(--sunken)}
+.abl-fig-box{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.2}
+.abl-fig-box.w{fill:var(--accent-t);stroke:var(--accent)}
+.abl-fig-box.g{fill:none;stroke-dasharray:4 3}
+.abl-fig-main{fill:none;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.abl-fig-thin{fill:none;stroke:var(--ink);stroke-width:1.3}
+.abl-fig-head,.abl-fig-dot{fill:var(--ink)}
+.abl-fig-plus circle{fill:var(--paper);stroke:var(--ink);stroke-width:1.5}
+.abl-fig-plus path{stroke:var(--ink);stroke-width:1.5}
+.abl-fig svg text.abl-fig-t{fill:var(--ink);font-size:12px}
+.abl-fig svg text.abl-fig-bl{font-size:11.5px;font-weight:600}
+/* end abliteracja */

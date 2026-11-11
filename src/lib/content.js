@@ -41,6 +41,8 @@ function md(node) {
     case 'em': case 'i': return inner.trim() ? '*' + inner.trim() + '*' : '';
     case 'a': return `[${inner}](${node.getAttribute('href')})`;
     case 'br': return '\n';
+    case 'svg': return '';
+    case 'figcaption': return inner.trim() ? ' *' + inner.trim() + '*' : '';
     default: return inner;
   }
 }

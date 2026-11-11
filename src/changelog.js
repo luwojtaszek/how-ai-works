@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-11-11',
+    added: ['abliteracja'],
+    updated: [],
+    en: 'New topic: Abliteration. How a weight edit with no training can reduce a model’s refusals: where the refusal direction comes from, how it is found, tested and removed, why editing every matrix that writes into a token’s vector does the same as removing the direction after every block, what the edited model does, what its limits are on the large models of 2026, and what it means for your own system. A widget walks through the three stages in two dimensions.',
+    pl: 'Nowy temat: Abliteracja. Jak edycja wag bez treningu może ograniczyć odmowy modelu: skąd się bierze kierunek odmowy, jak się go znajduje, sprawdza i usuwa, czemu edycja każdej macierzy zapisującej do wektora tokena daje to samo co usuwanie kierunku po każdym bloku, co robi model po edycji, jakie ma ograniczenia na dużych modelach z 2026 r. i co z tego wynika dla twojego systemu. Widżet pokazuje te trzy etapy w dwóch wymiarach.',
+  },
+  {
     date: '2026-11-07',
     added: [],
     updated: ['kontekst'],
