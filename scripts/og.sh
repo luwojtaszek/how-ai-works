@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate the social preview images public/og/<lang>/<id>.png from the /og-card/ pages.
-# Run after adding or renaming topics. Needs bun, python3 and agent-browser.
+# Run after adding or renaming topics: scripts/og.sh <id> [<id>…] renders only those topics,
+# no argument renders every topic. Needs bun, python3 and agent-browser.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 bun run build >/dev/null
@@ -12,6 +13,7 @@ ab() { agent-browser --session og ${AB_ARGS:---args --no-sandbox} "$@" >/dev/nul
 ab set viewport 1200 630
 for f in dist/og-card/*/*/index.html; do
   rel=${f#dist/og-card/}; lang=${rel%%/*}; id=$(basename "$(dirname "$rel")")
+  if [ $# -gt 0 ] && [[ " $* " != *" $id "* ]]; then continue; fi
   mkdir -p "public/og/$lang"
   ab open "http://127.0.0.1:4499/og-card/$lang/$id/"
   ab eval "document.fonts.ready.then(() => true)"
