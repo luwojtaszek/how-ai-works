@@ -70,14 +70,18 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 
 ## Review before anyone reads it
 
-Every new topic and every heavy rewrite passes this, per language, before the preview:
+Every new topic and every heavy rewrite passes this, per language, before the preview. A heavy rewrite changes what a section claims, adds or removes a section, or rewrites a widget's steps.
 
 1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
 2. Run the three reader reviews below, the learner, the explain-back and the sceptic, as read-only agents. Verify each finding, fix it, and repeat the explain-back and the sceptical read on what changed. Accuracy review doesn't replace them: a claim can be true and still leave the wrong picture.
-3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
+3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements. A score of 8 means a native engineer reads the page without stopping and every remaining remark is optional polish. A sentence a native reader stumbles on, translated rhythm, one term used for two things or jargon without a definition keeps the score below 8. If no other provider is available, don't use the author's own model in their place: say so and ask the owner how to proceed.
 4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
-5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
+5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error.
 6. Write the scores, reviewers and reviewed revision in the handover, and which sections passed the explain-back.
+
+A smaller change, including a fix after the owner's question on a preview, repeats steps 1 and 4 and the explain-back on the changed section. The language reviewers score again when the change rewrites more than one bullet or paragraph in a language. For less, one of them reads the changed sentences and reports defects without a score. The handover names the sentences that nobody but the author has read.
+
+Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length, and read the result on screen afterwards: two fixes that are each right can clash once applied. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
 
 ### Learner
 
@@ -124,5 +128,3 @@ They also ask the owner's questions, the ones that found what accuracy review mi
 - Ask whether it can be simpler. A precise label a reader can't parse is worse than a plain one with the nuance in the notes: "many times per model pass" beat "steps 12–14".
 
 Answer the question on the page or cut the number. Prefer the one fix that removes the wrong conclusion over a caveat on every sentence. Run it on new text too: the sceptic's own fixes can be wrong, as "two 84 GB conversations fill 140 GB" was.
-
-Reviewers tend to add caveats and clipped sentences. Take the correction, not the extra length, and read the result on screen afterwards: two fixes that are each right can clash once applied. Details belong lower on the page, and the opening stays simple if every claim in it is still true.
