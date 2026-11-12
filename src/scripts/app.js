@@ -2144,8 +2144,9 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
   const f1=v=>(Math.abs(v)<.05?0:v).toLocaleString(tr('pl-PL','en-GB'),{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−');
   // MU, NU: the averages of the harmful and harmless clouds; R: their difference; RH: the same direction at length 1; PH: perpendicular to it
   const MU=[3.33,5],NU=[1.23,2.2],R=add(MU,mul(NU,-1)),RH=mul(R,1/Math.hypot(R[0],R[1])),PH=[-RH[1],RH[0]];
-  // eight points around a centre, shifted so that their average is exactly the centre
-  const cloud=(c,seed)=>{const r=rng(seed),o=Array.from({length:8},()=>[(r()-.5)*1.3,(r()-.5)*2.8]),m=[0,1].map(k=>o.reduce((s,v)=>s+v[k],0)/8);
+  // eight points around a centre, at least 0.55 apart so that each can be tapped, shifted so that their average is exactly the centre
+  const cloud=(c,seed)=>{const r=rng(seed),o=[];for(let n=0;o.length<8&&n<4000;n++){const v=[(r()-.5)*1.5,(r()-.5)*3];if(o.every(w=>Math.hypot(w[0]-v[0],w[1]-v[1])>=.55))o.push(v);}
+    const m=[0,1].map(k=>o.reduce((s,v)=>s+v[k],0)/o.length);
     return o.map(v=>add(c,add(mul(RH,v[0]-m[0]),mul(PH,v[1]-m[1]))));};
   const PTS=[...cloud(MU,3).map(p=>[p,1]),...cloud(NU,9).map(p=>[p,0])];
   const WR=[[tr('Embedding','Embedding'),'--tok',[1.6,1.2]],[tr('Attention','Attention'),'--att',[2.2,.8]],[tr('MLP','MLP'),'--cache',[1.4,.9]]]; // one write each: [name, colour, [along r, across r]]
@@ -2179,10 +2180,11 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
     if(s===2){const p=PTS[sel][0],a=dot(p,RH),foot=mul(RH,a);
       svg.append(line([0,0],foot,{stroke:ink,'stroke-width':3,'stroke-linecap':'round'}),line(p,foot,{stroke:ink,'stroke-width':1.5,'stroke-dasharray':'4 3'}));
       out=tr(`r·x = ${f1(a)} dla zaznaczonej prośby. Średnie r·x: nieszkodliwe ${f1(dot(NU,RH))}, szkodliwe ${f1(dot(MU,RH))}.`,`r·x = ${f1(a)} for the selected request. Average r·x: harmless ${f1(dot(NU,RH))}, harmful ${f1(dot(MU,RH))}.`);}
-    if(s<=3)PTS.forEach(([p,bad],i)=>{const on=s===2&&i===sel||s===3&&i===selOk,c=circle(p,6,{fill:hue(bad),stroke:on?ink:'none','stroke-width':2.5});
-      if(s!==2&&(s!==3||bad))return svg.append(c);
+    // a clickable dot has a thin outline, the selected one a thick outline, the others none
+    if(s<=3)PTS.forEach(([p,bad],i)=>{const on=s===2&&i===sel||s===3&&i===selOk,act=s===2||s===3&&!bad,c=circle(p,6,{fill:hue(bad),stroke:on||act?ink:'none','stroke-width':on?3:1.5});
+      if(!act)return svg.append(c);
       const pick=byKey=>{if(s===2)sel=i;else selOk=i;plot(s,byKey?i:null);};
-      const g=S('g',{tabindex:0,role:'button',class:'abl-dot','data-i':i,'aria-pressed':String(on),'aria-label':(bad?tr('Prośba szkodliwa ','Harmful request '):tr('Prośba nieszkodliwa ','Harmless request '))+(i+1)},circle(p,13,{fill:'transparent'}),c);
+      const g=S('g',{tabindex:0,role:'button',class:'abl-dot','data-i':i,'aria-pressed':String(on),'aria-label':(bad?tr('Prośba szkodliwa ','Harmful request '):tr('Prośba nieszkodliwa ','Harmless request '))+(i+1)},circle(p,10,{fill:'transparent'}),c);
       g.addEventListener('click',()=>pick(false));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(true);}});svg.append(g);});
     if(s===3){const p=PTS[selOk][0],q=add(p,R),a=dot(p,RH);svg.append(arrow(p,q,ink),circle(q,6,{fill:hue(0),stroke:ink,'stroke-width':2.5}));
       out=tr(`r·x tej prośby: ${f1(a)} przed dodaniem, ${f1(a+Math.hypot(R[0],R[1]))} po. Średnie r·x dla próśb szkodliwych: ${f1(dot(MU,RH))}.`,`r·x for this request: ${f1(a)} before the addition, ${f1(a+Math.hypot(R[0],R[1]))} after. Average r·x for harmful requests: ${f1(dot(MU,RH))}.`);}
