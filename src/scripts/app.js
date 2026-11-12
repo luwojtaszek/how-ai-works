@@ -49,7 +49,7 @@ const ICO={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l
 // Every step gets one segment (click to jump); while playing, the current segment fills over the step's time.
 // The card keeps the height of its tallest step, so nothing jumps between steps;
 // opt.grow, if given, takes that extra height instead of the gap above the bar.
-function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.group?opt.group(k):0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
+function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.group?opt.group(k):0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=k=>typeof opt.interval==='function'?opt.interval(k):opt.interval||1000; // interval: milliseconds, or a function of the step
   const lab=mount.closest('.lab'),pad=h('div',{class:'pl-pad','aria-hidden':'true'});if(lab)lab.append(pad,mount);
   const bPlay=h('button',{class:'pl-btn pl-play',type:'button'}),
     bPrev=h('button',{class:'pl-btn',type:'button','aria-label':tr('Krok wstecz','Step back'),title:tr('Krok wstecz','Step back'),html:ICO.prev}),
@@ -60,7 +60,7 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
     // snap every segment without a transition, then let only the current one fill while playing
     [...segs.children].forEach((g,k)=>{g.classList.remove('run','cur');g.querySelector('i').getAnimations().forEach(a=>a.cancel());g.style.setProperty('--f',k<i||(k===i&&!timer)?'100%':'0%');});
     const g=segs.children[i];void g.offsetWidth;g.classList.add('cur');
-    if(timer&&i<n){g.style.setProperty('--dur',dur+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
+    if(timer&&i<n){g.style.setProperty('--dur',dur(i)+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
   function ui(){const n=total();pos.textContent=(i+1)+' / '+(n+1);
     bPrev.disabled=i<=0;bNext.disabled=i>=n;bPlay.innerHTML=timer?ICO.pause:ICO.play;
     const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
@@ -68,9 +68,10 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
   const natural=()=>{pad.style.height='0px';if(opt.grow)opt.grow.style.minHeight='';return lab?lab.getBoundingClientRect().height:0;};
   function fit(){if(!lab)return;const x=Math.max(0,(opt.group?talls[grp(i)]||0:tall)-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
   function measure(){if(!lab)return;tall=0;for(const g in talls)delete talls[g];for(let k=0;k<=total();k++){opt.render(k);const n=natural();tall=Math.max(tall,n);talls[grp(k)]=Math.max(talls[grp(k)]||0,n);}opt.render(i);fit();}
-  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  function stop(){if(timer){clearTimeout(timer);timer=null;}}
   function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();const nn=natural();tall=Math.max(tall,nn);talls[grp(i)]=Math.max(talls[grp(i)]||0,nn);fit();ui();}
-  function play(){if(i>=total())set(0);stop();timer=setInterval(()=>set(i+1),dur);ui();}
+  // one timeout per step, because steps can differ in length; set() stops the player on the last step
+  function play(){if(i>=total())set(0);stop();const tick=()=>{timer=setTimeout(()=>{set(i+1);if(timer)tick();},dur(i));};tick();ui();}
   bPlay.addEventListener('click',()=>{if(timer){stop();ui();}else play();});
   bPrev.addEventListener('click',()=>{stop();set(i-1);});bNext.addEventListener('click',()=>{stop();set(i+1);});
   mount.classList.add('player');mount.replaceChildren(bPlay,bPrev,segs,bNext,pos);
@@ -2210,7 +2211,8 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
     b.append(h('div',{id:'ablPlot'}),s<5?h('div',{class:'abl-key'},h('span',{},h('i',{class:'bad'}),tr('prośby szkodliwe','harmful requests')),h('span',{},h('i',{class:'ok'}),tr('prośby nieszkodliwe','harmless requests'))):'',h('p',{class:'hint',id:'ablOut','aria-live':'polite'}));
     plot(s);
     const[what,why]=CAP[s];$('#ablCap').replaceChildren(h('p',{class:'hint'},what),h('p',{class:'callout'},h('b',{},tr('Po co? ','Why? ')),why));}
-  pl=player($('#ablPlayer'),{steps:CAP.length-1,render,interval:6000,grow:$('.abl-main')});PLAYERS.push(pl);}
+  // captions here are long (up to 160 words): give the reader about 0.28 s per word
+  pl=player($('#ablPlayer'),{steps:CAP.length-1,render,interval:k=>Math.max(6000,CAP[k].join(' ').split(/\s+/).length*280),grow:$('.abl-main')});PLAYERS.push(pl);}
 /* end abliteracja */
 
 // ponytail: one bundle for every page; split per topic if it grows heavy
