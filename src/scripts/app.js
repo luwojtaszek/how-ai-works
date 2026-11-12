@@ -61,9 +61,11 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
     [...segs.children].forEach((g,k)=>{g.classList.remove('run','cur');g.querySelector('i').getAnimations().forEach(a=>a.cancel());g.style.setProperty('--f',k<i||(k===i&&!timer)?'100%':'0%');});
     const g=segs.children[i];void g.offsetWidth;g.classList.add('cur');
     if(timer&&i<n){g.style.setProperty('--dur',dur(i)+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
-  function ui(){const n=total();pos.textContent=(i+1)+' / '+(n+1);
+  // the buttons and the counter; the progress segments are repainted separately, because repainting restarts the current segment's animation
+  function ctl(){const n=total();pos.textContent=(i+1)+' / '+(n+1);
     bPrev.disabled=i<=0;bNext.disabled=i>=n;bPlay.innerHTML=timer?ICO.pause:ICO.play;
-    const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
+    const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;}
+  function ui(){ctl();paintSegs();}
   // the card's natural height without the pad; the pad tops every step up to the tallest one
   const natural=()=>{pad.style.height='0px';if(opt.grow)opt.grow.style.minHeight='';return lab?lab.getBoundingClientRect().height:0;};
   function fit(){if(!lab)return;const x=Math.max(0,(opt.group?talls[grp(i)]||0:tall)-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
@@ -78,7 +80,7 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
   measure();set(0);
   // mobile browsers fire resize when the address bar hides on scroll: only a width change alters the layout
   let rt,rw=innerWidth;addEventListener('resize',()=>{if(innerWidth===rw)return;rw=innerWidth;clearTimeout(rt);rt=setTimeout(measure,150);});document.fonts?.ready.then(measure);
-  return{set,stop,halt(){stop();ui();},refresh(){measure();ui();},get step(){return i;}};}
+  return{set,stop,halt(){stop();ui();},refresh(){measure();if(segs.children.length!==total()+1)ui();else ctl();},get step(){return i;}};}
 
 /* ---------- station data ---------- */
 
