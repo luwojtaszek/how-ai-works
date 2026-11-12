@@ -16,6 +16,7 @@ How text for "How AI works" / "Jak działa AI" is written, in every language. `A
 - A pronoun or "this X" points at a noun in the same sentence or the one before. After a sentence about something else, repeat the noun. "A layer has two blocks, attention and an MLP. This vector is called the residual stream" left the reader asking which vector.
 - A name taken from the literature says what it names: the whole object, or its state at one point. The residual stream is a token's vector across all layers, and "the residual stream after layer 12" is its value at that point.
 - A result from an older paper carries the year of the measurement and the models it covered. Look for a newer measurement on current models, and say so when there is none.
+- When a note describes a structure, a flow or a calculation that the reader has to hold in their head, put a small figure right under it. A vector split into two parts and a matrix formula both needed one. Split the bullet if the figure would land far from its sentence. Don't draw what the widget already shows, and don't chart numbers that read fine in a sentence.
 - Name the action, not a metaphor. A metaphor belongs in the "In plain words" box, not mixed with technical terms.
 - Use one word for one thing across the page, widget and self-check. When a term stands for a process, an object and an action, pick one for each. A widget's "step" is not the mechanism's step: the inference page keeps "step" for the player and says "model pass" for the computation.
 - A frequency names its unit in words the reader already has: "once per request", "many times per model pass". "At every step, many times" says nothing, and neither do player step numbers such as "steps 12–14". The unit holds in every phase: "per token" is wrong for prefill, which can take several passes before a token exists. On a group, say which parts it covers: "then for every token" left open whether a whole level repeats or one process.
@@ -69,6 +70,7 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 - Code blocks use English labels, as real code would. Comments and the explanation under the block stay in the page language.
 - Never translate field names, methods, selectors or error codes.
 - Align blocks so they fit 390 px without wrapping or scrolling where possible.
+- A figure in the notes is a static inline SVG in a `<figure>`, with a `<figcaption>` that makes sense on its own and an `aria-label` that says what the figure shows. It uses the numbers from the text and CSS variables for colour, so both themes work. A colour that means something in the page's widget keeps that meaning or stays out of the figure. No label is clipped at 390 px.
 
 ## Review before anyone reads it
 
