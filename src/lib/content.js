@@ -99,7 +99,10 @@ function build(lang, id) {
   for (const el of sec.childNodes.filter((n) => n.nodeType === 1)) {
     if (el.classList?.contains('sub')) { cur = { id, anchor: el.getAttribute('id'), title, section: clean(el.text), text: '' }; entries.push(cur); continue; }
     if (el.classList?.contains('lab') || el.rawTagName === 'h2') continue;
-    const t = clean(el.text);
+    // labels inside a figure's SVG are not prose: index the element without them
+    const bare = el.querySelector('svg') ? parse(el.toString()) : el;
+    if (bare !== el) bare.querySelectorAll('svg').forEach((s) => s.remove());
+    const t = clean(bare.text);
     if (cur) cur.text += ' ' + t; else entries[0].text += ' ' + t;
   }
   if (s) entries.push({ id, anchor: 'check', title, section: ui.interview, text: [s.q, s.a, ...(x.f || []).flat()].join(' ') });
