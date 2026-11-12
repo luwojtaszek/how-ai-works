@@ -3,7 +3,7 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
-    date: '2026-11-11',
+    date: '2026-11-12',
     added: ['abliteracja'],
     updated: [],
     en: 'New topic: Abliteration. How a weight edit with no training can reduce a model’s refusals: where the refusal direction comes from, how it is found, tested and removed, why editing every matrix that writes into a token’s vector does the same as removing the direction after every block, what the edited model does, what its limits are on the large models of 2026, and what it means for your own system. A widget walks through the three stages in two dimensions.',
