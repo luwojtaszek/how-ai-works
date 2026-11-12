@@ -2589,7 +2589,7 @@ function initCodec(){
     ['dac-2',tr('2 warstwy','2 layers'),tr('172 kody/s','172 codes/s'),tr('172 kody na sekundę · 1,72 kbit/s · ok. 410× mniej','172 codes per second · 1.72 kbit/s · about 410× less'),
       tr('Dwie warstwy: druga warstwa koduje błąd pierwszej, więc prążki harmonicznych wracają, choć wciąż są słabsze niż w oryginale.','Two layers: the second layer encodes the error of the first, so the harmonic stripes come back, though still weaker than in the original.')],
     ['dac-4',tr('4 warstwy','4 layers'),tr('345 kodów/s','345 codes/s'),tr('345 kodów na sekundę · 3,45 kbit/s · ok. 205× mniej','345 codes per second · 3.45 kbit/s · about 205× less'),
-      tr('Cztery warstwy: spektrogram jest już bardzo podobny do oryginału; różnice zostają w drobnych szczegółach wysokich pasm.','Four layers: the spectrogram is already very close to the original; the differences remain in fine detail of the high bands.')],
+      tr('Cztery warstwy: spektrogram jest już bardzo podobny do oryginału; różnice widać jeszcze w drobnych szczegółach wysokich pasm.','Four layers: the spectrogram is already very close to the original; the differences remain in fine detail of the high bands.')],
     ['dac-9',tr('9 warstw','9 layers'),tr('775 kodów/s','775 codes/s'),tr('775 kodów na sekundę · 7,75 kbit/s · ok. 91× mniej','775 codes per second · 7.75 kbit/s · about 91× less'),
       tr('Dziewięć warstw, pełny kodek DAC: na spektrogramie trudno odróżnić wynik od oryginału, przy 91 razy mniejszej ilości danych.','Nine layers, the full DAC codec: the spectrogram is hard to tell from the original, with 91 times less data.')]];
   const lab=$('#cdLab');if(lab){const au=$('#cdAudio'),sp=$('#cdSpec'),st=$('#cdStat'),msg=$('#cdMsg');
