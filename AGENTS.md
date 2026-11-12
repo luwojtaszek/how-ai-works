@@ -37,7 +37,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 - One illustrative model or example serves the whole page, and its numbers agree between widget, notes and self-check.
 - A topic readers have probably never met opens with the problem and how the approach solves it, in a short section before the first widget. A widget means nothing until the reader knows what it is about.
 - Every sentence teaches something concrete: a mechanism, number, trade-off, failure mode or decision rule. No filler, no marketing tone, no emoji.
-- Correct as of the date you write it. Numbers with units and context; dates for anything time-sensitive; primary sources you actually opened (2–4 per topic). Illustrative numbers in widgets are labelled as illustrative.
+- Correct as of the date you write it. Numbers with units and context; dates for anything time-sensitive; primary sources you actually opened (3–6 per topic). Illustrative numbers in widgets are labelled as illustrative.
 - Cross-reference other topics by their exact title in quotes.
 - "Check yourself" is a self-check, not interview prep: don't frame the guide around job interviews. Short answers and follow-ups are written in the second person or impersonally, never "I…".
 - Vendor-specific content (for example Jev / System One) separates the vendor's claims from general facts.

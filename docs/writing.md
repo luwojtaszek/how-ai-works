@@ -49,9 +49,11 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | natywna tożsamość obciążenia | name the mechanism, e.g. role IAM |
 | zdezorientowany zastępca | confused deputy |
 | skuteczne uprawnienia | uprawnienia, które faktycznie obowiązują |
-| SVID-y, bundle’em, cache’u | SVID, zestaw kluczy (bundle), cache, without declension |
+| SVID-y, bundle’em | SVID, zestaw kluczy (bundle), without declension |
 | zdjąć odmowy, model traci odmowy | usunąć odmowy, model odmawia rzadziej |
 | kosztuje jakość | obniża jakość, pogarsza wyniki |
+
+English terms that Polish engineers use every day decline as Polish nouns: tokena, promptu, embeddingu, fine-tuningu, and with an apostrophe after a silent final e, cache’u and trace’y. Acronyms and rarer terms stay undeclined, with a Polish noun in front when the case matters, as in the table.
 
 Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X" as a calque of "you want X", "do X" rather than "pod X" for targets, and nouns joined to a clause in headings ("Ograniczenia i kiedy to się opłaca"). "Czego nie chroni" asks about the protected thing; write "przed czym nie chroni".
 
