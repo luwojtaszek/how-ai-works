@@ -1210,6 +1210,22 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .rvq-t{fill:none;stroke:var(--cost);stroke-width:2}.rvq-p{fill:var(--ink)}.rvq-o{fill:var(--muted)}
 .legend i.rvq-lt{border-radius:50%;box-shadow:inset 0 0 0 2px var(--cost)}.legend i.rvq-lp{border-radius:50%;background:var(--ink)}.legend i.rvq-lc{border-radius:50%;background:var(--tok);opacity:.6}
 /* end audio */
+/* note figures of the media chapter */
+.nfig{margin:12px 0 2px}
+.nfig svg{display:block;width:100%;max-width:400px}
+.nfig figcaption{font-size:.88rem;color:var(--muted);margin-top:6px}
+.nfig svg text{fill:var(--ink);font-size:11.5px}
+.nfig svg text.b{font-size:12px;font-weight:600}
+.nfig svg text.a{fill:var(--accent);font-weight:600}
+.nfig .bx{fill:var(--surface);stroke:var(--line-strong);stroke-width:1}
+.nfig .hl{fill:var(--accent-t);stroke:var(--accent);stroke-width:1.2}
+.nfig .gl{stroke:var(--line);stroke-width:.6}
+.nfig .ln{fill:none;stroke:var(--ink);stroke-width:1.5}
+.nfig .ln.thin{stroke:var(--muted);stroke-width:.8}
+.nfig .ac{fill:none;stroke:var(--accent);stroke-width:2}
+.nfig .hd{fill:var(--ink)}
+.nfig .hda{fill:var(--accent)}
+/* end note figures */
 /* kolejnosc */
 /* grid tiles: wide cells in full rows, side items (mask) in a row below; media tiles show real words and real frames */
 .ord-main{margin-top:14px}
