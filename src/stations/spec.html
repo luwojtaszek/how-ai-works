@@ -19,7 +19,7 @@
   </ul>
   <h3 class="sub">Od czego zależy zysk</h3>
   <ul class="notes">
-    <li>Przy współczynniku akceptacji α i γ propozycjach runda daje średnio (1 − α^(γ+1)) / (1 − α) tokenów. Dla α = 0,8 i γ = 4 to ok. 3,4 tokenu na przebieg dużego modelu. Zysk czasu jest mniejszy, bo draft też kosztuje, a odrzucone propozycje to zmarnowana praca.</li>
+    <li>Przy współczynniku akceptacji α i γ propozycjach runda daje średnio (1 − α^(γ+1)) / (1 − α) tokenów. Dla α = 0,8 i γ = 4 to ok. 3,4 tokena na przebieg dużego modelu. Zysk czasu jest mniejszy, bo draft też kosztuje, a odrzucone propozycje to zmarnowana praca.</li>
     <li>Akceptacja zależy od tekstu. Kod, JSON, powtórzenia i niska temperatura dają wysokie α, a twórczy tekst przy wysokiej temperaturze niskie. Leviathan i in. zmierzyli przyspieszenie 2–3× na T5-XXL. DeepSeek-V3 podaje 85–90% akceptacji drugiego tokena z modułu MTP i 1,8× więcej tokenów na sekundę.</li>
     <li>Zysk maleje wraz ze wzrostem batcha. Wagi i tak czyta się raz dla całego batcha, więc gdy krok staje się ograniczony mocą obliczeniową, dodatkowe pozycje kosztują realną moc: przy dużym batchu i krótkich kontekstach spekulacja może wyjść na minus. Z KV cache’em jest inaczej, bo każda rozmowa czyta własny. Przy długich kontekstach decode zostaje ograniczony pamięcią nawet przy dużym batchu, a draft, który czyta niewiele z cache’u, nadal podnosi przepustowość (MagicDec: do 2,5× dla Llama 3.1 8B przy batchu 32–256; EAGLE-3: 1,38× przy batchu 64 w SGLang). vLLM poleca spekulację głównie przy niskim i średnim obciążeniu, ale dla EAGLE i MTP podaje średni lub duży zysk także przy dużym.</li>
   </ul>

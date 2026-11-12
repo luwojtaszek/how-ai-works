@@ -49,7 +49,7 @@ const ICO={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l
 // Every step gets one segment (click to jump); while playing, the current segment fills over the step's time.
 // The card keeps the height of its tallest step, so nothing jumps between steps;
 // opt.grow, if given, takes that extra height instead of the gap above the bar.
-function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.group?opt.group(k):0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=opt.interval||1000;
+function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.group?opt.group(k):0;const total=()=>typeof opt.steps==='function'?opt.steps():opt.steps,dur=k=>typeof opt.interval==='function'?opt.interval(k):opt.interval||1000; // interval: milliseconds, or a function of the step
   const lab=mount.closest('.lab'),pad=h('div',{class:'pl-pad','aria-hidden':'true'});if(lab)lab.append(pad,mount);
   const bPlay=h('button',{class:'pl-btn pl-play',type:'button'}),
     bPrev=h('button',{class:'pl-btn',type:'button','aria-label':tr('Krok wstecz','Step back'),title:tr('Krok wstecz','Step back'),html:ICO.prev}),
@@ -60,7 +60,7 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
     // snap every segment without a transition, then let only the current one fill while playing
     [...segs.children].forEach((g,k)=>{g.classList.remove('run','cur');g.querySelector('i').getAnimations().forEach(a=>a.cancel());g.style.setProperty('--f',k<i||(k===i&&!timer)?'100%':'0%');});
     const g=segs.children[i];void g.offsetWidth;g.classList.add('cur');
-    if(timer&&i<n){g.style.setProperty('--dur',dur+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
+    if(timer&&i<n){g.style.setProperty('--dur',dur(i)+'ms');g.classList.add('run');g.style.setProperty('--f','100%');}}
   function ui(){const n=total();pos.textContent=(i+1)+' / '+(n+1);
     bPrev.disabled=i<=0;bNext.disabled=i>=n;bPlay.innerHTML=timer?ICO.pause:ICO.play;
     const l=timer?tr('Pauza','Pause'):tr('Odtwórz','Play');bPlay.setAttribute('aria-label',l);bPlay.title=l;paintSegs();}
@@ -68,9 +68,10 @@ function player(mount,opt){let i=0,timer=null,tall=0;const talls={},grp=k=>opt.g
   const natural=()=>{pad.style.height='0px';if(opt.grow)opt.grow.style.minHeight='';return lab?lab.getBoundingClientRect().height:0;};
   function fit(){if(!lab)return;const x=Math.max(0,(opt.group?talls[grp(i)]||0:tall)-natural());if(opt.grow)opt.grow.style.minHeight=opt.grow.getBoundingClientRect().height+x+'px';else pad.style.height=x+'px';}
   function measure(){if(!lab)return;tall=0;for(const g in talls)delete talls[g];for(let k=0;k<=total();k++){opt.render(k);const n=natural();tall=Math.max(tall,n);talls[grp(k)]=Math.max(talls[grp(k)]||0,n);}opt.render(i);fit();}
-  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  function stop(){if(timer){clearTimeout(timer);timer=null;}}
   function set(n){i=Math.max(0,Math.min(total(),n));opt.render(i);if(i>=total())stop();const nn=natural();tall=Math.max(tall,nn);talls[grp(i)]=Math.max(talls[grp(i)]||0,nn);fit();ui();}
-  function play(){if(i>=total())set(0);stop();timer=setInterval(()=>set(i+1),dur);ui();}
+  // one timeout per step, because steps can differ in length; set() stops the player on the last step
+  function play(){if(i>=total())set(0);stop();const tick=()=>{timer=setTimeout(()=>{set(i+1);if(timer)tick();},dur(i));};tick();ui();}
   bPlay.addEventListener('click',()=>{if(timer){stop();ui();}else play();});
   bPrev.addEventListener('click',()=>{stop();set(i-1);});bNext.addEventListener('click',()=>{stop();set(i+1);});
   mount.classList.add('player');mount.replaceChildren(bPlay,bPrev,segs,bNext,pos);
@@ -592,7 +593,7 @@ function initTokPath(){const PL=LANG==='pl',q=t=>tr('„'+t+'”','“'+t+'”')
     [tr('Na końcu wektor mnoży się przez macierz słownika: wychodzi jeden wynik, logit, na każdy ze 128 256 tokenów, a softmax zamienia logity w prawdopodobieństwa (zobacz „Następny token”). Wybrany token trafia na koniec tekstu i tę samą drogę przechodzi już tylko on (zobacz „Pętla generowania i KV cache”).','At the end the vector is multiplied by the vocabulary matrix: that yields one score, a logit, for each of the 128,256 tokens, and a softmax turns the logits into probabilities (see “The next token”). The chosen token is appended to the text, and only that new token takes the same path (see “The generation loop and KV cache”).')]];
   const toks=()=>h('div',{class:'tp-toks'},T.map(([t,id],i)=>h('span',{class:'tp-tok'+(i===T.length-1?' on':'')},q(t),h('small',{},'#'+nf(id)))));
   const bars=rows=>h('div',{class:'tp-bars'},rows.map(([t,p])=>h('div',{class:'tp-bar'},h('span',{},t?q(t):tr('pozostałe','the rest')),h('div',{class:'track'},h('b',{style:`width:${p*100}%`})),h('span',{class:'mono'},pct(p)))));
-  let pl;function render(s){$('#tpStages').replaceChildren(...STG.map((t,i)=>h('button',{type:'button',class:'stage'+(i===s?' on':i<s?' done':''),'aria-current':i===s?'step':null,onclick:()=>{pl.halt();pl.set(i);}},t)));const b=$('#tpBody');b.replaceChildren();
+  let pl;function render(s){$('#tpStages').replaceChildren(...STG.map((t,i)=>h('button',{type:'button',class:'stage'+(i===s?' on':i<s?' done':''),'aria-current':i===s?'step':null,onclick:()=>{pl.halt();pl.set(i);$('#tpStages').children[i]?.focus();}},t)));const b=$('#tpBody');b.replaceChildren();
     if(s===0){b.append(toks(),arrow(''));const r=rng(5),rv=()=>Array.from({length:8},()=>+(r()*2-1).toFixed(1)),row=(id,t,v,on)=>h('div',{class:'tp-trow'+(on?' on':'')},h('span',{class:'mono'},'#'+nf(id)+' '+q(t)),vec(v,null,null,true));
       b.append(h('div',{class:'tp-table'},h('div',{class:'tp-trow dim'},'…'),row(last[1]-1,NB[0],rv()),row(last[1],last[0],x0,true),row(last[1]+1,NB[1],rv()),
         h('div',{class:'tp-trow dim'},tr('… 128 256 wierszy po 8192 liczby','… 128,256 rows of 8192 numbers'))),arrow(''),vec(x0,tr('wektor ','vector for ')+L));}
@@ -614,10 +615,10 @@ function initTokPath(){const PL=LANG==='pl',q=t=>tr('„'+t+'”','“'+t+'”')
 /* ---------- embedding map ---------- */
 function initEmb(){const P=LANG==='pl'?[['król',20,40],['królowa',80,24],['mężczyzna',20,116],['kobieta',80,100],['Warszawa',205,55],['Kraków',232,90],['Berlin',282,30],['Java',228,205],['Kotlin',262,180],['TypeScript',252,245],['pies',40,200],['kot',82,222],['chomik',30,255]]
     :[['king',20,40],['queen',80,24],['man',20,116],['woman',80,100],['Warsaw',205,55],['Prague',232,90],['Berlin',282,30],['Java',228,205],['Kotlin',262,180],['TypeScript',252,245],['dog',40,200],['cat',82,222],['hamster',30,255]];
-  const W=360,H=275;const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':tr('Mapa pojęć w przestrzeni wektorowej','Map of concepts in vector space'),style:'max-width:440px;margin:0 auto'});const lines=S('g');svg.append(lines);
-  P.forEach(([n,x,y],i)=>{const g=S('g',{tabindex:0,role:'button',style:'cursor:pointer'});g.append(S('circle',{cx:x,cy:y,r:7,fill:'var(--tok)'}),S('text',{x:x+11,y:y+5,style:'fill:var(--ink);font-size:14px;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round'},n));
+  const W=360,H=275;const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,role:'group','aria-label':tr('Mapa pojęć w przestrzeni wektorowej','Map of concepts in vector space'),style:'max-width:440px;margin:0 auto'});const lines=S('g');svg.append(lines);
+  const dots=[];P.forEach(([n,x,y],i)=>{const g=S('g',{tabindex:0,role:'button',class:'emb-dot','aria-pressed':'false'});dots.push(g);g.append(S('circle',{cx:x,cy:y,r:7,fill:'var(--tok)'}),S('text',{x:x+11,y:y+5,style:'fill:var(--ink);font-size:14px;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round'},n));
     const pick=()=>{const near=P.map((p,j)=>[j,Math.hypot(p[1]-x,p[2]-y)]).filter(a=>a[0]!==i).sort((a,b)=>a[1]-b[1]).slice(0,2);
-      lines.replaceChildren(...near.map(([j])=>S('line',{x1:x,y1:y,x2:P[j][1],y2:P[j][2],stroke:'var(--att)','stroke-width':2.5})));
+      lines.replaceChildren(...near.map(([j])=>S('line',{x1:x,y1:y,x2:P[j][1],y2:P[j][2],stroke:'var(--att)','stroke-width':2.5})));dots.forEach(d=>d.setAttribute('aria-pressed',String(d===g)));
       out.textContent=tr('Najbliżsi sąsiedzi pojęcia „'+n+'”: ','Nearest neighbours of “'+n+'”: ')+near.map(([j])=>P[j][0]).join(', ')+tr('. Bliskie wektory to podobne znaczenia.','. Close vectors mean similar meanings.');};
     g.addEventListener('click',pick);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});svg.append(g);});
   const out=h('p',{class:'hint','aria-live':'polite'});$('#emb').append(svg);$('#emb').after(out);}
@@ -832,7 +833,7 @@ function initGramPath(){
     [tr('W stanie 7 automat dopuszcza tylko token końca, a we wcześniejszych stanach go blokuje, więc model nie skończy przed domknięciem JSON-a. Wyjątki opisuje sekcja „Czego gwarancja nie obejmuje”, a samą pętlę token po tokenie pokazuje widżet wyżej.','In state 7 the automaton allows only the end token, and in earlier states it blocks it, so the model can’t stop before the JSON is closed. The exceptions are covered in “What the guarantee doesn’t cover”, and the token-by-token loop itself is shown in the widget above.'),
       tr('Dzięki temu równoległe odpowiedzi z tym samym schematem korzystają z jednej skompilowanej gramatyki i tabeli masek, a każda trzyma tylko własny stan automatu.','So concurrent responses with the same schema share one compiled grammar and mask table, and each keeps only its own automaton state.')]];
   const STG=tr(['Request','Automat','Maski','Prefill','Myślenie','Koniec'],['Request','Automaton','Masks','Prefill','Thinking','End']);
-  let pl;function render(s){$('#gpStages').replaceChildren(...STG.map((t,i)=>h('button',{type:'button',class:'stage'+(i===s?' on':i<s?' done':''),'aria-current':i===s?'step':null,onclick:()=>{pl.halt();pl.set(i);}},t)));
+  let pl;function render(s){$('#gpStages').replaceChildren(...STG.map((t,i)=>h('button',{type:'button',class:'stage'+(i===s?' on':i<s?' done':''),'aria-current':i===s?'step':null,onclick:()=>{pl.halt();pl.set(i);$('#gpStages').children[i]?.focus();}},t)));
     const b=$('#gpBody');b.replaceChildren();BODY[s](b);const[what,why]=CAP[s];
     $('#gpCap').replaceChildren(h('p',{class:'hint',html:what}),h('p',{class:'callout'},h('b',{},tr('Po co? ','Why? ')),h('span',{html:why})));}
   pl=player($('#gpPlayer'),{steps:STG.length-1,render,interval:6000,grow:$('#gpBody').parentElement});PLAYERS.push(pl);}
@@ -2144,8 +2145,9 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
   const f1=v=>(Math.abs(v)<.05?0:v).toLocaleString(tr('pl-PL','en-GB'),{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−');
   // MU, NU: the averages of the harmful and harmless clouds; R: their difference; RH: the same direction at length 1; PH: perpendicular to it
   const MU=[3.33,5],NU=[1.23,2.2],R=add(MU,mul(NU,-1)),RH=mul(R,1/Math.hypot(R[0],R[1])),PH=[-RH[1],RH[0]];
-  // eight points around a centre, shifted so that their average is exactly the centre
-  const cloud=(c,seed)=>{const r=rng(seed),o=Array.from({length:8},()=>[(r()-.5)*1.3,(r()-.5)*2.8]),m=[0,1].map(k=>o.reduce((s,v)=>s+v[k],0)/8);
+  // eight points around a centre, at least 0.55 apart so that each can be tapped, shifted so that their average is exactly the centre
+  const cloud=(c,seed)=>{const r=rng(seed),o=[];for(let n=0;o.length<8&&n<4000;n++){const v=[(r()-.5)*1.5,(r()-.5)*3];if(o.every(w=>Math.hypot(w[0]-v[0],w[1]-v[1])>=.55))o.push(v);}
+    const m=[0,1].map(k=>o.reduce((s,v)=>s+v[k],0)/o.length);
     return o.map(v=>add(c,add(mul(RH,v[0]-m[0]),mul(PH,v[1]-m[1]))));};
   const PTS=[...cloud(MU,3).map(p=>[p,1]),...cloud(NU,9).map(p=>[p,0])];
   const WR=[[tr('Embedding','Embedding'),'--tok',[1.6,1.2]],[tr('Attention','Attention'),'--att',[2.2,.8]],[tr('MLP','MLP'),'--cache',[1.4,.9]]]; // one write each: [name, colour, [along r, across r]]
@@ -2179,10 +2181,11 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
     if(s===2){const p=PTS[sel][0],a=dot(p,RH),foot=mul(RH,a);
       svg.append(line([0,0],foot,{stroke:ink,'stroke-width':3,'stroke-linecap':'round'}),line(p,foot,{stroke:ink,'stroke-width':1.5,'stroke-dasharray':'4 3'}));
       out=tr(`r·x = ${f1(a)} dla zaznaczonej prośby. Średnie r·x: nieszkodliwe ${f1(dot(NU,RH))}, szkodliwe ${f1(dot(MU,RH))}.`,`r·x = ${f1(a)} for the selected request. Average r·x: harmless ${f1(dot(NU,RH))}, harmful ${f1(dot(MU,RH))}.`);}
-    if(s<=3)PTS.forEach(([p,bad],i)=>{const on=s===2&&i===sel||s===3&&i===selOk,c=circle(p,6,{fill:hue(bad),stroke:on?ink:'none','stroke-width':2.5});
-      if(s!==2&&(s!==3||bad))return svg.append(c);
+    // a clickable dot has a thin outline, the selected one a thick outline, the others none
+    if(s<=3)PTS.forEach(([p,bad],i)=>{const on=s===2&&i===sel||s===3&&i===selOk,act=s===2||s===3&&!bad,c=circle(p,6,{fill:hue(bad),stroke:on||act?ink:'none','stroke-width':on?3:1.5});
+      if(!act)return svg.append(c);
       const pick=byKey=>{if(s===2)sel=i;else selOk=i;plot(s,byKey?i:null);};
-      const g=S('g',{tabindex:0,role:'button',class:'abl-dot','data-i':i,'aria-pressed':String(on),'aria-label':(bad?tr('Prośba szkodliwa ','Harmful request '):tr('Prośba nieszkodliwa ','Harmless request '))+(i+1)},circle(p,13,{fill:'transparent'}),c);
+      const g=S('g',{tabindex:0,role:'button',class:'abl-dot','data-i':i,'aria-pressed':String(on),'aria-label':(bad?tr('Prośba szkodliwa ','Harmful request '):tr('Prośba nieszkodliwa ','Harmless request '))+(i+1)},circle(p,10,{fill:'transparent'}),c);
       g.addEventListener('click',()=>pick(false));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(true);}});svg.append(g);});
     if(s===3){const p=PTS[selOk][0],q=add(p,R),a=dot(p,RH);svg.append(arrow(p,q,ink),circle(q,6,{fill:hue(0),stroke:ink,'stroke-width':2.5}));
       out=tr(`r·x tej prośby: ${f1(a)} przed dodaniem, ${f1(a+Math.hypot(R[0],R[1]))} po. Średnie r·x dla próśb szkodliwych: ${f1(dot(MU,RH))}.`,`r·x for this request: ${f1(a)} before the addition, ${f1(a+Math.hypot(R[0],R[1]))} after. Average r·x for harmful requests: ${f1(dot(MU,RH))}.`);}
@@ -2208,7 +2211,8 @@ function initAbl(){const W=360,H=284,U=34,OX=100,OY=240,px=p=>[OX+p[0]*U,OY-p[1]
     b.append(h('div',{id:'ablPlot'}),s<5?h('div',{class:'abl-key'},h('span',{},h('i',{class:'bad'}),tr('prośby szkodliwe','harmful requests')),h('span',{},h('i',{class:'ok'}),tr('prośby nieszkodliwe','harmless requests'))):'',h('p',{class:'hint',id:'ablOut','aria-live':'polite'}));
     plot(s);
     const[what,why]=CAP[s];$('#ablCap').replaceChildren(h('p',{class:'hint'},what),h('p',{class:'callout'},h('b',{},tr('Po co? ','Why? ')),why));}
-  pl=player($('#ablPlayer'),{steps:CAP.length-1,render,interval:6000,grow:$('.abl-main')});PLAYERS.push(pl);}
+  // captions here are long (up to 160 words): give the reader about 0.28 s per word
+  pl=player($('#ablPlayer'),{steps:CAP.length-1,render,interval:k=>Math.max(6000,CAP[k].join(' ').split(/\s+/).length*280),grow:$('.abl-main')});PLAYERS.push(pl);}
 /* end abliteracja */
 
 // ponytail: one bundle for every page; split per topic if it grows heavy
