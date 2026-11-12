@@ -9,6 +9,7 @@ BANNED = [(re.compile(p, re.I), why) for p, why in [
     (r'kto dzwoni|woła system', 'kto wysłał żądanie, wywołuje usługę'),
     (r'na okaziciela', 'token bearer, or say who can use it'),
     (r'SVID-(y|a|em|ów)\b|bundle’|odcięci\w* agenta', 'see the Polish table'),
+    (r'(zdj|zdejm|trac)\w+ odm[oó]w\w*|kosztuj\w* jakoś|kosztowa\w* jakoś', 'see the Polish table'),
     (r'in order to|delve|seamless|leverag|worth noting', 'plain English'),
     (r'where the model ends|gets out of the container', 'name what happens'),
     (r'—', 'no dashes in place of punctuation'),
@@ -41,6 +42,8 @@ def main():
 if __name__ == '__main__':
     assert [h[0] for h in findings('ok\nkrótko ważny token\nfine')] == [2]
     assert findings('krótkotrwałe poświadczenie') == []
+    assert findings('model traci odmowy')[0][1] == 'traci odmowy'
+    assert findings('kosztem jakości') == []
     assert findings('A — B')[0][1] == '—'
     assert findings('<code>seamless</code>') == []
     assert findings("// A — B, tr('ok','fine')", 'app.js') == []

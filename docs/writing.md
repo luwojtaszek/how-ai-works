@@ -46,6 +46,8 @@ Write the Polish on its own, as a Polish engineer would say it. Don't translate 
 | zdezorientowany zastępca | confused deputy |
 | skuteczne uprawnienia | uprawnienia, które faktycznie obowiązują |
 | SVID-y, bundle’em, cache’u | SVID, zestaw kluczy (bundle), cache, without declension |
+| zdjąć odmowy, model traci odmowy | usunąć odmowy, model odmawia rzadziej |
+| kosztuje jakość | obniża jakość, pogarsza wyniki |
 
 Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X" as a calque of "you want X", "do X" rather than "pod X" for targets, and nouns joined to a clause in headings ("Ograniczenia i kiedy to się opłaca"). "Czego nie chroni" asks about the protected thing; write "przed czym nie chroni".
 
@@ -67,15 +69,29 @@ Other things to watch: "ty" in advice and impersonal in mechanisms, no "chcesz X
 Every new topic and every heavy rewrite passes this, per language, before the preview:
 
 1. Run `python3 scripts/qa/copy.py`. It rejects known mistakes in visible text; add each new unconditional one to its list. Wording that depends on context stays in review.
-2. Run the two reader reviews below, the learner and the sceptic, as read-only agents. Verify each finding, fix it, and repeat the sceptical read on what changed. Accuracy review doesn't replace them: a claim can be true and still leave the wrong picture.
+2. Run the three reader reviews below, the learner, the explain-back and the sceptic, as read-only agents. Verify each finding, fix it, and repeat the explain-back and the sceptical read on what changed. Accuracy review doesn't replace them: a claim can be true and still leave the wrong picture.
 3. Two independent reviewers from another provider score the language out of 10, as readers, without being told what the author intended. They judge natural language, terminology, clarity and repetition, and give exact replacements.
 4. Language edits can distort facts. Compare the result with the previous version, line by line, and check every changed claim.
 5. Both reviewers must score the final wording at least 8/10, with no open factual or terminology error. A later wording change repeats the word check and the review of what changed.
-6. Write the scores, reviewers and reviewed revision in the handover.
+6. Write the scores, reviewers and reviewed revision in the handover, and which sections passed the explain-back.
 
 ### Learner
 
 An engineer new to the topic reads the page and widget and reports where they got lost, terms used before they are defined, jumps that don't connect, what they still can't explain afterwards, and what needs a picture. They also use the widget: press next to the end, click out of order, and report what next skips, clicks that don't move the widget, and steps that make no sense without the one before.
+
+### Explain-back
+
+The learner reports where they got lost. A model knows the jargon and fills gaps from memory, so it calls a sentence clear where a newcomer stops. The explain-back checks the reader's answers against a key.
+
+Before the read, the author writes control questions with the expected answers for every new term and mechanism in the section. Each question targets a wrong reading a newcomer could reach: "one vector per token, or one per layer?", "is the direction a field inside the vector?".
+
+A read-only agent, as an engineer new to the topic and told to use only the text, then:
+
+- explains each term in its own words, in two or three sentences,
+- answers every control question and quotes the sentence that gave the answer, or says that none did,
+- lists where it hesitated or saw two readings.
+
+A wrong answer, an answer without a quoted sentence, or two readings fails the section. Fix it and rerun with a fresh agent, because one that saw the old text remembers it. Run it on the section before the first widget and on every section that defines a term the rest of the page builds on. Every question the owner asks on a preview becomes a control question for that section.
 
 ### Sceptic
 
@@ -85,6 +101,7 @@ They look for:
 
 - Numbers without their conditions: a worst case read as typical, an example read as a limit. "A replica fits 13 conversations" was true and read as "a replica serves 13 users".
 - Claims that don't square with the real world the reader knows, such as how large services actually run.
+- Numbers stronger than the source. Compare each number, its unit and its scope with the source's own table or sentence, not with a summary of it. "Removed 78% of refusals" came from a refusal rate that fell from 95% to 17%, which is 78 percentage points.
 - Arithmetic a reader will redo. "140 GB over 80 GB per GPU, so four GPUs" invites "why not two?".
 - Mechanisms a reader expects and can't find, such as swapping out memory.
 - Contradictions between levels, or between the widget and the notes.
