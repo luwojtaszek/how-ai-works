@@ -6,7 +6,7 @@ export const GROUPS_EN = {
   'Jak model pisze i ile to kosztuje': ['How a model writes and what it costs', 'Writing one piece at a time, caching, and why long conversations are expensive.'],
   'Kontekst i wiedza': ['Context and knowledge', 'What to put into the context window and how to find it in your data.'],
   'Agenci': ['Agents', 'A model in a loop: tools, the standard for connecting them, enforced formats, the coding-agent harness and splitting the work.'],
-  'Jakość i bezpieczeństwo': ['Quality and security', 'Hallucinations, measuring quality instead of guessing, attacks through untrusted content, and removing refusals from the weights.'],
+  'Jakość i bezpieczeństwo': ['Quality and security', 'Hallucinations, measuring quality instead of guessing, attacks through untrusted content, removing refusals from the weights, and agent identity.'],
   'Model na produkcji': ['Production and serving', 'A reliable system around the model, and what happens in the data centre.'],
   'Wybór modelu': ['Choosing a model', 'Matching a model to the task, open weights, alternatives to an LLM, and why a model sometimes seems “dumber”.'],
   'Ćwiczenia i powtórka': ['Practice and review', 'Design scenarios and flashcards for review.'],
