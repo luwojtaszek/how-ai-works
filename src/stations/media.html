@@ -57,10 +57,9 @@
       <p class="dl-back">siatka z mniejszym szumem wraca na wejście, aż do kroku 20</p>
     </div>
     <div class="dl-join" aria-hidden="true"><span>↓</span><span></span></div>
-    <div class="dl-end">
-      <div class="dl-card"><span><b>dekoder autoenkodera</b><small>dopiero po ostatnim kroku robi z siatki piksele</small></span></div>
-      <span class="dl-ar" aria-hidden="true">→</span>
-      <figure><img src="/img/obrazy/ex-final.webp" alt="Czerwona latarnia na klifie nad wzburzonym morzem" width="256" height="256" loading="lazy"><figcaption>gotowy<br>obraz</figcaption></figure>
+    <div class="dl-in dl-out">
+      <div class="dl-card dl-k"><span><b>dekoder autoenkodera</b><small>dopiero po ostatnim kroku robi z siatki piksele</small></span></div>
+      <div class="dl-card"><span class="dl-ar" aria-hidden="true">→</span><img src="/img/obrazy/ex-final.webp" alt="Czerwona latarnia na klifie nad wzburzonym morzem" width="256" height="256" loading="lazy"><span><b>gotowy obraz</b><small>512×512 pikseli</small></span></div>
     </div>
     <p class="hint">Prawdziwy przebieg Stable Diffusion 1.5 (2022) z tematu „Generowanie obrazów”, 20 kroków. Siatka to same liczby, więc w trakcie pokazuje ją dekoder. Nowsze modele mają większą siatkę i transformer zamiast starszej sieci, ale pętlę tę samą; wideo dodaje do siatki czas jako trzeci wymiar. Jak sieć uczy się przewidywać szum, opisuje temat „Generowanie obrazów”.</p>
   </div>
