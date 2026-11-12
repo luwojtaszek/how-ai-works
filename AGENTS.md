@@ -21,7 +21,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 
 ## Adding or updating a topic
 
-1. Polish station `src/stations/<id>.html`: `<h2>` title, `<p class="lede">`, widget(s) in `<div class="lab">`, then 2–4 sections as `<h3 class="sub">` + `<ul class="notes">`.
+1. Polish station `src/stations/<id>.html`: `<h2>` title, `<p class="lede">`, a short problem section when the topic needs one (see "Content standard"), widget(s) in `<div class="lab">`, then 2–4 sections. Every section is `<h3 class="sub">` + `<ul class="notes">`.
 2. English station `src/stations/en/<id>.html` with identical markup (same ids and classes); translate, don't transliterate.
 3. Data: `ST.<id>` and `X.<id>` in `src/data.js`, `ST_EN.<id>` and `X_EN.<id>` in `src/data.en.js`; `ht` in `X`/`X_EN` is the search title (what people type into Google, ≤ ~60 chars). For a new topic add the id to a chapter in `GROUPS` and an English slug to `SLUG_EN`. Never change a published slug.
 4. Widget: an `init…` function in `src/scripts/app.js` added to `inits`; every visible string through `tr()`; colours only via CSS variables so light and dark both work. Choices are equal tiles (`.opts` and `.opt`) with labels of one or two short lines, not wrapping pill buttons; an on/off option is a `role="switch"`. Options compared across situations are a matrix first, with steps that explain each column after it. A flow between parties is one SVG with the talking nodes and paths highlighted and the protocol text below it, never text art. Draw it by hand when a generated layout hides the structure: visible boundaries, and separate arrow styles for what goes down and what comes back. Anything with steps uses the shared `player()`, never custom next/back buttons in the content. On a stepped diagram every clickable element has a step, a click jumps to it, and there is one text per step, not a second description per element. A diagram with levels keeps all the steps of a level together, so a click never leaves the level, and where the real flow crosses levels a step says which levels come next.
@@ -32,7 +32,7 @@ The layout adds breadcrumbs, the "In plain words" box (`X[id].lay`), "Check your
 
 ## Content standard
 
-- Lede: the essence in 1–2 sentences. Then an analogy that genuinely helps, the widget, and sections from mechanism to nuances to what it means for building systems.
+- Lede: the essence in 1–2 sentences. The layout puts the "In plain words" box (`X[id].lay`) right after it: one analogy that genuinely helps, and the only place for one. Then the widget and sections from mechanism to nuances to what it means for building systems.
 - When a widget has levels or stages, the sections under it follow them, with the same names, and add what the widget can't show. This overrides the 2–4 section count.
 - One illustrative model or example serves the whole page, and its numbers agree between widget, notes and self-check.
 - A topic readers have probably never met opens with the problem and how the approach solves it, in a short section before the first widget. A widget means nothing until the reader knows what it is about.

@@ -1,12 +1,12 @@
 # Writing guide
 
-How text for "How AI works" / "Jak działa AI" is written, in every language. `AGENTS.md` sets the structure of a topic; this file sets how the text reads. When the owner corrects a text, add the rule here.
+How text for "How AI works" / "Jak działa AI" is written, in every language. `AGENTS.md` sets the structure of a topic, including the problem section before the first widget and sections that follow the widget's stages; this file sets how the text reads. When the owner corrects a text, add the rule here.
 
 ## Every language
 
-- Assume an engineer who is new to the topic. If they probably have not met the idea, start with the problem and how the approach solves it, before any widget.
+- Assume an engineer who is new to the topic.
 - Show the whole mechanism in the order it really runs: what is set up first, what goes in, the loop, what stops it, and the real scale next to the toy example. A diagram walked level by level is the one exception: its title says so, and the first step of a level that really runs inside another says where it fits.
-- Keep one order. Notes under a widget follow the widget's stages, and what is decided first is explained first.
+- Keep one order: what is decided first is explained first.
 - One fact, one place. Notes carry what the widget doesn't show.
 - Define a term at first use, with a concrete value. Keep confusable terms apart. A term that collides with a word the reader already knows gets a plain name throughout and the jargon once, as a definition: "GPU program", and once "called a compute kernel, nothing to do with the operating system kernel".
 - A multiplier or number in a diagram says what it counts and why it is that value, in the diagram or right next to it. "× 4" alone leaves the reader guessing.
