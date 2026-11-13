@@ -2591,7 +2591,7 @@ function initCodec(){
     ['dac-4',tr('4 warstwy','4 layers'),tr('345 kodów/s','345 codes/s'),tr('345 kodów na sekundę · 3,45 kbit/s · ok. 205× mniej','345 codes per second · 3.45 kbit/s · about 205× less'),
       tr('Cztery warstwy: spektrogram jest już bardzo podobny do oryginału; różnice widać jeszcze w drobnych szczegółach wysokich pasm.','Four layers: the spectrogram is already very close to the original; the differences still show in fine detail of the high bands.')],
     ['dac-9',tr('9 warstw','9 layers'),tr('775 kodów/s','775 codes/s'),tr('775 kodów na sekundę · 7,75 kbit/s · ok. 91× mniej','775 codes per second · 7.75 kbit/s · about 91× less'),
-      tr('Dziewięć warstw, pełny kodek DAC: na spektrogramie trudno odróżnić wynik od oryginału, przy 91 razy mniejszej ilości danych.','Nine layers, the full DAC codec: the spectrogram is hard to tell from the original, with 91 times less data.')]];
+      tr('Dziewięć warstw, pełny kodek DAC: na spektrogramie trudno odróżnić wynik od oryginału, choć zapis zajmuje 91 razy mniej bitów.','Nine layers, the full DAC codec: the spectrogram is hard to tell from the original, with 91 times less data.')]];
   const lab=$('#cdLab');if(lab){const au=$('#cdAudio'),sp=$('#cdSpec'),st=$('#cdStat'),msg=$('#cdMsg');
     const bs=V.map(([f,l,s,line,m])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{pressed(bs,e.currentTarget);const t=au.currentTime,play=!au.paused;au.src=D+f+'.ogg';
       au.addEventListener('loadedmetadata',()=>{au.currentTime=Math.min(t,au.duration||t);if(play)au.play();},{once:true});sp.style.setProperty('--spec','url('+D+f+'.webp)');st.textContent=line;msg.textContent=m;}},h('b',{},l),h('small',{},s)));
