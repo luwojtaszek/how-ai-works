@@ -37,7 +37,7 @@
   <h3 class="sub">How the output is produced</h3>
   <ul class="notes">
     <li>Diffusion is a loop. The generator gets a noisy grid and predicts a noise value for every number stored in it. The sampler, the algorithm that performs each step, uses a predefined schedule of noise levels to decide how much predicted noise to subtract from the grid. It then passes the updated grid back to the generator for the next step. The name is the same as in LLMs but the role differs: there the sampler draws a token, here it performs a denoising step.</li>
-    <li>For an ordinary model one step is not enough: a prediction made from pure noise corresponds only to an averaged, blurry image. Each further step starts from a less noisy grid, so it can settle finer details, like successive approximations in an iterative method. The first steps produce the layout of the image and the last ones the details, a bit like a progressive JPEG loading, except that here the details are not waiting in a file: the model makes them up as it goes.</li>
+    <li>For an ordinary model one step is not enough: a prediction made from pure noise corresponds only to an averaged, blurry image. Each further step starts from a less noisy grid, so it can resolve finer details, like successive approximations in an iterative method. The first steps produce the layout of the image and the last ones the details, a bit like a progressive JPEG loading, except that here the details are not waiting in a file: the model makes them up as it goes.</li>
   </ul>
   <div class="lab">
     <p class="lab-title">From noise to image: the generator and sampler loop</p>
