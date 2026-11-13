@@ -73,8 +73,8 @@
   </div>
   <ul class="notes">
     <li>Stable Audio generuje dyfuzją ciągłe wektory zamiast kodów ze słownika, z czasem trwania podanym jako warunek. Model badawczy z 2024 roku tworzył do 4 min 45 s naraz, bo mocno kompresuje dźwięk i trenowano go na całych utworach, a Stable Audio 3 (maj 2026) w większych wersjach do 6 min 20 s. Długi utwór da się więc wygenerować bez sklejania, ale długi kontekst nie gwarantuje dobrej struktury utworu.</li>
-    <li>Strukturę utworu podaj wprost, zamiast liczyć, że model ją zapamięta: użyj tagów w tekście, takich jak <code>[Verse]</code> i <code>[Chorus]</code> (Suno, Lyria), albo planu sekcji w ElevenLabs Music, gdzie można wygenerować od nowa pojedynczą sekcję.</li>
-    <li>Limity produktów (stan na listopad 2026): ElevenLabs Music od 3 s do 5 min, efekty dźwiękowe ElevenLabs do 30 s z opcją zapętlenia, które powtarza ten sam dźwięk, Suno v6 do 8 min w jednej generacji.</li>
+    <li>Strukturę utworu podaj wprost, zamiast liczyć, że model ją zapamięta: użyj tagów w tekście, takich jak <code>[Verse]</code> i <code>[Chorus]</code> (tak opisuje je dokumentacja Lyrii), albo planu sekcji w ElevenLabs Music, gdzie można wygenerować od nowa pojedynczą sekcję.</li>
+    <li>Limity produktów (stan na listopad 2026): ElevenLabs Music od 3 s do 5 min według opisu usługi (dokumentacja API dopuszcza do 10 min), efekty dźwiękowe ElevenLabs do 30 s z opcją zapętlenia, które powtarza ten sam dźwięk, Suno v6 do 8 min w jednej generacji.</li>
     <li>Zamknięte produkty, jak ElevenLabs, Suno i Udio, nie publikują architektury, a otwarty Bark (2023) od Suno nie mówi nic o tym, jak działa Suno v6. Wyniki są niedeterministyczne, więc udany wynik zapisuj jako plik, a przed użyciem muzyki w produkcie przeczytaj aktualną licencję i warunki pobierania.</li>
   </ul>
 </section>
