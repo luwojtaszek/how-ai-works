@@ -2594,9 +2594,9 @@ function initCodec(){
       tr('Cztery warstwy: spektrogram jest już bardzo podobny do oryginału; różnice widać jeszcze w drobnych szczegółach wysokich pasm.','Four layers: the spectrogram is already very close to the original; differences remain in the fine detail of the high-frequency bands.')],
     ['dac-9',tr('9 warstw','9 layers'),tr('775 kodów/s','775 codes/s'),tr('775 kodów na sekundę · 7,75 kbit/s · ok. 91× mniej','775 codes per second · 7.75 kbit/s · about 1/91 of the original bitrate'),
       tr('Dziewięć warstw, pełny kodek DAC: na spektrogramie trudno odróżnić wynik od oryginału, choć zapis zajmuje 91 razy mniej bitów.','Nine layers, the full DAC codec: the spectrogram is hard to tell from the original, at about 1/91 of the original bitrate.')]];
-  const lab=$('#cdLab');if(lab){const au=$('#cdAudio'),sp=$('#cdSpec'),st=$('#cdStat'),msg=$('#cdMsg');
-    const bs=V.map(([f,l,s,line,m])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{pressed(bs,e.currentTarget);const t=au.currentTime,play=!au.paused;au.src=D+f+'.ogg';
-      au.addEventListener('loadedmetadata',()=>{au.currentTime=Math.min(t,au.duration||t);if(play)au.play();},{once:true});sp.style.setProperty('--spec','url('+D+f+'.webp)');st.textContent=line;msg.textContent=m;}},h('b',{},l),h('small',{},s)));
+  const lab=$('#cdLab');if(lab){const au=$('#cdAudio'),sp=$('#cdSpec'),st=$('#cdStat'),msg=$('#cdMsg');let pend=null;// position and play state kept while a sample is still loading
+    const bs=V.map(([f,l,s,line,m])=>h('button',{class:'opt',type:'button','aria-pressed':'false',onclick:e=>{pressed(bs,e.currentTarget);pend=pend||{t:au.currentTime,play:!au.paused};au.src=D+f+'.ogg';
+      au.onloadedmetadata=()=>{if(!pend)return;const{t,play}=pend;pend=null;au.currentTime=Math.min(t,au.duration||t);if(play)au.play();};sp.style.setProperty('--spec','url('+D+f+'.webp)');st.textContent=line;msg.textContent=m;}},h('b',{},l),h('small',{},s)));
     $('#cdTiles').replaceChildren(...bs);bs[1].click();}
   // toy RVQ: one frame vector, three codebooks of 8 entries, each smaller than the last
   const box=$('#rvqLab');if(!box)return;

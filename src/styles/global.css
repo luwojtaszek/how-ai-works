@@ -1264,7 +1264,7 @@ dialog.zoom::backdrop{background:rgb(0 0 0/.6)}
 .ord-bar b{display:block;height:100%;border-radius:4px;background:var(--cost)}
 .ord-img{position:relative;border-radius:8px;overflow:hidden}
 .ord-img img,.ord-pic>figure>img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:8px}
-.ord-img::after{content:"";position:absolute;inset:0;border-radius:8px;--gl:color-mix(in srgb,var(--line-strong) 80%,transparent);box-shadow:inset 0 0 0 1px var(--gl);background:repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),var(--gl) 0 12.5%),repeating-linear-gradient(transparent 0 calc(12.5% - 1px),var(--gl) 0 12.5%)}
+.ord-img::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:8px;--gl:color-mix(in srgb,var(--line-strong) 80%,transparent);box-shadow:inset 0 0 0 1px var(--gl);background:repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),var(--gl) 0 12.5%),repeating-linear-gradient(transparent 0 calc(12.5% - 1px),var(--gl) 0 12.5%)}
 .ord-img.on::after{--gl:color-mix(in srgb,var(--cost) 75%,transparent);box-shadow:inset 0 0 0 2px var(--cost)}
 .ord-none{aspect-ratio:1;border-radius:8px;border:1px dashed var(--line-strong);display:grid;place-items:center;padding:10px;text-align:center;font-size:.8rem;color:var(--muted)}
 @media (max-width:600px){.ord-t{font-size:.88rem;padding:6px 8px}.ord-pic{grid-template-columns:1fr 1fr}.ord-pic>figure:last-child{grid-column:1/-1;flex-direction:row;align-items:center}}
