@@ -1,0 +1,95 @@
+<section class="station" id="media" data-hue="att">
+  <h2>How models generate images, video and audio</h2>
+  <p class="lede">Many image, video and audio models are built on a transformer, as LLMs are, but they often produce their output differently. An LLM appends token after token, while a typical image or video model starts from random noise and improves the whole output at once over many steps, which is called diffusion; audio models work one way or the other.</p>
+  <div class="lab">
+    <p class="lab-title">What these models share with LLMs and where they differ</p>
+    <div class="cmp">
+      <span class="cmp-h" aria-hidden="true"></span><span class="cmp-h">LLM</span><span class="cmp-h">Images and video</span><span class="cmp-h">Audio</span>
+      <p class="cmp-q">What a token is</p>
+      <p data-k="LLM">The number of a piece of text in a vocabulary.</p>
+      <p data-k="Images and video">A vector of numbers describing a patch of the image, e.g. a 16×16 pixel square, and in video a patch of the picture across several consecutive frames. There is no vocabulary: the model does not pick a token from a list, it computes the token’s values.</p>
+      <p data-k="Audio">Usually a number from the codebook of a neural codec, called a code; a codec is a learned counterpart of MP3. One frame, a short stretch of the recording, is described by several codes.</p>
+      <p class="cmp-q">How the output is produced</p>
+      <p data-k="LLM">Token by token; each one is final as soon as it is produced.</p>
+      <p data-k="Images and video">All at once, from noise, in a few dozen steps, or in a few in fast variants; final only after the last one.</p>
+      <p data-k="Audio">Often in order as in an LLM, sometimes all at once like an image.</p>
+      <p class="cmp-q">How the prompt works</p>
+      <p data-k="LLM">It is the start of the text, and the model appends the continuation.</p>
+      <p data-k="Images and video">A separate model, the text encoder, reads the prompt once, and the vectors it computes steer every step. How strongly the prompt acts is set by a separate parameter, the guidance scale (see “Image generation”).</p>
+      <p data-k="Audio">For speech generation the prompt holds the text to be read and often a voice sample as well, which the model continues as an LLM would. For music generation the prompt is a description, as with images.</p>
+      <p class="cmp-q">What limits one call</p>
+      <p data-k="LLM">The context window: a token limit for the prompt and the answer.</p>
+      <p data-k="Images and video">The size of the output: resolution and clip length, fixed before the start. The text encoder also has its own prompt limit.</p>
+      <p data-k="Audio">It depends on the model: a context window as in an LLM, or a length fixed before the start. Longer recordings are split into segments.</p>
+      <p class="cmp-q">Where the randomness is</p>
+      <p data-k="LLM">Sampling at every token, temperature.</p>
+      <p data-k="Images and video">The starting noise, determined by a number called the seed; some samplers (the algorithms that perform a step) also add fresh random noise at every step.</p>
+      <p data-k="Audio">As in an LLM or as in an image model, depending on the model.</p>
+    </div>
+    <p class="hint">The images and video column describes typical diffusion models. Models in all three columns usually use a transformer with attention. They are trained on huge datasets, then tuned on selected examples and on human preferences (see “Training”).</p>
+  </div>
+  <h3 class="sub">A shorter representation instead of pixels</h3>
+  <ul class="notes">
+    <li>The generator, the network that produces the output in a loop, usually works not on pixels but on a shorter representation of them: an array of numbers (a tensor), called the grid below. Fewer numbers mean a lower cost for every generator step. A separate network, the autoencoder, converts between the image and the grid (publications call it a VAE and the grid a latent): its encoder turns an image into a grid, and its decoder turns a grid into an image. The autoencoder works like a lossy codec such as JPEG. In audio this role is usually played by a neural codec.</li>
+    <li>The difference from JPEG: an overcompressed JPEG shows blurry blocks, while the autoencoder’s decoder draws in plausible details that were not in the representation. Small text, small faces and fast motion are lost most easily.</li>
+    <li>The representation has three levels, shown here for FLUX.1 (2024). The image is 1024×1024 pixels of 3 numbers each (RGB), about 3.1 million numbers in total. The grid is 128×128 cells of 16 numbers each, about 262,000 numbers, 12 times fewer; one cell corresponds to an 8×8 pixel square. The FLUX.1 generator, a transformer, joins cells into 2×2 squares, so it gets 64×64 = 4,096 tokens, each for a 16×16 pixel square. This resembles a tokenizer merging characters into a token (see “Tokens”), except that here the merging is fixed and yields a vector, not a number.<figure class="nfig"><svg viewBox="0 0 340 240" role="img" aria-label="Three levels in FLUX.1: a 1024×1024 pixel image, a grid of 128×128 cells and 4,096 tokens. The highlighted square is the same part of the image at every level."><rect class="bx" x="8" y="8" width="64" height="64"/><line class="gl" x1="12.0" y1="8" x2="12.0" y2="72"/><line class="gl" x1="8" y1="12.0" x2="72" y2="12.0"/><line class="gl" x1="16.0" y1="8" x2="16.0" y2="72"/><line class="gl" x1="8" y1="16.0" x2="72" y2="16.0"/><line class="gl" x1="20.0" y1="8" x2="20.0" y2="72"/><line class="gl" x1="8" y1="20.0" x2="72" y2="20.0"/><line class="gl" x1="24.0" y1="8" x2="24.0" y2="72"/><line class="gl" x1="8" y1="24.0" x2="72" y2="24.0"/><line class="gl" x1="28.0" y1="8" x2="28.0" y2="72"/><line class="gl" x1="8" y1="28.0" x2="72" y2="28.0"/><line class="gl" x1="32.0" y1="8" x2="32.0" y2="72"/><line class="gl" x1="8" y1="32.0" x2="72" y2="32.0"/><line class="gl" x1="36.0" y1="8" x2="36.0" y2="72"/><line class="gl" x1="8" y1="36.0" x2="72" y2="36.0"/><line class="gl" x1="40.0" y1="8" x2="40.0" y2="72"/><line class="gl" x1="8" y1="40.0" x2="72" y2="40.0"/><line class="gl" x1="44.0" y1="8" x2="44.0" y2="72"/><line class="gl" x1="8" y1="44.0" x2="72" y2="44.0"/><line class="gl" x1="48.0" y1="8" x2="48.0" y2="72"/><line class="gl" x1="8" y1="48.0" x2="72" y2="48.0"/><line class="gl" x1="52.0" y1="8" x2="52.0" y2="72"/><line class="gl" x1="8" y1="52.0" x2="72" y2="52.0"/><line class="gl" x1="56.0" y1="8" x2="56.0" y2="72"/><line class="gl" x1="8" y1="56.0" x2="72" y2="56.0"/><line class="gl" x1="60.0" y1="8" x2="60.0" y2="72"/><line class="gl" x1="8" y1="60.0" x2="72" y2="60.0"/><line class="gl" x1="64.0" y1="8" x2="64.0" y2="72"/><line class="gl" x1="8" y1="64.0" x2="72" y2="64.0"/><line class="gl" x1="68.0" y1="8" x2="68.0" y2="72"/><line class="gl" x1="8" y1="68.0" x2="72" y2="68.0"/><rect class="hl" x="24" y="24" width="16" height="16"/><text x="84" y="26" class="b">Image</text><text x="84" y="44">1024×1024 pixels of 3 numbers (RGB),</text><text x="84" y="59">about 3.1 million numbers in total</text><rect class="bx" x="8" y="88" width="64" height="64"/><line class="gl" x1="16.0" y1="88" x2="16.0" y2="152"/><line class="gl" x1="8" y1="96.0" x2="72" y2="96.0"/><line class="gl" x1="24.0" y1="88" x2="24.0" y2="152"/><line class="gl" x1="8" y1="104.0" x2="72" y2="104.0"/><line class="gl" x1="32.0" y1="88" x2="32.0" y2="152"/><line class="gl" x1="8" y1="112.0" x2="72" y2="112.0"/><line class="gl" x1="40.0" y1="88" x2="40.0" y2="152"/><line class="gl" x1="8" y1="120.0" x2="72" y2="120.0"/><line class="gl" x1="48.0" y1="88" x2="48.0" y2="152"/><line class="gl" x1="8" y1="128.0" x2="72" y2="128.0"/><line class="gl" x1="56.0" y1="88" x2="56.0" y2="152"/><line class="gl" x1="8" y1="136.0" x2="72" y2="136.0"/><line class="gl" x1="64.0" y1="88" x2="64.0" y2="152"/><line class="gl" x1="8" y1="144.0" x2="72" y2="144.0"/><rect class="hl" x="24" y="104" width="16" height="16"/><text x="84" y="106" class="b">Grid</text><text x="84" y="124">128×128 cells of 16 numbers, about 262,000</text><text x="84" y="139">cell = 8×8 pixels</text><rect class="bx" x="8" y="168" width="64" height="64"/><line class="gl" x1="24.0" y1="168" x2="24.0" y2="232"/><line class="gl" x1="8" y1="184.0" x2="72" y2="184.0"/><line class="gl" x1="40.0" y1="168" x2="40.0" y2="232"/><line class="gl" x1="8" y1="200.0" x2="72" y2="200.0"/><line class="gl" x1="56.0" y1="168" x2="56.0" y2="232"/><line class="gl" x1="8" y1="216.0" x2="72" y2="216.0"/><rect class="hl" x="24" y="184" width="16" height="16"/><text x="84" y="186" class="b">Tokens</text><text x="84" y="204">64×64 = 4,096 tokens</text><text x="84" y="219">token = 2×2 cells = 16×16 pixels</text></svg><figcaption>Three levels of representing an image in FLUX.1. The highlighted square is the same part of the image: 16×16 pixels, 2×2 grid cells, one token. The drawn lattices are schematic; real grids have more cells.</figcaption></figure></li>
+  </ul>
+  <h3 class="sub">How the output is produced</h3>
+  <ul class="notes">
+    <li>Diffusion is a loop. The generator gets a noisy grid and predicts a noise value for every number stored in it. The sampler, the algorithm that performs a step, subtracts part of the predicted noise from the grid, as much as the schedule (a table of noise levels fixed in advance) assigns to that step, and hands the grid back to the generator for the next step. The name is the same as in LLMs but the role differs: there the sampler draws a token, here it performs a denoising step.</li>
+    <li>For an ordinary model one step is not enough: a prediction made from pure noise corresponds only to an averaged, blurry image. Each further step starts from a less noisy grid, so it can settle finer details, like successive approximations in an iterative method. The first steps produce the layout of the image and the last ones the details, a bit like a progressive JPEG loading, except that here the details are not waiting in a file: the model makes them up as it goes.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">From noise to image: the generator and sampler loop</p>
+    <div class="dl-in">
+      <div class="dl-card"><img src="/img/obrazy/xt-00.webp" alt="Random noise" width="46" height="46"><span><b>random noise</b><small>in the shape of the grid, not the image</small></span></div>
+      <div class="dl-card"><span class="dl-chip">prompt</span><span class="dl-ar" aria-hidden="true">→</span><span><b>text encoder</b><small>turns the prompt into vectors once</small></span></div>
+    </div>
+    <div class="dl-join" aria-hidden="true"><span>↓</span><span>↓ the same vectors at every step</span></div>
+    <div class="dl-gen">
+      <p class="dl-gh"><b>generator in a loop</b><span>at every step it gets the whole grid, the noise level and the prompt vectors</span></p>
+      <ol class="dl-strip">
+        <li><img src="/img/obrazy/xt-00.webp" alt="Pure noise" width="256" height="256" loading="lazy">start</li>
+        <li><img src="/img/obrazy/xt-04.webp" alt="Noise with a barely visible outline of a lighthouse" width="256" height="256" loading="lazy">after step 4</li>
+        <li><img src="/img/obrazy/xt-08.webp" alt="A lighthouse and a cliff emerge from the noise" width="256" height="256" loading="lazy">after step 8</li>
+        <li><img src="/img/obrazy/xt-16.webp" alt="An almost final image of a lighthouse with a trace of noise" width="256" height="256" loading="lazy">after step 16</li>
+      </ol>
+      <p class="dl-back">the sampler subtracts part of the predicted noise and feeds the grid back in, up to step 20</p>
+    </div>
+    <div class="dl-join" aria-hidden="true"><span>↓</span><span></span></div>
+    <div class="dl-in dl-out">
+      <div class="dl-card dl-k"><span><b>autoencoder’s decoder</b><small>turns the grid into pixels only after the last step</small></span></div>
+      <div class="dl-card"><span class="dl-ar" aria-hidden="true">→</span><img src="/img/obrazy/ex-final.webp" alt="A red lighthouse on a cliff above a rough sea" width="256" height="256" loading="lazy"><span><b>final image</b><small>512×512 pixels</small></span></div>
+    </div>
+    <p class="hint">A real generation in Stable Diffusion 1.5 (2022) from the topic “Image generation”, 20 steps. The grid is only numbers, so for this figure the decoder shows it. Newer models have a larger grid and a transformer in place of the convolutional network (U-Net), but the same loop; video adds a time dimension to the grid. How the generator learns to predict noise is covered in “Image generation”.</p>
+  </div>
+  <div class="lab" data-ord="media">
+    <p class="lab-title">An LLM appends token after token, diffusion improves the whole grid at every step</p>
+    <div class="ord"></div><div class="ord-pl"></div>
+    <p class="hint">LLM: for readability one word is one token here; a real tokenizer splits some words into several pieces (see “Tokens”). Diffusion: the same generation in Stable Diffusion 1.5; the decoder shows the grid, and the red 8×8 lattice stands in for its 64×64 cells. The percentage is the share of noise in the variance of the grid entering the step. The schedule sets it, here with 20 noise levels, one per step. It is not the fraction of cells that are noisy: every cell is a mix of image and noise.</p>
+  </div>
+  <ul class="notes">
+    <li>The generator sees the whole output at once, so the first frame of a clip can adapt to the last; an LLM, which only writes forward, cannot do that. For a model that improves the whole output at once this has two consequences. It has no KV cache for the output: every step changes all cells, so no part of the output is a fixed prefix (only the prompt vectors, computed once, stay fixed). It also has no counterpart of time to first token (see “The generation loop and KV cache”): the preview that services show along the way is a forecast of the whole image (the decoded grid after subtracting all of the predicted noise), not a finished part.</li>
+    <li>Autoregression, appending in order as an LLM does, has caught on in audio: the model predicts one code after another, with a KV cache and temperature (see “The next token”). A recording has a natural order in time and often has to be played before the whole of it exists. Video has an order in time too, but a second of 720p video is well over ten thousand tokens and a second of speech only hundreds of codes, so appending video token by token would take too long (models that append whole groups of frames are covered in “Video generation”). The first parts of the audio can be played earlier if the generator and decoder work in short chunks. Details are in “Voice, speech and music”.</li>
+    <li>In images autoregression is less common. An image consists of thousands of tokens with no natural order. Appending them one by one takes thousands of consecutive network passes, which a GPU cannot compute in parallel, while diffusion processes all tokens at once in 20–50 steps. That is why most open image models use diffusion. Autoregression is used too: OpenAI described image generation in GPT-4o (2025), which started the GPT Image line, as autoregressive. OpenAI does not disclose the architecture of the newer GPT Image models.</li>
+    <li>Is this the same kind of model as an LLM? The block can be the same: Movie Gen (Meta, 2024) was built on the Llama 3 block. A diffusion model differs in that it sees the whole output at once, predicts numbers instead of picking a token, and repeats its loop over noise levels, not over positions. More and more often one model combines autoregression with diffusion: the open HunyuanImage 3.0 (Tencent, 2025) writes text token by token and creates the image by diffusion. The label “natively multimodal” in a service’s description does not say whether the model creates an image autoregressively or by diffusion.</li>
+    <li>The text encoder reads the prompt, so the encoder determines how much of the prompt reaches the generator. Many services rewrite your prompt with an LLM before generating, because newer generators were trained on long, precise descriptions. When the output strays from the prompt, check whether the service returns the rewritten prompt.</li>
+  </ul>
+  <h3 class="sub">Token count and the cost of generation</h3>
+  <div class="lab">
+    <p class="lab-title">How many tokens an image, a clip or a speech recording takes</p>
+    <div class="opts" id="mdKind" role="group" aria-label="Kind"></div>
+    <label class="ctl" style="margin-top:12px"><span id="mdL"></span><input type="range" id="mdS" min="0" max="10" step="1" value="4"></label>
+    <div class="stats">
+      <div class="stat"><b id="mdT"></b><span id="mdTL">tokens for the transformer</span></div>
+      <div class="stat"><b id="mdP"></b><span>pages of English text with the same number of tokens</span></div>
+      <div class="stat"><b id="mdA"></b><span id="mdAL"></span></div>
+    </div>
+    <div class="callout" id="mdM" aria-live="polite"></div>
+    <p class="hint">Numbers computed from published grid dimensions and codec parameters: the image as in FLUX.1, video as in Wan 2.1 (2025; 720p, 16 frames per second), speech as in the DAC codec (2023; about 86.1 frames per second of 9 codes each, about 775 codes per second; this codec stores audio across the full band a human can hear; speech-only codecs use fewer codes per second). How many network passes a recording takes depends on the generator. Other models compress differently, so this is an order of magnitude, not a constant, and the slider goes beyond the sizes these models were trained on. A page of English text is about 500 words, about 650 tokens.</p>
+  </div>
+  <ul class="notes">
+    <li>At a fixed size and duration the token count does not depend on the content: a blank wall and a crowd in a square at the same resolution take the same number of tokens. In text the token count depends on the content. “Image tokens” in price lists are a separate billing unit that need not match the generator’s token count.</li>
+    <li>The compute cost of a diffusion model is the number of steps times the cost of a step (classic guidance computes two predictions at every step, with the prompt and without it; see “Image generation”), and the cost of a step grows with the token count. The cost of attention alone, where every token looks at every other token, grows with the square of the token count. Many tokens computed at once make good use of the GPU, much as prefill does (see “Why the GPU is idle”). Time depends mainly on resolution, length and the number of steps. Fast variants such as FLUX.1 schnell are separate versions of the model, trained (distilled) down to 1–4 steps (see “Distillation”).</li>
+  </ul>
+</section>
