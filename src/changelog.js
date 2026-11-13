@@ -3,6 +3,13 @@
 // `updated` ones are linked from the entry. Dates are YYYY-MM-DD.
 export const CHANGELOG = [
   {
+    date: '2026-11-13',
+    added: ['media', 'obrazy', 'wideo', 'audio'],
+    updated: [],
+    en: 'New chapter: Images, video and audio. “How models generate images, video and audio” compares these models with an LLM: what a token is, how the output is produced, how the prompt works and what it costs. “Image generation” follows one real Stable Diffusion run from noise to image, with guidance, seed, editing and inpainting. “Video generation” counts the tokens of a clip, explains why a clip is short and what goes wrong when it is extended. “Voice, speech and music” lets you hear a neural codec with 1 to 9 layers of codes and covers the three families of speech generators, voice cloning, live conversation and music length.',
+    pl: 'Nowy rozdział: Obraz, wideo i dźwięk. Temat „Jak modele generują obraz, wideo i dźwięk” zestawia te modele z LLM: czym jest token, jak powstaje wynik, jak działa prompt i ile to kosztuje. „Generowanie obrazów” prowadzi przez jeden prawdziwy przebieg Stable Diffusion od szumu do obrazu, z guidance, seedem, edycją i inpaintingiem. „Generowanie wideo” liczy tokeny klipu, wyjaśnia, czemu klip jest krótki i co psuje się przy przedłużaniu. „Głos, mowa i muzyka” pozwala posłuchać kodeka neuronowego z 1–9 warstwami kodów i opisuje trzy rodziny generatorów mowy, klonowanie głosu, rozmowę na żywo i długość muzyki.',
+  },
+  {
     date: '2026-11-12',
     added: ['abliteracja'],
     updated: [],

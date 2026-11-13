@@ -1,0 +1,95 @@
+<section class="station" id="media" data-hue="att">
+  <h2>Jak modele generują obraz, wideo i dźwięk</h2>
+  <p class="lede">Wiele modeli obrazu, wideo i dźwięku opiera się na transformerze, tak jak LLM, ale wynik często powstaje w nich inaczej. LLM dopisuje token po tokenie, a typowy model obrazu czy wideo zaczyna od losowego szumu i w wielu krokach poprawia cały wynik naraz, co nazywa się dyfuzją; modele dźwięku działają jednym albo drugim sposobem.</p>
+  <div class="lab">
+    <p class="lab-title">Co łączy te modele z LLM, a co je różni</p>
+    <div class="cmp">
+      <span class="cmp-h" aria-hidden="true"></span><span class="cmp-h">LLM</span><span class="cmp-h">Obraz i wideo</span><span class="cmp-h">Dźwięk</span>
+      <p class="cmp-q">Czym jest token</p>
+      <p data-k="LLM">Numer kawałka tekstu ze słownika.</p>
+      <p data-k="Obraz i wideo">Wektor liczb opisujący fragment obrazu, np. kwadrat 16×16 pikseli, a w wideo fragment kadru w kilku kolejnych klatkach. Nie ma słownika: model nie wybiera tokena z listy, tylko liczy jego wartości.</p>
+      <p data-k="Dźwięk">Zwykle numer ze słownika kodeka neuronowego, nazywany kodem; kodek to wyuczony odpowiednik MP3. Jedną ramkę, czyli krótki odcinek nagrania, opisuje kilka kodów.</p>
+      <p class="cmp-q">Jak powstaje wynik</p>
+      <p data-k="LLM">Token po tokenie; każdy jest od razu gotowy.</p>
+      <p data-k="Obraz i wideo">Cały naraz, od szumu, w kilkudziesięciu krokach, a w szybkich wariantach w kilku; gotowy dopiero po ostatnim.</p>
+      <p data-k="Dźwięk">Często po kolei jak w LLM, czasem cały naraz jak obraz.</p>
+      <p class="cmp-q">Jak działa prompt</p>
+      <p data-k="LLM">To początek tekstu, do którego model dopisuje ciąg dalszy.</p>
+      <p data-k="Obraz i wideo">Osobny model, koder tekstu (text encoder), czyta prompt raz, a obliczone przez niego wektory kierują każdym krokiem. Siłę promptu ustawia osobny parametr, skala guidance (zobacz „Generowanie obrazów”).</p>
+      <p data-k="Dźwięk">Przy generowaniu mowy prompt zawiera tekst do przeczytania, a często także próbkę głosu, którą model kontynuuje jak LLM. Przy generowaniu muzyki prompt jest opisem, jak przy obrazach.</p>
+      <p class="cmp-q">Co ogranicza jedno wywołanie</p>
+      <p data-k="LLM">Okno kontekstu: limit tokenów na prompt i odpowiedź.</p>
+      <p data-k="Obraz i wideo">Rozmiar wyniku: rozdzielczość i długość klipu, ustalone przed startem. Koder tekstu ma też własny limit promptu.</p>
+      <p data-k="Dźwięk">Zależnie od modelu: okno kontekstu jak w LLM albo długość ustalona przed startem. Dłuższe nagrania dzieli się na fragmenty.</p>
+      <p class="cmp-q">Gdzie jest losowość</p>
+      <p data-k="LLM">Losowanie przy każdym tokenie, temperatura.</p>
+      <p data-k="Obraz i wideo">Szum na starcie, wyznaczony przez liczbę zwaną seed; niektóre samplery (algorytmy wykonujące krok) dolosowują szum też w każdym kroku.</p>
+      <p data-k="Dźwięk">Jak w LLM albo jak w obrazie, zależnie od modelu.</p>
+    </div>
+    <p class="hint">Kolumna obrazu i wideo opisuje typowe modele dyfuzyjne. Modele ze wszystkich trzech kolumn zwykle wykorzystują transformer z attention. Trenuje się je na ogromnych zbiorach danych, a potem dostraja na wybranych przykładach i na podstawie preferencji ludzi (zobacz „Trening”).</p>
+  </div>
+  <h3 class="sub">Krótszy zapis zamiast pikseli</h3>
+  <ul class="notes">
+    <li>Generator, czyli sieć, która w pętli tworzy wynik, zwykle nie pracuje na pikselach, tylko na ich krótszym zapisie: tablicy liczb (tensorze), dalej nazywanej siatką. Mniej liczb oznacza mniejszy koszt każdego kroku generatora. Zamianą między obrazem a siatką zajmuje się osobna sieć, autoenkoder (w publikacjach VAE, a sama siatka to latent): jego koder zamienia obraz w siatkę, a dekoder siatkę w obraz. Autoenkoder działa jak stratny kodek, np. JPEG. W dźwięku tę rolę pełni zwykle kodek neuronowy.</li>
+    <li>Różnica względem JPEG: za mocno ściśnięty JPEG pokazuje rozmyte bloki, a dekoder autoenkodera dorysowuje wiarygodne szczegóły, których w zapisie nie było. Najłatwiej giną drobny tekst, małe twarze i szybki ruch.</li>
+    <li>Zapis ma trzy poziomy, tu na przykładzie FLUX.1 (2024). Obraz ma 1024×1024 piksele po 3 liczby (RGB), razem ok. 3,1 mln liczb. Siatka ma 128×128 pól po 16 liczb, ok. 262 tys. liczb, czyli 12 razy mniej; jedno pole odpowiada kwadratowi 8×8 pikseli. Generator FLUX.1, transformer, łączy pola w kwadraty 2×2, więc dostaje 64×64 = 4096 tokenów, każdy dla kwadratu 16×16 pikseli. Przypomina to tokenizer, który skleja znaki w token (zobacz „Tokeny”), tylko tu sklejanie jest stałe i daje wektor, a nie numer.<figure class="nfig"><svg viewBox="0 0 340 240" role="img" aria-label="Trzy poziomy we FLUX.1: obraz 1024×1024 piksele, siatka 128×128 pól i 4096 tokenów. Wyróżniony kwadrat to ten sam fragment obrazu na każdym poziomie."><rect class="bx" x="8" y="8" width="64" height="64"/><line class="gl" x1="12.0" y1="8" x2="12.0" y2="72"/><line class="gl" x1="8" y1="12.0" x2="72" y2="12.0"/><line class="gl" x1="16.0" y1="8" x2="16.0" y2="72"/><line class="gl" x1="8" y1="16.0" x2="72" y2="16.0"/><line class="gl" x1="20.0" y1="8" x2="20.0" y2="72"/><line class="gl" x1="8" y1="20.0" x2="72" y2="20.0"/><line class="gl" x1="24.0" y1="8" x2="24.0" y2="72"/><line class="gl" x1="8" y1="24.0" x2="72" y2="24.0"/><line class="gl" x1="28.0" y1="8" x2="28.0" y2="72"/><line class="gl" x1="8" y1="28.0" x2="72" y2="28.0"/><line class="gl" x1="32.0" y1="8" x2="32.0" y2="72"/><line class="gl" x1="8" y1="32.0" x2="72" y2="32.0"/><line class="gl" x1="36.0" y1="8" x2="36.0" y2="72"/><line class="gl" x1="8" y1="36.0" x2="72" y2="36.0"/><line class="gl" x1="40.0" y1="8" x2="40.0" y2="72"/><line class="gl" x1="8" y1="40.0" x2="72" y2="40.0"/><line class="gl" x1="44.0" y1="8" x2="44.0" y2="72"/><line class="gl" x1="8" y1="44.0" x2="72" y2="44.0"/><line class="gl" x1="48.0" y1="8" x2="48.0" y2="72"/><line class="gl" x1="8" y1="48.0" x2="72" y2="48.0"/><line class="gl" x1="52.0" y1="8" x2="52.0" y2="72"/><line class="gl" x1="8" y1="52.0" x2="72" y2="52.0"/><line class="gl" x1="56.0" y1="8" x2="56.0" y2="72"/><line class="gl" x1="8" y1="56.0" x2="72" y2="56.0"/><line class="gl" x1="60.0" y1="8" x2="60.0" y2="72"/><line class="gl" x1="8" y1="60.0" x2="72" y2="60.0"/><line class="gl" x1="64.0" y1="8" x2="64.0" y2="72"/><line class="gl" x1="8" y1="64.0" x2="72" y2="64.0"/><line class="gl" x1="68.0" y1="8" x2="68.0" y2="72"/><line class="gl" x1="8" y1="68.0" x2="72" y2="68.0"/><rect class="hl" x="24" y="24" width="16" height="16"/><text x="84" y="26" class="b">Obraz</text><text x="84" y="44">1024×1024 piksele po 3 liczby (RGB),</text><text x="84" y="59">razem ok. 3,1 mln liczb</text><rect class="bx" x="8" y="88" width="64" height="64"/><line class="gl" x1="16.0" y1="88" x2="16.0" y2="152"/><line class="gl" x1="8" y1="96.0" x2="72" y2="96.0"/><line class="gl" x1="24.0" y1="88" x2="24.0" y2="152"/><line class="gl" x1="8" y1="104.0" x2="72" y2="104.0"/><line class="gl" x1="32.0" y1="88" x2="32.0" y2="152"/><line class="gl" x1="8" y1="112.0" x2="72" y2="112.0"/><line class="gl" x1="40.0" y1="88" x2="40.0" y2="152"/><line class="gl" x1="8" y1="120.0" x2="72" y2="120.0"/><line class="gl" x1="48.0" y1="88" x2="48.0" y2="152"/><line class="gl" x1="8" y1="128.0" x2="72" y2="128.0"/><line class="gl" x1="56.0" y1="88" x2="56.0" y2="152"/><line class="gl" x1="8" y1="136.0" x2="72" y2="136.0"/><line class="gl" x1="64.0" y1="88" x2="64.0" y2="152"/><line class="gl" x1="8" y1="144.0" x2="72" y2="144.0"/><rect class="hl" x="24" y="104" width="16" height="16"/><text x="84" y="106" class="b">Siatka</text><text x="84" y="124">128×128 pól po 16 liczb, ok. 262 tys. liczb</text><text x="84" y="139">pole = 8×8 pikseli</text><rect class="bx" x="8" y="168" width="64" height="64"/><line class="gl" x1="24.0" y1="168" x2="24.0" y2="232"/><line class="gl" x1="8" y1="184.0" x2="72" y2="184.0"/><line class="gl" x1="40.0" y1="168" x2="40.0" y2="232"/><line class="gl" x1="8" y1="200.0" x2="72" y2="200.0"/><line class="gl" x1="56.0" y1="168" x2="56.0" y2="232"/><line class="gl" x1="8" y1="216.0" x2="72" y2="216.0"/><rect class="hl" x="24" y="184" width="16" height="16"/><text x="84" y="186" class="b">Tokeny</text><text x="84" y="204">64×64 = 4096 tokenów</text><text x="84" y="219">token = 2×2 pola = 16×16 pikseli</text></svg><figcaption>Trzy poziomy zapisu obrazu we FLUX.1. Wyróżniony kwadrat to ten sam fragment obrazu: 16×16 pikseli, 2×2 pola siatki, jeden token. Kratki są poglądowe; rzeczywiste siatki mają więcej pól.</figcaption></figure></li>
+  </ul>
+  <h3 class="sub">Jak powstaje wynik</h3>
+  <ul class="notes">
+    <li>Dyfuzja to pętla. Generator dostaje zaszumioną siatkę i dla każdej zapisanej w niej liczby przewiduje wartość szumu. Sampler, czyli algorytm wykonujący krok, odejmuje od siatki część przewidzianego szumu, tyle, ile na dany krok wyznacza harmonogram (ustalona z góry tabela poziomów szumu), i oddaje siatkę generatorowi na kolejny krok. Nazwa jest ta sama co w LLM, ale rola inna: tam sampler losuje token, tu wykonuje krok odszumiania.</li>
+    <li>Zwykłemu modelowi jeden krok nie wystarcza: przewidywanie z czystego szumu odpowiada tylko uśrednionemu, rozmytemu obrazowi. Każdy kolejny krok startuje z mniej zaszumionej siatki, więc może ustalić drobniejsze szczegóły, jak kolejne przybliżenia w metodzie iteracyjnej. W pierwszych krokach powstaje układ obrazu, w ostatnich szczegóły, trochę jak przy progresywnym ładowaniu JPEG, tylko że tu szczegóły nie czekają w pliku: model je dopiero wymyśla.</li>
+  </ul>
+  <div class="lab">
+    <p class="lab-title">Od szumu do obrazu: pętla generatora i samplera</p>
+    <div class="dl-in">
+      <div class="dl-card"><img src="/img/obrazy/xt-00.webp" alt="Losowy szum" width="46" height="46"><span><b>losowy szum</b><small>w kształcie siatki, nie obrazu</small></span></div>
+      <div class="dl-card"><span class="dl-chip">prompt</span><span class="dl-ar" aria-hidden="true">→</span><span><b>koder tekstu</b><small>raz zamienia prompt w wektory</small></span></div>
+    </div>
+    <div class="dl-join" aria-hidden="true"><span>↓</span><span>↓ te same wektory w każdym kroku</span></div>
+    <div class="dl-gen">
+      <p class="dl-gh"><b>generator w pętli</b><span>w każdym kroku dostaje całą siatkę, poziom szumu i wektory promptu</span></p>
+      <ol class="dl-strip">
+        <li><img src="/img/obrazy/xt-00.webp" alt="Sam szum" width="256" height="256" loading="lazy">start</li>
+        <li><img src="/img/obrazy/xt-04.webp" alt="Szum z ledwo widocznym zarysem latarni" width="256" height="256" loading="lazy">po kroku 4</li>
+        <li><img src="/img/obrazy/xt-08.webp" alt="Latarnia i klif wyłaniają się z szumu" width="256" height="256" loading="lazy">po kroku 8</li>
+        <li><img src="/img/obrazy/xt-16.webp" alt="Prawie gotowy obraz latarni z resztką szumu" width="256" height="256" loading="lazy">po kroku 16</li>
+      </ol>
+      <p class="dl-back">sampler odejmuje część przewidzianego szumu i oddaje siatkę na wejście, aż do kroku 20</p>
+    </div>
+    <div class="dl-join" aria-hidden="true"><span>↓</span><span></span></div>
+    <div class="dl-in dl-out">
+      <div class="dl-card dl-k"><span><b>dekoder autoenkodera</b><small>dopiero po ostatnim kroku robi z siatki piksele</small></span></div>
+      <div class="dl-card"><span class="dl-ar" aria-hidden="true">→</span><img src="/img/obrazy/ex-final.webp" alt="Czerwona latarnia na klifie nad wzburzonym morzem" width="256" height="256" loading="lazy"><span><b>gotowy obraz</b><small>512×512 pikseli</small></span></div>
+    </div>
+    <p class="hint">Prawdziwe generowanie w Stable Diffusion 1.5 (2022) z tematu „Generowanie obrazów”, 20 kroków. Siatka to same liczby, więc na potrzeby rysunku pokazuje ją dekoder. Nowsze modele mają większą siatkę i transformer zamiast sieci splotowej (U-Net), ale pętlę tę samą; wideo dodaje do siatki wymiar czasu. Jak generator uczy się przewidywać szum, opisuje temat „Generowanie obrazów”.</p>
+  </div>
+  <div class="lab" data-ord="media">
+    <p class="lab-title">LLM dopisuje token po tokenie, dyfuzja w każdym kroku poprawia całą siatkę</p>
+    <div class="ord"></div><div class="ord-pl"></div>
+    <p class="hint">LLM: dla czytelności jedno słowo to tu jeden token; prawdziwy tokenizer dzieli polskie słowa na więcej kawałków (zobacz „Tokeny”). Dyfuzja: to samo generowanie w Stable Diffusion 1.5; siatkę pokazuje dekoder, a czerwona kratka 8×8 zastępuje jej 64×64 pola. Procent to udział szumu w wariancji siatki na wejściu kroku. Wyznacza go harmonogram, tu z 20 poziomami szumu, po jednym na krok. To nie jest odsetek zaszumionych pól: każde pole jest mieszanką obrazu i szumu.</p>
+  </div>
+  <ul class="notes">
+    <li>Generator widzi cały wynik naraz, więc pierwsza klatka klipu może dopasować się do ostatniej; LLM, piszący tylko do przodu, tego nie potrafi. Dla modelu, który poprawia cały wynik naraz, ma to dwie konsekwencje. Nie ma w nim KV cache dla wyniku: każdy krok zmienia wszystkie pola, więc żadna część wyniku nie jest stałym początkiem (stałe są tylko wektory promptu, liczone raz). Nie ma też odpowiednika czasu do pierwszego tokena (zobacz „Pętla generowania i KV cache”): podgląd, który usługi pokazują w trakcie, to prognoza całego obrazu (zdekodowana siatka po odjęciu całego przewidzianego szumu), a nie gotowy fragment.</li>
+    <li>Autoregresja, czyli dopisywanie po kolei jak w LLM, przyjęła się w dźwięku: model przewiduje kolejne kody, z KV cache i temperaturą (zobacz „Następny token”). Nagranie ma naturalną kolejność w czasie i często trzeba je odtwarzać, zanim powstanie całość. Wideo też ma kolejność w czasie, ale sekunda wideo 720p to kilkanaście tysięcy tokenów, a sekunda mowy tylko setki kodów, więc dopisywanie wideo token po tokenie trwałoby za długo (modele dopisujące całe porcje klatek opisuje temat „Generowanie wideo”). Pierwsze fragmenty dźwięku można odtworzyć wcześniej, jeśli generator i dekoder działają krótkimi kawałkami. Szczegóły są w temacie „Głos, mowa i muzyka”.</li>
+    <li>W obrazie autoregresja jest rzadsza. Obraz składa się z tysięcy tokenów bez naturalnej kolejności. Dopisywanie ich po kolei wymaga tysięcy kolejnych przebiegów sieci, których GPU nie policzy równolegle, a dyfuzja przetwarza wszystkie tokeny naraz w 20–50 krokach. Dlatego większość otwartych modeli obrazu używa dyfuzji. Autoregresja też bywa używana: OpenAI opisał generowanie obrazów w GPT-4o (2025), od którego zaczęła się linia GPT Image, jako autoregresyjne. Architektury nowszych modeli GPT Image OpenAI nie podaje.</li>
+    <li>Czy to ten sam rodzaj modelu co LLM? Blok bywa ten sam: Movie Gen (Meta, 2024) oparto na bloku Llamy 3. Model dyfuzyjny różni się tym, że widzi cały wynik naraz, przewiduje liczby zamiast wybierać token i powtarza pętlę po poziomach szumu, a nie po pozycjach. Coraz częściej jeden model łączy autoregresję z dyfuzją: otwarty HunyuanImage 3.0 (Tencent, 2025) tekst pisze token po tokenie, a obraz tworzy dyfuzją. Hasło „natywnie multimodalny” w opisie usługi nie mówi, czy model tworzy obraz autoregresyjnie, czy dyfuzją.</li>
+    <li>Prompt czyta koder tekstu, więc to od kodera zależy, ile z promptu trafi do generatora. Wiele usług przed generowaniem przepisuje twój prompt za pomocą LLM, bo nowsze generatory trenowano na długich, dokładnych opisach. Gdy wynik odbiega od promptu, sprawdź, czy usługa zwraca przepisany prompt.</li>
+  </ul>
+  <h3 class="sub">Liczba tokenów i koszt generowania</h3>
+  <div class="lab">
+    <p class="lab-title">Ile tokenów to obraz, klip albo nagranie mowy</p>
+    <div class="opts" id="mdKind" role="group" aria-label="Rodzaj"></div>
+    <label class="ctl" style="margin-top:12px"><span id="mdL"></span><input type="range" id="mdS" min="0" max="10" step="1" value="4"></label>
+    <div class="stats">
+      <div class="stat"><b id="mdT"></b><span id="mdTL">tokenów dla transformera</span></div>
+      <div class="stat"><b id="mdP"></b><span>stron tekstu po angielsku o tej samej liczbie tokenów</span></div>
+      <div class="stat"><b id="mdA"></b><span id="mdAL"></span></div>
+    </div>
+    <div class="callout" id="mdM" aria-live="polite"></div>
+    <p class="hint">Liczby obliczone z opublikowanych wymiarów siatek i parametrów kodeka: obraz jak we FLUX.1, wideo jak w Wan 2.1 (2025; 720p, 16 klatek na sekundę), mowa jak w kodeku DAC (2023; ok. 86,1 ramki na sekundę po 9 kodów, czyli ok. 775 kodów na sekundę; ten kodek zapisuje dźwięk w całym paśmie słyszalnym dla człowieka; kodeki do samej mowy używają mniej kodów na sekundę). Ile przebiegów sieci wymaga nagranie, zależy od generatora. Inne modele kompresują inaczej, więc to rząd wielkości, nie stała, a suwak wychodzi poza rozmiary, na których te modele trenowano. Strona tekstu po angielsku to ok. 500 słów, czyli ok. 650 tokenów.</p>
+  </div>
+  <ul class="notes">
+    <li>Przy ustalonym rozmiarze i czasie trwania liczba tokenów nie zależy od treści: pusta ściana i tłum na placu w tej samej rozdzielczości to tyle samo tokenów. W tekście liczba tokenów zależy od treści. „Tokeny obrazu” w cennikach to osobna jednostka rozliczeniowa, która nie musi odpowiadać liczbie tokenów generatora.</li>
+    <li>Koszt obliczeń modelu dyfuzyjnego to liczba kroków razy koszt kroku (klasyczne guidance liczy w każdym kroku dwa przewidywania, z promptem i bez niego; zobacz „Generowanie obrazów”), a koszt kroku rośnie z liczbą tokenów. Sam koszt attention, w którym każdy token patrzy na każdy, rośnie z kwadratem liczby tokenów. Wiele tokenów liczonych naraz dobrze wykorzystuje GPU, podobnie jak prefill (zobacz „Czemu GPU się nudzi”). Czas zależy głównie od rozdzielczości, długości i liczby kroków. Szybkie warianty, jak FLUX.1 schnell, to osobne wersje modelu, wyuczone (destylowane) do 1–4 kroków (zobacz „Destylacja”).</li>
+  </ul>
+</section>
