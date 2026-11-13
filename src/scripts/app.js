@@ -2480,12 +2480,12 @@ function initMedia(){
 /* obrazy */
 // tap any picture in the chapter's figures to see it full width (they are 68 px wide in a 4-column grid on a phone)
 let zoomDeco=null;
-function initZoom(){const d=h('dialog',{class:'zoom','aria-label':tr('Powiększony obraz','Enlarged image')}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});let from=null;
+function initZoom(){const d=h('dialog',{class:'zoom','aria-label':tr('Powiększony obraz','Enlarged image')}),im=h('img',{alt:''}),cap=h('p',{class:'hint'});let from=null,host=null;
   d.append(im,cap,h('button',{class:'btn ghost',type:'button',onclick:()=>d.close()},tr('Zamknij','Close')));
-  d.addEventListener('click',e=>{if(e.target===d)d.close();});d.addEventListener('close',()=>from?.focus());document.body.append(d);
+  d.addEventListener('click',e=>{if(e.target===d)d.close();});d.addEventListener('close',()=>(from?.isConnected?from:host?.querySelector('.zoomable'))?.focus());document.body.append(d);
   // caption: the figure's label and text joined with a colon, else the image's alt text
   const label=i=>{const fc=i.closest('figure')?.querySelector('figcaption');return fc?[...fc.childNodes].map(n=>n.textContent.trim()).filter(Boolean).join(': '):i.alt;};
-  const open=i=>{from=i;im.src=i.src;im.alt=i.alt;cap.textContent=label(i);d.showModal();};
+  const open=i=>{from=i;host=i.closest('.lab');im.src=i.src;im.alt=i.alt;cap.textContent=label(i);d.showModal();};
   const deco=i=>{if(i.classList.contains('zoomable'))return;i.classList.add('zoomable');i.tabIndex=0;i.setAttribute('role','button');
     i.setAttribute('aria-label',tr('Powiększ: ','Enlarge: ')+(label(i)||i.alt));i.title=tr('Powiększ','Enlarge');
     i.addEventListener('click',()=>open(i));i.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(i);}});};
