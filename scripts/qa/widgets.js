@@ -7,4 +7,7 @@ for(const s of document.querySelectorAll('main select')){for(const o of s.option
 for(const c of document.querySelectorAll('main input[type=checkbox]')){c.click();scan('cb:'+c.id);c.click();}
 for(const b of document.querySelectorAll('main button:not(:disabled)')){if(b.classList.contains('pl-play')||b.closest('.gt'))continue;b.click();scan('btn:'+b.textContent.trim().slice(0,18));}
 for(let i=0;i<40;i++){const n=[...document.querySelectorAll('main .pl-next')].find(b=>!b.disabled);if(!n)break;n.click();scan('next'+i);}
+// a real pointer must reach every zoomable image: element.click() bypasses an overlay that covers it
+document.documentElement.style.scrollBehavior='auto';
+for(const im of document.querySelectorAll('main img.zoomable')){if(!im.offsetParent)continue;scrollTo(0,Math.max(0,im.getBoundingClientRect().top+scrollY-innerHeight/2));const r=im.getBoundingClientRect();if(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)!==im)hits.push('covered:'+(im.alt||im.src).slice(0,24));}
 return W+'px '+([...new Set(hits)].slice(0,4).join(' | ')||'ok')})()
